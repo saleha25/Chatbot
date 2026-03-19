@@ -35,3 +35,4 @@
 # [Asmamujtaba] Minor UI update - 04/07/2026 14:18:00
 # [saleha25] Update README - 04/20/2026 14:16:00
 # [amolic] Fix typo - 03/15/2026 13:29:00
+# [amolic] Improve docs - 03/19/2026 12:45:00
