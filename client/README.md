@@ -94,3 +94,4 @@
 # [saleha25] Improve docs - 04/01/2026 11:49:00
 # [saleha25] UI fix - 04/20/2026 11:01:00
 # [amolic] Update logic - 03/17/2026 16:29:00
+# [amolic] Update README - 03/31/2026 15:42:00
