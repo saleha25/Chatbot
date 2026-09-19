@@ -20,3 +20,6 @@ anaconda_projects/
 
 # Generated model/retrieval files
 *.pkl
+
+# Jupyter
+.ipynb_checkpoints/

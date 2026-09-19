@@ -1,6 +1,3 @@
-# Empath AI — Mental Health Screening & Well-Being Assessment
-**Target Users:** Internally Displaced Persons (IDPs) in Pakistan  
-**Stack:** Flask · OpenAI GPT-4.1-mini · scikit-learn · HTML/CSS/JS
 
 ---
 
