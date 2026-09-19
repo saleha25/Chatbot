@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+mygnuhealth-venv/
+
+# Private/local databases
+*.db
+*.sqbpro
+
+# Datasets and generated data
+data/
+
+# Generated/local project files
+.claude/
+anaconda_projects/
+
+# Generated model/retrieval files
+*.pkl
