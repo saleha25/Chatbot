@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Empath AI — Mental Health Support</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --brown: #4b2e23;
@@ -485,6 +486,95 @@ footer {
   .benefits-header h2 { font-size: 36px; }
   footer { padding: 36px 24px; flex-direction: column; align-items: flex-start; gap: 20px; }
 }
+
+/* ===== ONE-TIME LANGUAGE SELECTOR ===== */
+.language-box {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 8px;
+  padding: 4px 6px 4px 11px;
+  border: 1px solid rgba(75,46,35,0.16);
+  border-radius: 24px;
+  background: rgba(255,255,255,0.55);
+}
+.language-box span {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.language-box select {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--brown);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+html[dir="rtl"] body { direction: rtl; }
+html[dir="rtl"] .hero-text,
+html[dir="rtl"] .about-content,
+html[dir="rtl"] .benefit-body { text-align: right; }
+html[lang="ur"] body,
+html[lang="ur"] button,
+html[lang="ur"] select {
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+}
+@media (max-width: 900px) {
+  .language-box { margin-left: 0; }
+}
+
+
+html[dir="rtl"] .benefit-slide {
+  direction: rtl;
+}
+html[dir="rtl"] .benefit-number {
+  text-align: left;
+}
+html[dir="rtl"] .benefit-card {
+  direction: rtl;
+}
+html[dir="rtl"] .benefit-body {
+  text-align: right;
+}
+html[dir="rtl"] .benefit-pills {
+  justify-content: flex-start;
+}
+/* =========================================================
+   URDU FIX FOR BENEFITS CAROUSEL
+   ========================================================= */
+
+/* Carousel itself always moves left-to-right.
+   This prevents RTL from pushing the cards outside the screen. */
+.benefits-track {
+    direction: ltr;
+}
+
+/* Individual Urdu card content is RTL */
+html[dir="rtl"] .benefit-slide {
+    direction: rtl;
+}
+
+html[dir="rtl"] .benefit-card {
+    direction: rtl;
+}
+
+html[dir="rtl"] .benefit-body {
+    text-align: right;
+}
+
+html[dir="rtl"] .benefit-pills {
+    justify-content: flex-start;
+    direction: rtl;
+}
+
+/* Keep carousel controls visually stable */
+.carousel-nav {
+    direction: ltr;
+}
+
 </style>
 </head>
 <body>
@@ -502,13 +592,20 @@ footer {
   </a>
 
   <ul class="nav-links" id="navLinks">
-    <li id="nav-home" class="active" onclick="navScrollTo('home')">Homepage</li>
-    <li id="nav-about" onclick="navScrollTo('about')">About Us</li>
-    <li id="nav-benefits" onclick="navScrollTo('benefits')">Benefits</li>
+    <li id="nav-home" class="active" onclick="navScrollTo('home')" data-i18n="homepage">Homepage</li>
+    <li id="nav-about" onclick="navScrollTo('about')" data-i18n="aboutUs">About Us</li>
+    <li id="nav-benefits" onclick="navScrollTo('benefits')" data-i18n="benefits">Benefits</li>
   </ul>
 
   <div class="nav-right">
-    <a class="nav-login" href="/login">Login</a>
+    <a class="nav-login" href="/login" data-i18n="login">Login</a>
+    <div class="language-box">
+      <span data-i18n="languageLabel">Language:</span>
+      <select id="appLanguage" aria-label="Select language" onchange="selectAppLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="ur">اردو</option>
+      </select>
+    </div>
   
   </div>
 </nav>
@@ -523,14 +620,14 @@ footer {
   <div class="hero-text">
     <h1>
       Empath AI<br>
-      <span class="green">Mental Health</span>
+      <span class="green" data-i18n="mentalHealth">Mental Health</span>
     </h1>
-    <p>
+    <p data-i18n="heroText">
       An AI-powered mental health assessment built specifically
       for internally displaced people in Pakistan —
       compassionate, culturally aware, and always available.
     </p>
-    <button class="hero-btn" onclick="window.location.href='/dashboard'">Start Now →</button>
+    <button class="hero-btn" onclick="window.location.href='/dashboard'" data-i18n="startNow">Start Now →</button>
   </div>
 </section>
 
@@ -578,30 +675,33 @@ footer {
   </div>
 
   <div class="about-content">
-    <p class="section-label">About Us</p>
-    <h2>Built for<br>Pakistan's IDPs</h2>
-    <p>
-      Empath AI was created in response to Pakistan's growing internally displaced
-      population — millions of people who have been forced from their homes by floods,
-      conflict, and climate crises, and who carry invisible wounds alongside everything else.
-    </p>
-    <p>
-      We are a team of researchers, mental health professionals, and technologists united
-      by one belief: <strong>no one should face trauma alone.</strong> Our platform combines
-      clinically validated screening tools — PHQ-9 and GAD-7 — with culturally sensitive
-      conversation design, so every assessment feels human, not clinical.
-    </p>
-    <p>
-      Empath AI speaks your language, understands your context, and connects you to
-      real support when it matters most. We are private, safe, and always available —
-      because mental health care should have no waiting room.
-    </p>
+    <p class="section-label" data-i18n="aboutUs">About Us</p>
+    <h2 data-i18n="aboutTitle">Built for<br>Pakistan's IDPs</h2>
+    <p data-i18n="aboutP1">
+    Empath AI was created in response to Pakistan's growing internally displaced
+    population — millions of people who have been forced from their homes by floods,
+    conflict, and climate crises, and who carry invisible wounds alongside everything else.
+</p>
+
+   <p data-i18n="aboutP2">
+    We are a team of researchers, mental health professionals, and technologists united
+    by one belief: <strong>no one should face trauma alone.</strong> Our platform combines
+    clinically validated screening tools — PHQ-9 and GAD-7 — with culturally sensitive
+    conversation design, so every assessment feels human, not clinical.
+</p>
+
+   <p data-i18n="aboutP3">
+    Empath AI speaks your language, understands your context, and connects you to
+    real support when it matters most. We are private, safe, and always available —
+    because mental health care should have no waiting room.
+</p>
+
     <div class="about-tags">
-      <span class="about-tag tag-brown">🤝 IDP-Focused</span>
-      <span class="about-tag tag-green">🕌 Culturally Aware</span>
-      <span class="about-tag tag-orange">🔒 Private & Safe</span>
-      <span class="about-tag tag-brown">📋 PHQ-9 / GAD-7</span>
-      <span class="about-tag tag-green">🛡️ Crisis Detection</span>
+      <span class="about-tag tag-brown" data-i18n="tagIdp">🤝 IDP-Focused</span>
+      <span class="about-tag tag-green" data-i18n="tagCulture">🕌 Culturally Aware</span>
+      <span class="about-tag tag-orange" data-i18n="tagSafe">🔒 Private & Safe</span>
+      <span class="about-tag tag-brown" data-i18n="tagScreening">📋 PHQ-9 / GAD-7</span>
+      <span class="about-tag tag-green" data-i18n="tagCrisis">🛡️ Crisis Detection</span>
     </div>
   </div>
 
@@ -610,9 +710,9 @@ footer {
 <!-- ── BENEFITS ── -->
 <section id="benefits">
   <div class="benefits-header">
-    <p class="section-label">Why Empath AI</p>
-    <h2>How We Help</h2>
-    <p>Each feature is designed with displaced communities at heart — practical, compassionate, and evidence-based.</p>
+    <p class="section-label" data-i18n="whyEmpath">Why Empath AI</p>
+    <h2 data-i18n="howHelp">How We Help</h2>
+    <p data-i18n="benefitsIntro">Each feature is designed with displaced communities at heart — practical, compassionate, and evidence-based.</p>
   </div>
 
   <div class="benefits-carousel">
@@ -623,12 +723,12 @@ footer {
         <div class="benefit-card">
           <div class="benefit-icon-wrap" style="background:#fff3eb;">🛡️</div>
           <div class="benefit-body">
-            <h3>Real-Time Crisis Detection</h3>
-            <p>Our AI monitors every conversation for signs of acute distress, suicidal ideation, or severe trauma response — and responds immediately with compassionate guidance and emergency resources tailored for Pakistan.</p>
+            <h3 data-i18n="crisisTitle">Real-Time Crisis Detection</h3>
+            <p data-i18n="crisisText">Our AI monitors every conversation for signs of acute distress, suicidal ideation, or severe trauma response — and responds immediately with compassionate guidance and emergency resources tailored for Pakistan.</p>
             <div class="benefit-pills">
-              <span class="benefit-pill">24/7 Monitoring</span>
-              <span class="benefit-pill">Instant Alerts</span>
-              <span class="benefit-pill">Pakistan Helplines</span>
+              <span class="benefit-pill" data-i18n="monitoring">24/7 Monitoring</span>
+              <span class="benefit-pill" data-i18n="alerts">Instant Alerts</span>
+              <span class="benefit-pill" data-i18n="helplines">Pakistan Helplines</span>
             </div>
           </div>
         </div>
@@ -639,13 +739,13 @@ footer {
         <div class="benefit-card">
           <div class="benefit-icon-wrap" style="background:#edf4e6;">📋</div>
           <div class="benefit-body">
-            <h3>Clinically Validated Screening</h3>
-            <p>Empath AI administers the gold-standard PHQ-9 for depression and GAD-7 for anxiety assessments — translated and culturally adapted for Urdu and regional languages — delivering reliable, actionable mental health scores.</p>
+            <h3 data-i18n="screenTitle">Clinically Validated Screening</h3>
+            <p data-i18n="screenText">Empath AI administers the gold-standard PHQ-9 for depression and GAD-7 for anxiety assessments — translated and culturally adapted for Urdu and regional languages — delivering reliable, actionable mental health scores.</p>
             <div class="benefit-pills">
-              <span class="benefit-pill">PHQ-9</span>
-              <span class="benefit-pill">GAD-7</span>
-              <span class="benefit-pill">Urdu Support</span>
-              <span class="benefit-pill">Evidence-Based</span>
+              <span class="benefit-pill" data-i18n="phq">PHQ-9</span>
+              <span class="benefit-pill" data-i18n="gad">GAD-7</span>
+              <span class="benefit-pill" data-i18n="urduSupport">Urdu Support</span>
+              <span class="benefit-pill" data-i18n="evidence">Evidence-Based</span>
             </div>
           </div>
         </div>
@@ -656,12 +756,12 @@ footer {
         <div class="benefit-card">
           <div class="benefit-icon-wrap" style="background:#fdf0e8;">🕌</div>
           <div class="benefit-body">
-            <h3>Culturally Sensitive Design</h3>
-            <p>Mental health conversations differ across cultures. Empath AI understands Pakistani social norms, family structures, religious values, and the specific grief of displacement — so it never feels foreign or judgmental.</p>
+            <h3 data-i18n="cultureTitle">Culturally Sensitive Design</h3>
+            <p data-i18n="cultureText">Mental health conversations differ across cultures. Empath AI understands Pakistani social norms, family structures, religious values, and the specific grief of displacement — so it never feels foreign or judgmental.</p>
             <div class="benefit-pills">
-              <span class="benefit-pill">Urdu / Pashto</span>
-              <span class="benefit-pill">Islamic-Aware</span>
-              <span class="benefit-pill">Family Dynamics</span>
+              <span class="benefit-pill" data-i18n="urduPashto">Urdu / Pashto</span>
+              <span class="benefit-pill" data-i18n="islamicAware">Islamic-Aware</span>
+              <span class="benefit-pill" data-i18n="familyDynamics">Family Dynamics</span>
             </div>
           </div>
         </div>
@@ -672,12 +772,12 @@ footer {
         <div class="benefit-card">
           <div class="benefit-icon-wrap" style="background:#eef5f2;">🔒</div>
           <div class="benefit-body">
-            <h3>Private & Completely Safe</h3>
-            <p>No accounts required. No data sold. Conversations are end-to-end encrypted and never linked to your identity. For communities where stigma is a barrier, anonymity is not an option — it's a foundation.</p>
+            <h3 data-i18n="privacyTitle">Private & Completely Safe</h3>
+            <p data-i18n="privacyText">No accounts required. No data sold. Conversations are end-to-end encrypted and never linked to your identity. For communities where stigma is a barrier, anonymity is not an option — it's a foundation.</p>
             <div class="benefit-pills">
-              <span class="benefit-pill">Anonymous</span>
-              <span class="benefit-pill">End-to-End Encrypted</span>
-              <span class="benefit-pill">No Account Needed</span>
+              <span class="benefit-pill" data-i18n="anonymous">Anonymous</span>
+              <span class="benefit-pill" data-i18n="encrypted">End-to-End Encrypted</span>
+              <span class="benefit-pill" data-i18n="noAccount">No Account Needed</span>
             </div>
           </div>
         </div>
@@ -688,12 +788,12 @@ footer {
         <div class="benefit-card">
           <div class="benefit-icon-wrap" style="background:#fff3eb;">🤝</div>
           <div class="benefit-body">
-            <h3>IDP-Specific Support</h3>
-            <p>Trained on over 140K data rows and 22K counseling conversation pairs drawn from displacement contexts, Empath AI deeply understands the layered trauma of losing home, community, and safety — and helps navigate it.</p>
+            <h3 data-i18n="idpTitle">IDP-Specific Support</h3>
+            <p data-i18n="idpText">Trained on over 140K data rows and 22K counseling conversation pairs drawn from displacement contexts, Empath AI deeply understands the layered trauma of losing home, community, and safety — and helps navigate it.</p>
             <div class="benefit-pills">
-              <span class="benefit-pill">140K+ Training Rows</span>
-              <span class="benefit-pill">22K Counseling Pairs</span>
-              <span class="benefit-pill">Displacement-Aware</span>
+              <span class="benefit-pill" data-i18n="rows140">140K+ Training Rows</span>
+              <span class="benefit-pill" data-i18n="pairs22">22K Counseling Pairs</span>
+              <span class="benefit-pill" data-i18n="displacementAware">Displacement-Aware</span>
             </div>
           </div>
         </div>
@@ -722,12 +822,12 @@ footer {
     Empath AI
   </div>
   <div class="footer-links">
-    <a href="#home" onclick="navScrollTo('home')">Homepage</a>
-    <a href="#about" onclick="navScrollTo('about')">About Us</a>
-    <a href="#benefits" onclick="navScrollTo('benefits')">Benefits</a>
+    <a href="#home" onclick="navScrollTo('home')" data-i18n="homepage">Homepage</a>
+    <a href="#about" onclick="navScrollTo('about')" data-i18n="aboutUs">About Us</a>
+    <a href="#benefits" onclick="navScrollTo('benefits')" data-i18n="benefits">Benefits</a>
 
-    <a href="#">Privacy Policy</a>
-    <a href="#">Contact</a>
+    <a href="#" data-i18n="privacy">Privacy Policy</a>
+    <a href="#" data-i18n="contact">Contact</a>
   </div>
   <div class="footer-copy">© 2026 Empath AI. Built for Pakistan's IDPs.</div>
 </footer>
@@ -764,6 +864,14 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') moveCarousel(-1);
 });
 
+function updateCarouselDirection() {
+  const isUrdu = document.documentElement.dir === 'rtl';
+  if (prevBtn) prevBtn.textContent = isUrdu ? '→' : '←';
+  if (nextBtn) nextBtn.textContent = isUrdu ? '←' : '→';
+}
+
+updateCarouselDirection();
+
 const sections = ['home', 'about', 'benefits'];
 
 function setActive(id) {
@@ -789,5 +897,355 @@ sections.forEach(s => {
   if (el) observer.observe(el);
 });
 </script>
+
+<script>
+/*
+ * EMPATH AI — ONE-TIME LANGUAGE SELECTION
+ *
+ * The language is selected ONLY on this starting page.
+ * It is stored in localStorage as "empathLanguage".
+ *
+ * Login, registration, dashboard, assessment, wellness, chatbot,
+ * quotes, etc. must read this value and must NOT ask the user again.
+ */
+
+const EMPATH_LANGUAGE_KEY = "empathLanguage";
+
+const INDEX_TRANSLATIONS = {
+  en: {
+    languageLabel: "Language:",
+    login: "Login",
+    homepage: "Homepage",
+    aboutUs: "About Us",
+    benefits: "Benefits",
+    mentalHealth: "Mental Health",
+    heroText: "An AI-powered mental health assessment built specifically for internally displaced people in Pakistan — compassionate, culturally aware, and always available.",
+    startNow: "Start Now →",
+    aboutP1: "Empath AI was created in response to Pakistan's growing internally displaced population — millions of people who have been forced from their homes by floods, conflict, and climate crises, and who carry invisible wounds alongside everything else.",
+    aboutP2: "We are a team of researchers, mental health professionals, and technologists united by one belief: <strong>no one should face trauma alone.</strong> Our platform combines clinically validated screening tools — PHQ-9 and GAD-7 — with culturally sensitive conversation design, so every assessment feels human, not clinical.",
+    aboutP3: "Empath AI speaks your language, understands your context, and connects you to real support when it matters most. We are private, safe, and always available — because mental health care should have no waiting room.",
+    crisisTitle: "Real-Time Crisis Detection",
+    crisisText: "Our AI monitors every conversation for signs of acute distress, suicidal ideation, or severe trauma response — and responds immediately with compassionate guidance and emergency resources tailored for Pakistan.",
+    monitoring: "24/7 Monitoring",
+    alerts: "Instant Alerts",
+    helplines: "Pakistan Helplines",
+    screenTitle: "Clinically Validated Screening",
+    screenText: "Empath AI administers the gold-standard PHQ-9 for depression and GAD-7 for anxiety assessments — translated and culturally adapted for Urdu and regional languages — delivering reliable, actionable mental health scores.",
+    phq: "PHQ-9",
+    gad: "GAD-7",
+    urduSupport: "Urdu Support",
+    evidence: "Evidence-Based",
+    cultureTitle: "Culturally Sensitive Design",
+    cultureText: "Mental health conversations differ across cultures. Empath AI understands Pakistani social norms, family structures, religious values, and the specific grief of displacement — so it never feels foreign or judgmental.",
+    urduPashto: "Urdu / Pashto",
+    islamicAware: "Islamic-Aware",
+    familyDynamics: "Family Dynamics",
+    privacyTitle: "Private & Completely Safe",
+    privacyText: "No accounts required. No data sold. Conversations are end-to-end encrypted and never linked to your identity. For communities where stigma is a barrier, anonymity is not an option — it's a foundation.",
+    anonymous: "Anonymous",
+    encrypted: "End-to-End Encrypted",
+    noAccount: "No Account Needed",
+    idpTitle: "IDP-Specific Support",
+    idpText: "Trained on over 140K data rows and 22K counseling conversation pairs drawn from displacement contexts, Empath AI deeply understands the layered trauma of losing home, community, and safety — and helps navigate it.",
+    rows140: "140K+ Training Rows",
+    pairs22: "22K Counseling Pairs",
+    displacementAware: "Displacement-Aware",
+    aboutTitle: "Built for<br>Pakistan's IDPs",
+    tagIdp: "🤝 IDP-Focused",
+    tagCulture: "🕌 Culturally Aware",
+    tagSafe: "🔒 Private & Safe",
+    tagScreening: "📋 PHQ-9 / GAD-7",
+    tagCrisis: "🛡️ Crisis Detection",
+    whyEmpath: "Why Empath AI",
+    howHelp: "How We Help",
+    benefitsIntro: "Each feature is designed with displaced communities at heart — practical, compassionate, and evidence-based.",
+    privacy: "Privacy Policy",
+    contact: "Contact"
+  },
+
+  ur: {
+    languageLabel: "زبان:",
+    login: "لاگ اِن",
+    homepage: "ہوم پیج",
+    aboutUs: "ہمارے بارے میں",
+    benefits: "فوائد",
+    mentalHealth: "ذہنی صحت",
+    heroText: "پاکستان میں اندرونِ ملک بے گھر افراد کے لیے خصوصی طور پر تیار کردہ مصنوعی ذہانت پر مبنی ذہنی صحت کا جائزہ — ہمدردانہ، ثقافتی طور پر حساس اور ہر وقت دستیاب۔",
+    startNow: "ابھی شروع کریں ←",
+    aboutP1: "Empath AI پاکستان میں اندرونِ ملک بے گھر افراد کی بڑھتی ہوئی تعداد کے جواب میں بنایا گیا ہے — ایسے لاکھوں لوگ جو سیلاب، تنازعات اور موسمی بحرانوں کی وجہ سے اپنے گھروں سے دور ہوئے اور جو دیگر مشکلات کے ساتھ ساتھ پوشیدہ ذہنی زخم بھی برداشت کرتے ہیں۔",
+    aboutP2: "ہم محققین، ذہنی صحت کے ماہرین اور ٹیکنالوجی کے ماہرین کی ایک ٹیم ہیں جو اس یقین پر متحد ہیں کہ کسی کو بھی صدمے کا سامنا اکیلے نہیں کرنا چاہیے۔ ہمارا پلیٹ فارم PHQ-9 اور GAD-7 جیسے طبی طور پر مستند اسکریننگ ٹولز کو ثقافتی طور پر حساس گفتگو کے ڈیزائن کے ساتھ استعمال کرتا ہے، تاکہ ہر جائزہ انسانی محسوس ہو، محض طبی نہیں۔",
+    aboutP3: "Empath AI آپ کی زبان میں بات کرتا ہے، آپ کے حالات کو سمجھتا ہے اور ضرورت کے وقت آپ کو حقیقی مدد سے جوڑتا ہے۔ ہم رازداری، تحفظ اور ہر وقت دستیابی کو اہمیت دیتے ہیں — کیونکہ ذہنی صحت کی مدد کے لیے انتظار گاہ نہیں ہونی چاہیے۔",
+    crisisTitle: "فوری بحران کی شناخت",
+    crisisText: "ہماری مصنوعی ذہانت ہر گفتگو میں شدید پریشانی، خودکشی کے خیالات یا شدید صدمے کے ردِعمل کی علامات کو دیکھتی ہے اور پاکستان کے لیے موزوں ہمدردانہ رہنمائی اور ہنگامی وسائل کے ساتھ فوری جواب دیتی ہے۔",
+    monitoring: "24/7 نگرانی",
+    alerts: "فوری انتباہات",
+    helplines: "پاکستانی ہیلپ لائنز",
+    screenTitle: "طبی طور پر مستند اسکریننگ",
+    screenText: "Empath AI ڈپریشن کے لیے PHQ-9 اور بے چینی کے لیے GAD-7 جیسے مستند جائزے فراہم کرتا ہے۔ یہ اردو اور علاقائی زبانوں کے لیے ترجمہ اور ثقافتی طور پر موزوں کیے گئے ہیں تاکہ قابلِ اعتماد اور مفید ذہنی صحت کے اسکور فراہم کیے جا سکیں۔",
+    phq: "PHQ-9",
+    gad: "GAD-7",
+    urduSupport: "اردو سپورٹ",
+    evidence: "شواہد پر مبنی",
+    cultureTitle: "ثقافتی طور پر حساس ڈیزائن",
+    cultureText: "مختلف ثقافتوں میں ذہنی صحت سے متعلق گفتگو مختلف ہوتی ہے۔ Empath AI پاکستانی سماجی روایات، خاندانی ڈھانچوں، مذہبی اقدار اور بے گھری کے مخصوص غم کو سمجھتا ہے، تاکہ گفتگو اجنبی یا تنقیدی محسوس نہ ہو۔",
+    urduPashto: "اردو / پشتو",
+    islamicAware: "اسلامی اقدار سے آگاہ",
+    familyDynamics: "خاندانی معاملات",
+    privacyTitle: "نجی اور مکمل طور پر محفوظ",
+    privacyText: "کسی اکاؤنٹ کی ضرورت نہیں۔ کوئی ڈیٹا فروخت نہیں کیا جاتا۔ گفتگو اینڈ ٹو اینڈ انکرپٹڈ ہے اور آپ کی شناخت سے منسلک نہیں کی جاتی۔ جہاں سماجی بدنامی رکاوٹ ہو، وہاں رازداری ایک سہولت نہیں بلکہ بنیادی ضرورت ہے۔",
+    anonymous: "گمنام",
+    encrypted: "اینڈ ٹو اینڈ انکرپٹڈ",
+    noAccount: "اکاؤنٹ کی ضرورت نہیں",
+    idpTitle: "آئی ڈی پیز کے لیے خصوصی مدد",
+    idpText: "بے گھری سے متعلق 140K سے زیادہ ڈیٹا قطاروں اور 22K مشاورتی گفتگو کے جوڑوں پر تربیت یافتہ Empath AI گھر، برادری اور تحفظ کھونے کے پیچیدہ صدمے کو سمجھتا ہے اور اس سے نمٹنے میں مدد کرتا ہے۔",
+    rows140: "140K+ تربیتی قطاریں",
+    pairs22: "22K مشاورتی جوڑے",
+    displacementAware: "بے گھری سے آگاہ",
+    aboutTitle: "پاکستان کے<br>آئی ڈی پیز کے لیے",
+    tagIdp: "🤝 آئی ڈی پی مرکوز",
+    tagCulture: "🕌 ثقافتی طور پر حساس",
+    tagSafe: "🔒 نجی اور محفوظ",
+    tagScreening: "📋 PHQ-9 / GAD-7",
+    tagCrisis: "🛡️ بحران کی شناخت",
+    whyEmpath: "Empath AI کیوں؟",
+    howHelp: "ہم کیسے مدد کرتے ہیں",
+    benefitsIntro: "ہر خصوصیت بے گھر کمیونٹیز کی ضروریات کو مدنظر رکھتے ہوئے عملی، ہمدردانہ اور شواہد پر مبنی بنائی گئی ہے۔",
+    privacy: "پرائیویسی پالیسی",
+    contact: "رابطہ"
+  }
+};
+
+function getSelectedLanguage() {
+  return localStorage.getItem(EMPATH_LANGUAGE_KEY) || "en";
+}
+
+function selectAppLanguage(language) {
+  if (!INDEX_TRANSLATIONS[language]) language = "en";
+
+  // This is the ONLY place where the user chooses the language.
+  localStorage.setItem(EMPATH_LANGUAGE_KEY, language);
+
+  applyIndexLanguage(language);
+}
+
+function applyIndexLanguage(language) {
+  if (!INDEX_TRANSLATIONS[language]) language = "en";
+
+  const t = INDEX_TRANSLATIONS[language];
+
+  document.documentElement.lang = language;
+  document.documentElement.dir = language === "ur" ? "rtl" : "ltr";
+
+  document.querySelectorAll("[data-i18n]").forEach(function(el) {
+    const key = el.getAttribute("data-i18n");
+    if (t[key] !== undefined) {
+      el.innerHTML = t[key];
+    }
+  });
+
+  const selector = document.getElementById("appLanguage");
+  if (selector) selector.value = language;
+
+  // Apply the benefit-card translations using the SAME language
+  // selected on the intro page.
+  applyBenefitsLanguage(language);
+}
+/*
+ * If the user already selected a language before, keep it.
+ * Do NOT ask again.
+ */
+document.addEventListener("DOMContentLoaded", function() {
+  applyIndexLanguage(getSelectedLanguage());
+});
+/* =========================================================
+   BENEFITS TRANSLATIONS
+   ========================================================= */
+
+const BENEFITS_TRANSLATIONS = {
+
+    en: [
+        {
+            title: "Real-Time Crisis Detection",
+            description:
+                "Our AI monitors every conversation for signs of acute distress, suicidal ideation, or severe trauma response — and responds immediately with compassionate guidance and emergency resources tailored for Pakistan.",
+            pills: [
+                "24/7 Monitoring",
+                "Instant Alerts",
+                "Pakistan Helplines"
+            ]
+        },
+
+        {
+            title: "Clinically Validated Screening",
+            description:
+                "Empath AI administers the gold-standard PHQ-9 for depression and GAD-7 for anxiety assessments — translated and culturally adapted for Urdu and regional languages — delivering reliable, actionable mental health scores.",
+            pills: [
+                "PHQ-9",
+                "GAD-7",
+                "Urdu Support",
+                "Evidence-Based"
+            ]
+        },
+
+        {
+            title: "Culturally Sensitive Design",
+            description:
+                "Mental health conversations differ across cultures. Empath AI understands Pakistani social norms, family structures, religious values, and the specific grief of displacement — so it never feels foreign or judgmental.",
+            pills: [
+                "Urdu / Pashto",
+                "Islamic-Aware",
+                "Family Dynamics"
+            ]
+        },
+
+        {
+            title: "Private & Completely Safe",
+            description:
+                "No accounts required. No data sold. Conversations are end-to-end encrypted and never linked to your identity. For communities where stigma is a barrier, anonymity is not an option — it's a foundation.",
+            pills: [
+                "Anonymous",
+                "End-to-End Encrypted",
+                "No Account Needed"
+            ]
+        },
+
+        {
+            title: "IDP-Specific Support",
+            description:
+                "Trained on over 140K data rows and 22K counseling conversation pairs drawn from displacement contexts, Empath AI deeply understands the layered trauma of losing home, community, and safety — and helps navigate it.",
+            pills: [
+                "140K+ Training Rows",
+                "22K Counseling Pairs",
+                "Displacement-Aware"
+            ]
+        }
+    ],
+
+    ur: [
+        {
+            title: "فوری بحران کی شناخت",
+            description:
+                "ہماری مصنوعی ذہانت ہر گفتگو میں شدید ذہنی دباؤ، خودکشی کے خیالات یا شدید صدمے کی علامات کو محسوس کرتی ہے اور پاکستان کے لیے موزوں ہمدردانہ رہنمائی اور ہنگامی وسائل فوری فراہم کرتی ہے۔",
+            pills: [
+                "24/7 نگرانی",
+                "فوری الرٹس",
+                "پاکستانی ہیلپ لائنز"
+            ]
+        },
+
+        {
+            title: "طبی طور پر مستند اسکریننگ",
+            description:
+                "Empath AI ڈپریشن کے لیے PHQ-9 اور بے چینی کے لیے GAD-7 جیسے مستند اسکریننگ ٹولز فراہم کرتا ہے۔ یہ ٹولز اردو اور علاقائی زبانوں کے لیے ثقافتی طور پر موزوں بنائے گئے ہیں تاکہ قابلِ اعتماد ذہنی صحت کے نتائج حاصل کیے جا سکیں۔",
+            pills: [
+                "PHQ-9",
+                "GAD-7",
+                "اردو سپورٹ",
+                "شواہد پر مبنی"
+            ]
+        },
+
+        {
+            title: "ثقافتی طور پر حساس ڈیزائن",
+            description:
+                "مختلف ثقافتوں میں ذہنی صحت سے متعلق گفتگو مختلف ہوتی ہے۔ Empath AI پاکستانی سماجی روایات، خاندانی نظام، مذہبی اقدار اور بے گھری کے مخصوص غم کو سمجھتا ہے تاکہ گفتگو اجنبی یا فیصلہ کن محسوس نہ ہو۔",
+            pills: [
+                "اردو / پشتو",
+                "اسلامی اقدار سے ہم آہنگ",
+                "خاندانی معاملات"
+            ]
+        },
+
+        {
+            title: "نجی اور مکمل طور پر محفوظ",
+            description:
+                "کسی اکاؤنٹ کی ضرورت نہیں۔ آپ کا ڈیٹا فروخت نہیں کیا جاتا۔ گفتگو محفوظ رہتی ہے اور آپ کی شناخت سے منسلک نہیں کی جاتی۔ جہاں ذہنی صحت سے متعلق بدنامی ایک رکاوٹ ہو، وہاں رازداری ہماری بنیادی ترجیح ہے۔",
+            pills: [
+                "گمنام",
+                "محفوظ گفتگو",
+                "اکاؤنٹ کی ضرورت نہیں"
+            ]
+        },
+
+        {
+            title: "آئی ڈی پیز کے لیے خصوصی مدد",
+            description:
+                "Empath AI بے گھر ہونے کے حالات سے متعلق 140K سے زیادہ ڈیٹا ریکارڈز اور 22K سے زیادہ کونسلنگ گفتگو کے جوڑوں پر تربیت یافتہ ہے۔ یہ گھر، کمیونٹی اور تحفظ کھونے کے پیچیدہ صدمے کو سمجھنے اور اس سے نمٹنے میں مدد فراہم کرتا ہے۔",
+            pills: [
+                "140K+ تربیتی ریکارڈز",
+                "22K کونسلنگ گفتگو",
+                "بے گھری سے آگاہ"
+            ]
+        }
+    ]
+};
+
+
+/* =========================================================
+   APPLY BENEFITS LANGUAGE
+   ========================================================= */
+
+function applyBenefitsLanguage(language) {
+
+    const benefits = BENEFITS_TRANSLATIONS[language];
+
+    if (!benefits) {
+        return;
+    }
+
+    const slides = document.querySelectorAll(".benefit-slide");
+
+    slides.forEach(function(slide, index) {
+
+        if (!benefits[index]) {
+            return;
+        }
+
+        const benefit = benefits[index];
+
+        /* Title */
+        const title = slide.querySelector(".benefit-body h3");
+
+        if (title) {
+            title.textContent = benefit.title;
+        }
+
+
+        /* Description */
+        const description = slide.querySelector(".benefit-body p");
+
+        if (description) {
+            description.textContent = benefit.description;
+        }
+
+
+        /* Pills */
+        const pillsContainer =
+            slide.querySelector(".benefit-pills");
+
+        if (pillsContainer) {
+
+            pillsContainer.innerHTML = "";
+
+            benefit.pills.forEach(function(pillText) {
+
+                const pill = document.createElement("span");
+
+                pill.className = "benefit-pill";
+
+                pill.textContent = pillText;
+
+                pillsContainer.appendChild(pill);
+
+            });
+
+        }
+
+    });
+
+}
+
+</script>
+
 </body>
 </html>

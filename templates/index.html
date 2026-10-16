@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr" id="htmlRoot">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
     <title>Mental Health Support — Empath AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -442,6 +443,36 @@
             font-size: 13px; z-index: 999;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+html[dir="rtl"] body {
+            direction:rtl;
+            font-family:Tahoma,sans-serif;
+        }
+        html[dir="rtl"] .message.user { flex-direction:row; }
+        html[dir="rtl"] .message.bot { flex-direction:row-reverse; }
+        html[dir="rtl"] .message.user .msg-body { align-items:flex-start; }
+        html[dir="rtl"] .message.user .msg-time { text-align:left; }
+        html[dir="rtl"] #center-input,
+        html[dir="rtl"] #userInput {
+            direction:rtl; text-align:right;
+            font-family:Tahoma,sans-serif;
+        }
+        html[dir="rtl"] .greeting,
+        html[dir="rtl"] .greeting-sub,
+        html[dir="rtl"] .chip,
+        html[dir="rtl"] .disclaimer,
+        html[dir="rtl"] .helpline-footer,
+        html[dir="rtl"] .back-btn,
+        html[dir="rtl"] .nav-btn {
+            font-family:Tahoma,sans-serif;
+        }
+        html[dir="rtl"] .msg-bubble { line-height:2; }
+
+        html[dir="rtl"] .msg-time {
+    direction: ltr !important;
+    text-align: left !important;
+    unicode-bidi: plaintext !important;
+}
+
     </style>
 </head>
 <body>
@@ -459,27 +490,30 @@
                 </div>
                 <div class="brand-text">
                     <span class="brand-name">Empath AI</span>
-                    <span class="brand-sub">IDP Mental Health</span>
+                    <span class="brand-sub" data-i18n="brandSub">IDP Mental Health</span>
                 </div>
             </div>
             <div class="nav-divider"></div>
-            <span class="nav-page-label">Support Chat</span>
+            <span class="nav-page-label" data-i18n="supportChat">Support Chat</span>
         </div>
 
         <div class="nav-right">
             <div class="status-pill">
                 <div class="status-dot"></div>
-                <span class="status-text">Online</span>
+                <span class="status-text" data-i18n="online">Online</span>
             </div>
-            <a href="/dashboard" class="back-btn">Dashboard</a>
-            <button class="nav-btn" onclick="resetChat()">New Chat</button>
+<a href="/dashboard" class="back-btn" data-i18n="dashboard">Dashboard</a>
+            <button class="nav-btn" onclick="resetChat()" data-i18n="newChat">New Chat</button>
         </div>
     </nav>
 
-    <div class="disclaimer">
-        This is a support tool, not a replacement for professional care. &nbsp;
-        If you are in immediate danger, call <strong>1122</strong> or Umang: <strong>0317-4288665</strong>
-    </div>
+   <div class="disclaimer">
+    <span data-i18n="disclaimer">This is a support tool, not a replacement for professional care.</span> &nbsp;
+    <span data-i18n="danger">If you are in immediate danger, call</span>
+    <strong dir="ltr">1122</strong>
+    <span data-i18n="umangCall">or Umang:</span>
+    <strong dir="ltr">0317-4288665</strong>
+</div>
 
     <div class="content-area">
 
@@ -505,24 +539,24 @@
 
             <div class="greeting">
                 <span id="greeting-line">Good morning,</span><br>
-                <em id="greeting-name">{{ user_name }}</em>
+                <em id="greeting-name" data-name-en="{{ user_name|e }}" data-name-ur="{{ user_name_urdu|e }}">{{ user_name }}</em>
             </div>
             <div class="greeting-sub" id="greeting-sub">
-                Before we begin, can you tell me a little about yourself — are you a student, working, a housewife/homemaker, unemployed, or something else?
+                <span data-i18n="welcomeSub">Before we begin, can you tell me a little about yourself — are you a student, working, a housewife/homemaker, unemployed, or something else?</span>
             </div>
 
             <div class="chips" id="role-chips" style="display: none;">
-                <div class="chip" onclick="sendChip(this)">Student</div>
-                <div class="chip" onclick="sendChip(this)">Working</div>
-                <div class="chip" onclick="sendChip(this)">Housewife</div>
-                <div class="chip" onclick="sendChip(this)">Unemployed</div>
-                <div class="chip" onclick="sendChip(this)">Parent</div>
-                <div class="chip" onclick="sendChip(this)">Something else</div>
+                <div class="chip" onclick="sendChip(this)" data-i18n="student">Student</div>
+                <div class="chip" onclick="sendChip(this)" data-i18n="working">Working</div>
+                <div class="chip" onclick="sendChip(this)" data-i18n="housewife">Housewife</div>
+                <div class="chip" onclick="sendChip(this)" data-i18n="unemployed">Unemployed</div>
+                <div class="chip" onclick="sendChip(this)" data-i18n="parent">Parent</div>
+                <div class="chip" onclick="sendChip(this)" data-i18n="somethingElse">Something else</div>
             </div>
 
             <div class="center-input-wrap">
                 <input id="center-input" type="text"
-                    placeholder="Share what's on your mind..."
+                    data-placeholder-en="Share what's on your mind..." data-placeholder-ur="جو کچھ آپ کے ذہن میں ہے، شیئر کریں..." placeholder="Share what's on your mind..."
                     onkeydown="if(event.key==='Enter') sendFromCenter()" />
 
                 <button id="centerMicBtn" class="voice-btn voice-start" type="button" title="Start voice input">🎤</button>
@@ -541,7 +575,7 @@
         <div id="bottom-input">
             <div class="bottom-input-wrap">
                 <textarea id="userInput" rows="1"
-                    placeholder="Type your message..."
+                    data-placeholder-en="Type your message..." data-placeholder-ur="اپنا پیغام لکھیں..." placeholder="Type your message..."
                     onkeydown="handleKey(event)"
                     oninput="autoResize(this)"></textarea>
 
@@ -557,24 +591,141 @@
     </div>
 
     <div class="helpline-footer">
-        <span>🆘 Crisis helplines always available:</span>
-        <span><strong>1122</strong> Emergency &nbsp;|&nbsp; <strong>0317-4288665</strong> Umang &nbsp;|&nbsp; <strong>051-2890505</strong> Rozan</span>
-    </div>
+    <span data-i18n="crisis">🆘 Crisis helplines always available:</span>
+    <span>
+        <strong dir="ltr">1122</strong>
+        <span data-i18n="emergency">Emergency</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">0317-4288665</strong>
+        <span data-i18n="umang">Umang</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">051-2890505</strong>
+        <span data-i18n="rozan">Rozan</span>
+    </span>
+</div>
 
 </div>
 
 <div id="error-toast"></div>
 
 <script>
-    (function setGreeting() {
+
+    // ===== EMPATH AI: language comes ONLY from the landing page =====
+    // The user selects the language once on the landing page.
+    // This page never asks for language again.
+    const EMPATH_LANGUAGE_KEY = "empathLanguage";
+
+    let currentLanguage =
+        (localStorage.getItem(EMPATH_LANGUAGE_KEY) || "en").toLowerCase();
+
+    currentLanguage = currentLanguage === "ur" ? "ur" : "en";
+
+    const UI_TRANSLATIONS = {
+        en: {
+            brandSub: "IDP Mental Health",
+            supportChat: "Support Chat",
+            online: "Online",
+            dashboard: "Dashboard",
+            newChat: "New Chat",
+            disclaimer: "This is a support tool, not a replacement for professional care.",
+            danger: "If you are in immediate danger, call",
+            umangCall: "or Umang:",
+            welcomeSub: "Before we begin, can you tell me a little about yourself — are you a student, working, a housewife/homemaker, unemployed, or something else?",
+            student: "Student",
+            working: "Working",
+            housewife: "Housewife",
+            unemployed: "Unemployed",
+            parent: "Parent",
+            somethingElse: "Something else",
+            crisis: "🆘 Crisis helplines always available:",
+            emergency: "Emergency",
+            umang: "Umang",
+            rozan: "Rozan"
+        },
+        ur: {
+            brandSub: "آئی ڈی پی ذہنی صحت",
+            supportChat: "معاونتی چیٹ",
+            online: "آن لائن",
+            dashboard: "ڈیش بورڈ",
+            newChat: "نئی چیٹ",
+            disclaimer: "یہ ایک معاونتی ٹول ہے، پیشہ ورانہ طبی نگہداشت کا متبادل نہیں۔",
+            danger: "اگر آپ فوری خطرے میں ہیں تو",
+            umangCall: "یا اُمنگ:",
+            welcomeSub: "شروع کرنے سے پہلے، کیا آپ اپنے بارے میں کچھ بتا سکتے ہیں — کیا آپ طالب علم ہیں، ملازمت کرتے ہیں، گھریلو خاتون ہیں، بے روزگار ہیں، یا کچھ اور؟",
+            student: "طالب علم",
+            working: "ملازمت",
+            housewife: "گھریلو خاتون",
+            unemployed: "بے روزگار",
+            parent: "والدین",
+            somethingElse: "کچھ اور",
+            crisis: "🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:",
+            emergency: "ایمرجنسی",
+            umang: "اُمنگ",
+            rozan: "روزن"
+        }
+    };
+
+    function applyLanguage(language) {
+        currentLanguage = language === "ur" ? "ur" : "en";
+
+        const root = document.getElementById("htmlRoot");
+        if (root) {
+            root.lang = currentLanguage;
+            root.dir = currentLanguage === "ur" ? "rtl" : "ltr";
+        }
+
+        const t = UI_TRANSLATIONS[currentLanguage];
+
+        const greetingName = document.getElementById("greeting-name");
+        if (greetingName) {
+            const englishName = greetingName.getAttribute("data-name-en") || "";
+            const urduName = greetingName.getAttribute("data-name-ur") || englishName;
+            greetingName.textContent = currentLanguage === "ur" ? urduName : englishName;
+        }
+
+        document.querySelectorAll("[data-i18n]").forEach(function(el) {
+            const key = el.getAttribute("data-i18n");
+            if (t[key] !== undefined) {
+                el.textContent = t[key];
+            }
+        });
+
+        document.querySelectorAll("[data-placeholder-en]").forEach(function(el) {
+            el.placeholder = currentLanguage === "ur"
+                ? el.getAttribute("data-placeholder-ur")
+                : el.getAttribute("data-placeholder-en");
+        });
+
+        setGreeting();
+    }
+
+    function setGreeting() {
         const h = new Date().getHours();
-        let line;
-        if (h >= 5 && h < 12) line = "Good morning,";
-        else if (h >= 12 && h < 17) line = "Good afternoon,";
-        else if (h >= 17 && h < 21) line = "Good evening,";
-        else line = "Good night,";
-        document.getElementById("greeting-line").textContent = line;
-    })();
+        let key = "night";
+
+        if (h >= 5 && h < 12) key = "morning";
+        else if (h >= 12 && h < 17) key = "afternoon";
+        else if (h >= 17 && h < 21) key = "evening";
+
+        const greetings = {
+            en: {
+                morning: "Good morning,",
+                afternoon: "Good afternoon,",
+                evening: "Good evening,",
+                night: "Good night,"
+            },
+            ur: {
+                morning: "صبح بخیر،",
+                afternoon: "دوپہر بخیر،",
+                evening: "شام بخیر،",
+                night: "شب بخیر،"
+            }
+        };
+
+        const el = document.getElementById("greeting-line");
+        if (el) el.textContent = greetings[currentLanguage][key];
+    }
+
 
     function updateRoleChips(stage) {
         const chips = document.getElementById('role-chips');
@@ -587,18 +738,26 @@
     }
 
     window.addEventListener('DOMContentLoaded', function() {
-        fetch('/init', { method: 'GET', credentials: 'same-origin' })
+        // Apply the language selected on the landing page immediately.
+        applyLanguage(currentLanguage);
+
+        // Send the selected language to the backend as well.
+        fetch('/init?language=' + encodeURIComponent(currentLanguage), {
+            method: 'GET',
+            credentials: 'same-origin'
+        })
             .then(r => r.json())
             .then(data => {
                 if (data && data.name) {
-                    document.getElementById('greeting-name').textContent = data.name;
+                    document.getElementById('greeting-name').textContent =
+                        currentLanguage === 'ur' ? (data.name_urdu || data.name) : data.name;
                 }
                 if (data && data.response) {
                     document.getElementById('greeting-sub').textContent = data.response;
                 }
                 updateRoleChips(data && data.stage ? data.stage : "");
             })
-            .catch(err => console.log('Init fetch error (non-critical):', err));
+            .catch(err => console.log('Init fetch error:', err));
     });
 
     function sendToBackend(text, callback) {
@@ -606,7 +765,7 @@
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text })
+            body: JSON.stringify({ message: text, language: currentLanguage })
         })
         .then(function(res) {
             if (!res.ok) throw new Error('Server error: ' + res.status);
@@ -649,102 +808,156 @@
     }
 
     function now() {
-        return new Date().toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' });
+    return new Date().toLocaleTimeString('en-PK', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+    
+let currentUrduAudio = null;
+let currentUrduAudioUrl = null;
+
+function stopSpeaking() {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
     }
 
-    function stopSpeaking() {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-        }
+    if (currentUrduAudio) {
+        currentUrduAudio.pause();
+        currentUrduAudio = null;
     }
 
-    function speakText(text) {
-        if (!('speechSynthesis' in window)) {
-            showErrorToast('Text-to-speech is not supported in this browser.');
-            return;
-        }
-
-        stopSpeaking();
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.92;
-        utterance.pitch = 1.0;
-        utterance.volume = 1;
-
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice =
-            voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-pk')) ||
-            voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-gb')) ||
-            voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-us')) ||
-            voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
-
-        if (preferredVoice) {
-            utterance.voice = preferredVoice;
-        }
-
-        window.speechSynthesis.speak(utterance);
+    if (currentUrduAudioUrl) {
+        URL.revokeObjectURL(currentUrduAudioUrl);
+        currentUrduAudioUrl = null;
     }
+}
 
-    function addMessage(text, role) {
-        const msgs = document.getElementById('messages');
-        const div  = document.createElement('div');
-        div.className = 'message ' + role;
+async function speakText(text) {
+    stopSpeaking();
 
-        const initials = role === 'bot' ? 'EA' : 'U';
+    if (currentLanguage === 'ur') {
+        try {
+            const response = await fetch('/tts/urdu', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: text })
+            });
 
-        const avatar = document.createElement('div');
-        avatar.className = 'msg-avatar';
-        avatar.textContent = initials;
+            if (!response.ok) {
+                throw new Error('Urdu voice generation failed');
+            }
 
-        const body = document.createElement('div');
-        body.className = 'msg-body';
+            const audioBlob = await response.blob();
+            currentUrduAudioUrl = URL.createObjectURL(audioBlob);
+            currentUrduAudio = new Audio(currentUrduAudioUrl);
 
-        const bubble = document.createElement('div');
-        bubble.className = 'msg-bubble';
-
-        const textSpan = document.createElement('div');
-        textSpan.textContent = text;
-        bubble.appendChild(textSpan);
-
-        if (role === 'bot') {
-            const controls = document.createElement('div');
-            controls.className = 'bubble-controls';
-
-            const speakBtn = document.createElement('button');
-            speakBtn.className = 'bubble-voice-btn bubble-speak';
-            speakBtn.type = 'button';
-            speakBtn.innerHTML = '🔊 Speak';
-            speakBtn.onclick = function() {
-                speakText(text);
-            };
-
-            const stopBtn = document.createElement('button');
-            stopBtn.className = 'bubble-voice-btn bubble-stop';
-            stopBtn.type = 'button';
-            stopBtn.innerHTML = '⏹ Stop';
-            stopBtn.onclick = function() {
+            currentUrduAudio.onended = function () {
                 stopSpeaking();
             };
 
-            controls.appendChild(speakBtn);
-            controls.appendChild(stopBtn);
-            bubble.appendChild(controls);
+            await currentUrduAudio.play();
+        } catch (error) {
+            console.error('Urdu TTS error:', error);
+            showErrorToast(
+                'Urdu voice could not play. Check your server and internet.'
+            );
         }
 
-        const time = document.createElement('div');
-        time.className = 'msg-time';
-        time.textContent = now();
-
-        body.appendChild(bubble);
-        body.appendChild(time);
-
-        div.appendChild(avatar);
-        div.appendChild(body);
-
-        msgs.appendChild(div);
-        msgs.scrollTop = msgs.scrollHeight;
+        return;
     }
+
+    if (!('speechSynthesis' in window)) {
+        showErrorToast('Text-to-speech is not supported in this browser.');
+        return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.92;
+    utterance.pitch = 1.0;
+    utterance.volume = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+
+    const preferredVoice =
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-pk')) ||
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-gb')) ||
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-us')) ||
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+
+    if (preferredVoice) {
+        utterance.voice = preferredVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+}
+
+
+    
+function addMessage(text, role) {
+    const msgs = document.getElementById('messages');
+    if (!msgs) {
+        console.error("Messages container not found");
+        return;
+    }
+
+    const div = document.createElement('div');
+    div.className = 'message ' + role;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = role === 'bot' ? 'EA' : 'U';
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = text;
+
+    if (role === 'bot') {
+        const controls = document.createElement('div');
+        controls.className = 'bubble-controls';
+
+        const speakBtn = document.createElement('button');
+        speakBtn.className = 'bubble-voice-btn bubble-speak';
+        speakBtn.type = 'button';
+        speakBtn.textContent = '🔊 Speak';
+        speakBtn.onclick = function () {
+            speakText(text);
+        };
+
+        const stopBtn = document.createElement('button');
+        stopBtn.className = 'bubble-voice-btn bubble-stop';
+        stopBtn.type = 'button';
+        stopBtn.textContent = '⏹ Stop';
+        stopBtn.onclick = function () {
+            stopSpeaking();
+        };
+
+        controls.appendChild(speakBtn);
+        controls.appendChild(stopBtn);
+        bubble.appendChild(controls);
+    }
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = now();
+
+    body.appendChild(bubble);
+    body.appendChild(time);
+    div.appendChild(avatar);
+    div.appendChild(body);
+    msgs.appendChild(div);
+
+    msgs.scrollTop = msgs.scrollHeight;
+}
 
     function addTyping() {
         const msgs = document.getElementById('messages');
@@ -815,7 +1028,10 @@
         stopListening();
 
         fetch('/reset', { method: 'POST', credentials: 'same-origin' })
-            .then(() => fetch('/init', { method: 'GET', credentials: 'same-origin' }))
+            .then(() => fetch('/init?language=' + encodeURIComponent(currentLanguage), {
+                method: 'GET',
+                credentials: 'same-origin'
+            }))
             .then(r => r.json())
             .then(data => {
                 chatStarted = false;
@@ -829,7 +1045,8 @@
                 ws.style.opacity = '1';
 
                 if (data && data.name) {
-                    document.getElementById('greeting-name').textContent = data.name;
+                    document.getElementById('greeting-name').textContent =
+                        currentLanguage === 'ur' ? (data.name_urdu || data.name) : data.name;
                 }
                 if (data && data.response) {
                     document.getElementById('greeting-sub').textContent = data.response;
@@ -878,7 +1095,7 @@
         activeStartBtn = document.getElementById(startBtnId);
 
         recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
+        recognition.lang = currentLanguage === 'ur' ? 'ur-PK' : 'en-US';
         recognition.interimResults = true;
         recognition.continuous = true;
         recognition.maxAlternatives = 1;

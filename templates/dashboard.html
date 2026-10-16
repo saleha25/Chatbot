@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Empath AI — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --brown: #4b2e23;
@@ -40,6 +41,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 3px 18px rgba(75,46,35,0.035);
 }
 
 .logo {
@@ -361,9 +363,94 @@ body {
   to   { opacity:1; transform:translateY(0); }
 }
 
+
+/* ── LANGUAGE / RTL SUPPORT ──
+   Language is selected only on the Intro page.
+   This dashboard reads that saved language and does NOT show
+   another language selector in its header.
+*/
+.navbar {
+    direction: ltr;
+}
+
+html[dir="rtl"] .navbar {
+    direction: rtl;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  direction: ltr;
+}
+
+.profile-wrap {
+  direction: ltr;
+}
+
+.profile-btn {
+  min-width: 132px;
+  justify-content: center;
+  box-shadow: 0 5px 16px rgba(75,46,35,0.12);
+}
+
+html[dir="rtl"] body {
+  direction: rtl;
+}
+
+html[dir="rtl"] .language-wrap {
+  direction: rtl;
+  padding: 4px 10px 4px 5px;
+}
+
+html[dir="rtl"] .language-select {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Naskh Arabic', sans-serif;
+  padding: 6px 12px 8px 28px;
+  background-position:
+    9px 50%,
+    13px 50%;
+}
+
+html[dir="rtl"] .profile-btn {
+  direction: rtl;
+}
+
+html[dir="rtl"] .dropdown {
+  right: auto;
+  left: 0;
+}
+
+html[dir="rtl"] .dd-item {
+  text-align: right;
+}
+
+html[dir="rtl"] .card-cta svg {
+  transform: scaleX(-1);
+}
+
+html[lang="ur"] .greeting-label {
+  letter-spacing: 0;
+}
+
+html[lang="ur"] .greeting h1,
+html[lang="ur"] .greeting p,
+html[lang="ur"] .card h2,
+html[lang="ur"] .card p,
+html[lang="ur"] .tag,
+html[lang="ur"] .card-cta,
+html[lang="ur"] .bottom-note {
+  font-family: 'Noto Naskh Arabic', sans-serif;
+}
+
+
 /* ── RESPONSIVE ── */
 @media (max-width: 680px) {
-  .navbar { padding: 14px 20px; }
+  .navbar { padding: 12px 16px; }
+  .navbar-actions { gap: 6px; }
+  .profile-btn { min-width: auto; padding: 8px 11px; }
+  .profile-btn .profile-avatar { width: 24px; height: 24px; }
   .greeting h1 { font-size: 32px; }
   .cards-grid { grid-template-columns: 1fr; max-width: 420px; }
   .page { padding: 28px 20px 40px; }
@@ -384,31 +471,44 @@ body {
     Empath AI
   </a>
 
-  <div class="profile-wrap">
+  <div class="navbar-actions">
+    <div class="profile-wrap">
     <button class="profile-btn" id="profileBtn" onclick="toggleDropdown()">
-      <div class="profile-avatar">AA</div>
-      {{ user_name }}
+      <div class="profile-avatar" id="profileAvatar"></div>
+     <span
+    id="profileUserName"
+    data-name-en="{{ user_name }}"
+    data-name-ur="{{ user_name_urdu }}"
+>
+    {{ user_name }}
+</span>
       <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
         <path d="M2 4l4 4 4-4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
     <div class="dropdown" id="dropdown">
       <div class="dd-header">
-        <p>{{ user_name }}</p>
-        <span>My Account</span>
+        <p
+    id="dropdownUserName"
+    data-name-en="{{ user_name }}"
+    data-name-ur="{{ user_name_urdu }}"
+>
+    {{ user_name }}
+</p>
+        <span data-i18n="myAccount">My Account</span>
       </div>
       <a class="dd-item dd-logout" href="/logout">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M5 2H2v10h3M9 4l3 3-3 3M12 7H6" stroke="#4b2e23" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Logout
+        <span data-i18n="logout">Logout</span>
       </a>
       <div class="dd-sep"></div>
       <button class="dd-item dd-delete" onclick="openDeleteModal(); closeDropdown();">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 4h10M5 4V3h4v1M6 7v3M8 7v3M3 4l1 8h6l1-8" stroke="#c94b4b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Delete Account
+        <span data-i18n="deleteAccount">Delete Account</span>
       </button>
     </div>
   </div>
@@ -418,9 +518,19 @@ body {
 <div class="page">
 
   <div class="greeting">
-    <p class="greeting-label">✦ Welcome ✦</p>
-    <h1>Hello, <span>{{ user_name }}</span> 👋</h1>
-    <p>How can we help you today? Choose one of the options below to begin your journey towards better mental wellbeing.</p>
+    <p class="greeting-label">✦ <span data-i18n="welcome">Welcome</span> ✦</p>
+   <h1>
+    <span data-i18n="hello">Hello</span>,
+    <span
+        id="greetingUserName"
+        data-name-en="{{ user_name }}"
+        data-name-ur="{{ user_name_urdu }}"
+    >
+        {{ user_name }}
+    </span>
+    👋
+</h1>
+    <p data-i18n="helpToday">How can we help you today? Choose one of the options below to begin your journey towards better mental wellbeing.</p>
   </div>
 
   <div class="cards-grid">
@@ -428,15 +538,15 @@ body {
     <!-- 1. Let's Chat -->
     <a class="card card-chat" href="/app">
       <div class="card-icon-wrap">🤝</div>
-      <h2>Let's Chat</h2>
-      <p>Talk openly with Empath AI — a compassionate listener trained specifically for internally displaced people in Pakistan. No judgment, always safe.</p>
+      <h2 data-i18n="letsChat">Let's Chat</h2>
+      <p data-i18n="chatDescription">Talk openly with Empath AI — a compassionate listener trained specifically for internally displaced people in Pakistan. No judgment, always safe.</p>
       <div class="card-tags">
-        <span class="tag">Culturally Aware</span>
-        <span class="tag">Crisis Support</span>
-        <span class="tag">Private</span>
+        <span class="tag" data-i18n="culturallyAware">Culturally Aware</span>
+        <span class="tag" data-i18n="crisisSupport">Crisis Support</span>
+        <span class="tag" data-i18n="private">Private</span>
       </div>
       <div class="card-cta">
-        Start Chatting
+        <span data-i18n="startChatting">Start Chatting</span>
         <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
           <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -446,16 +556,16 @@ body {
     <!-- 2. Weekly Assessment -->
     <a class="card card-assessment" href="/self_assessment">
       <div class="card-icon-wrap">📋</div>
-      <h2>Weekly Self Assessment</h2>
-      <p>Answer 21 short questions covering depression, anxiety, and wellbeing. Get your personal PHQ-9, GAD-7, and WHO-5 scores with tailored guidance.</p>
+      <h2 data-i18n="weeklyAssessment">Weekly Self Assessment</h2>
+      <p data-i18n="assessmentDescription">Answer 21 short questions covering depression, anxiety, and wellbeing. Get your personal PHQ-9, GAD-7, and WHO-5 scores with tailored guidance.</p>
       <div class="card-tags">
         <span class="tag">PHQ-9</span>
         <span class="tag">GAD-7</span>
         <span class="tag">WHO-5</span>
-        <span class="tag">~5 mins</span>
+        <span class="tag" data-i18n="fiveMins">~5 mins</span>
       </div>
       <div class="card-cta">
-        Start Assessment
+        <span data-i18n="startAssessment">Start Assessment</span>
         <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
           <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -465,15 +575,15 @@ body {
     <!-- 3. Wellness Progress -->
     <a class="card card-wellness" href="/wellness">
       <div class="card-icon-wrap">📈</div>
-      <h2>Wellness Progress</h2>
-      <p>Track your mental health journey over time. View trends in your assessment scores and monitor improvements in your overall wellbeing.</p>
+      <h2 data-i18n="wellnessProgress">Wellness Progress</h2>
+      <p data-i18n="wellnessDescription">Track your mental health journey over time. View trends in your assessment scores and monitor improvements in your overall wellbeing.</p>
       <div class="card-tags">
-        <span class="tag">Score Trends</span>
-        <span class="tag">Weekly Reports</span>
-        <span class="tag">Insights</span>
+        <span class="tag" data-i18n="scoreTrends">Score Trends</span>
+        <span class="tag" data-i18n="weeklyReports">Weekly Reports</span>
+        <span class="tag" data-i18n="insights">Insights</span>
       </div>
       <div class="card-cta">
-        View Progress
+        <span data-i18n="viewProgress">View Progress</span>
         <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
           <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -483,15 +593,15 @@ body {
     <!-- 4. Words of Hope -->
     <a class="card card-quotes" href="/quotes">
       <div class="card-icon-wrap">🕊️</div>
-      <h2>Words of Hope</h2>
-      <p>Gentle quotes from the Quran, Hadith, Quaid-e-Azam, Allama Iqbal, and voices from around the world — fresh every time you visit.</p>
+      <h2 data-i18n="wordsOfHope">Words of Hope</h2>
+      <p data-i18n="hopeDescription">Gentle quotes from the Quran, Hadith, Quaid-e-Azam, Allama Iqbal, and voices from around the world — fresh every time you visit.</p>
       <div class="card-tags">
-        <span class="tag">Quran &amp; Hadith</span>
-        <span class="tag">Pakistani Leaders</span>
-        <span class="tag">AI Powered</span>
+        <span class="tag" data-i18n="quranHadith">Quran &amp; Hadith</span>
+        <span class="tag" data-i18n="pakistaniLeaders">Pakistani Leaders</span>
+        <span class="tag" data-i18n="aiPowered">AI Powered</span>
       </div>
       <div class="card-cta">
-        Read Today's Words
+        <span data-i18n="readTodaysWords">Read Today's Words</span>
         <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
           <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -501,7 +611,7 @@ body {
   </div>
 
   <div class="bottom-note">
-    <p>🔒 Your conversations are <span>private and anonymous</span>.</p>
+    <p>🔒 <span data-i18n="conversationsAre">Your conversations are</span> <span data-i18n="privateAnonymous">private and anonymous</span>.</p>
   </div>
 
 </div>
@@ -509,14 +619,128 @@ body {
 <!-- DELETE ACCOUNT MODAL -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box">
-    <h3>Delete Account?</h3>
-    <p>This action will permanently remove your account and all related data. This cannot be undone.</p>
+    <h3 data-i18n="deleteAccountQuestion">Delete Account?</h3>
+    <p data-i18n="deleteWarning">This action will permanently remove your account and all related data. This cannot be undone.</p>
     <div class="modal-actions">
-      <button class="modal-btn modal-cancel" onclick="closeDeleteModal()">Cancel</button>
-      <button class="modal-btn modal-delete" onclick="deleteAccount()">Yes, Delete</button>
+      <button class="modal-btn modal-cancel" onclick="closeDeleteModal()" data-i18n="cancel">Cancel</button>
+      <button class="modal-btn modal-delete" onclick="deleteAccount()" data-i18n="yesDelete">Yes, Delete</button>
     </div>
   </div>
 </div>
+
+
+<script>
+const translations = {
+  en: {
+    language: "Language", welcome: "Welcome", hello: "Hello",
+    helpToday: "How can we help you today? Choose one of the options below to begin your journey towards better mental wellbeing.",
+    myAccount: "My Account", logout: "Logout", deleteAccount: "Delete Account",
+    letsChat: "Let's Chat",
+    chatDescription: "Talk openly with Empath AI — a compassionate listener trained specifically for internally displaced people in Pakistan. No judgment, always safe.",
+    culturallyAware: "Culturally Aware", crisisSupport: "Crisis Support", private: "Private",
+    startChatting: "Start Chatting",
+    weeklyAssessment: "Weekly Self Assessment",
+    assessmentDescription: "Answer 21 short questions covering depression, anxiety, and wellbeing. Get your personal PHQ-9, GAD-7, and WHO-5 scores with tailored guidance.",
+    fiveMins: "~5 mins", startAssessment: "Start Assessment",
+    wellnessProgress: "Wellness Progress",
+    wellnessDescription: "Track your mental health journey over time. View trends in your assessment scores and monitor improvements in your overall wellbeing.",
+    scoreTrends: "Score Trends", weeklyReports: "Weekly Reports", insights: "Insights",
+    viewProgress: "View Progress", wordsOfHope: "Words of Hope",
+    hopeDescription: "Gentle quotes from the Quran, Hadith, Quaid-e-Azam, Allama Iqbal, and voices from around the world — fresh every time you visit.",
+    quranHadith: "Quran & Hadith", pakistaniLeaders: "Pakistani Leaders", aiPowered: "AI Powered",
+    readTodaysWords: "Read Today's Words", conversationsAre: "Your conversations are",
+    privateAnonymous: "private and anonymous", deleteAccountQuestion: "Delete Account?",
+    deleteWarning: "This action will permanently remove your account and all related data. This cannot be undone.",
+    cancel: "Cancel", yesDelete: "Yes, Delete",
+    serverError: "Server error:", accountDeleted: "Your account has been deleted.",
+    unableDelete: "Unable to delete account right now.",
+    somethingWrong: "Something went wrong while deleting the account."
+  },
+  ur: {
+    language: "زبان", welcome: "خوش آمدید", hello: "السلام علیکم",
+    helpToday: "آج ہم آپ کی کیسے مدد کر سکتے ہیں؟ اپنی بہتر ذہنی فلاح و بہبود کے سفر کے لیے نیچے دیے گئے اختیارات میں سے ایک منتخب کریں۔",
+    myAccount: "میرا اکاؤنٹ", logout: "لاگ آؤٹ", deleteAccount: "اکاؤنٹ حذف کریں",
+    letsChat: "بات چیت کریں",
+    chatDescription: "ایمپیتھ اے آئی کے ساتھ کھل کر بات کریں — ایک ہمدرد سامع جو پاکستان میں اندرونی طور پر بے گھر افراد کی مدد کے لیے تیار کیا گیا ہے۔ بغیر کسی فیصلے کے، ہمیشہ محفوظ۔",
+    culturallyAware: "ثقافتی حساسیت", crisisSupport: "بحرانی مدد", private: "نجی",
+    startChatting: "چیٹ شروع کریں",
+    weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+    assessmentDescription: "ڈپریشن، اضطراب اور ذہنی فلاح و بہبود سے متعلق 21 مختصر سوالات کے جوابات دیں۔ اپنی PHQ-9، GAD-7 اور WHO-5 کی ذاتی اسکورز اور رہنمائی حاصل کریں۔",
+    fiveMins: "تقریباً 5 منٹ", startAssessment: "جائزہ شروع کریں",
+    wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت",
+    wellnessDescription: "وقت کے ساتھ اپنی ذہنی صحت کے سفر کو دیکھیں۔ اپنے تشخیصی اسکورز کے رجحانات دیکھیں اور اپنی مجموعی ذہنی فلاح و بہبود میں بہتری کو جانچیں۔",
+    scoreTrends: "اسکور کے رجحانات", weeklyReports: "ہفتہ وار رپورٹس", insights: "مفید معلومات",
+    viewProgress: "پیش رفت دیکھیں", wordsOfHope: "امید کے الفاظ",
+    hopeDescription: "قرآن، حدیث، قائداعظم، علامہ اقبال اور دنیا بھر کی آوازوں سے امید بھری باتیں — ہر بار آپ کے آنے پر تازہ۔",
+    quranHadith: "قرآن اور حدیث", pakistaniLeaders: "پاکستانی رہنما", aiPowered: "اے آئی سے تقویت یافتہ",
+    readTodaysWords: "آج کے الفاظ پڑھیں", conversationsAre: "آپ کی گفتگو",
+    privateAnonymous: "نجی اور گمنام ہے", deleteAccountQuestion: "اکاؤنٹ حذف کریں؟",
+    deleteWarning: "یہ کارروائی آپ کے اکاؤنٹ اور اس سے متعلق تمام ڈیٹا کو مستقل طور پر حذف کر دے گی۔ اسے واپس نہیں کیا جا سکتا۔",
+    cancel: "منسوخ کریں", yesDelete: "ہاں، حذف کریں",
+    serverError: "سرور کی خرابی:", accountDeleted: "آپ کا اکاؤنٹ حذف کر دیا گیا ہے۔",
+    unableDelete: "اس وقت اکاؤنٹ حذف نہیں کیا جا سکا.",
+    somethingWrong: "اکاؤنٹ حذف کرتے وقت کچھ غلط ہو گیا۔"
+  }
+};
+
+function getCurrentLanguage() {
+  return localStorage.getItem("empathLanguage") || "en";
+}
+
+function translatePage(language) {
+  const dictionary = translations[language] || translations.en;
+
+  document.querySelectorAll("[data-i18n]").forEach(function(element) {
+    const key = element.getAttribute("data-i18n");
+    if (dictionary[key] !== undefined) element.textContent = dictionary[key];
+  });
+
+  document.documentElement.lang = language;
+  document.documentElement.dir = language === "ur" ? "rtl" : "ltr";
+
+const nameElements = document.querySelectorAll("[data-name-en]");
+
+nameElements.forEach(function(element) {
+    element.textContent =
+        language === "ur"
+            ? (element.getAttribute("data-name-ur") || element.getAttribute("data-name-en"))
+            : element.getAttribute("data-name-en");
+});
+
+  localStorage.setItem("empathLanguage", language);
+  updateProfileAvatar();
+}
+
+// Language is controlled by the Intro page.
+// Other pages only read the saved "empathLanguage" value.
+function changeLanguage(language) {
+  translatePage(language);
+}
+function updateProfileAvatar() {
+    const avatar = document.getElementById("profileAvatar");
+    const nameElement = document.getElementById("profileUserName");
+
+    if (!avatar || !nameElement) return;
+
+    const englishName = nameElement.getAttribute("data-name-en") || "";
+    const nameParts = englishName.trim().split(/\s+/).filter(Boolean);
+
+    if (nameParts.length >= 2) {
+        avatar.textContent =
+            nameParts[0].charAt(0).toUpperCase() +
+            nameParts[1].charAt(0).toUpperCase();
+    } else if (nameParts.length === 1) {
+        avatar.textContent =
+            nameParts[0].substring(0, 2).toUpperCase();
+    } else {
+        avatar.textContent = "U";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  translatePage(getCurrentLanguage());
+});
+</script>
 
 <script>
 function toggleDropdown() {
@@ -557,16 +781,16 @@ async function deleteAccount() {
     const rawText = await response.text();
     let data = {};
     try { data = JSON.parse(rawText); } catch(e) {
-      alert('Server error:\n' + rawText); return;
+      alert(translations[getCurrentLanguage()].serverError + '\n' + rawText); return;
     }
     if (response.ok && data.success) {
-      alert(data.message || 'Your account has been deleted.');
+      alert(data.message || translations[getCurrentLanguage()].accountDeleted);
       window.location.href = data.redirect || '/';
     } else {
-      alert(data.message || 'Unable to delete account right now.');
+      alert(data.message || translations[getCurrentLanguage()].unableDelete);
     }
   } catch(error) {
-    alert('Something went wrong while deleting the account.');
+    alert(translations[getCurrentLanguage()].somethingWrong);
   }
 }
 </script>

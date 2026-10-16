@@ -7,13 +7,16 @@ import json
 import random
 import hashlib
 import numpy as np
+import asyncio
+import io
+import edge_tts
 
 
 from datetime import datetime, timedelta
 from functools import wraps
 from sklearn.metrics.pairwise import cosine_similarity
 
-from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for
+from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for, send_file
 from openai import OpenAI
 from gnuhealth_connector import (
     send_wellness_to_gnuhealth,
@@ -164,6 +167,16 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                dob TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
     # Migrate existing DB — add columns if missing
     for col_sql in [
@@ -173,24 +186,105 @@ def init_db():
         "ALTER TABLE assessments ADD COLUMN prev_phq9 INTEGER",
         "ALTER TABLE assessments ADD COLUMN prev_gad7 INTEGER",
         "ALTER TABLE assessments ADD COLUMN prev_who5 INTEGER",
+        "ALTER TABLE accounts ADD COLUMN urdu_name TEXT DEFAULT ''",
     ]:
         try:
             cursor.execute(col_sql)
         except Exception:
             pass
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS accounts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            dob TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+   
 
     db.commit()
+
+def generate_urdu_name(name):
+    """
+    Convert a person's Roman/English name into its natural Urdu spelling.
+    """
+
+    if not name:
+        return ""
+
+    try:
+        prompt = f"""
+Convert this person's name from Roman English into its natural and commonly used Urdu spelling.
+
+This is TRANSLITERATION, NOT translation.
+
+Important:
+- This is a person's name.
+- Write the name exactly as a Pakistani/Urdu speaker would normally write it in Urdu.
+- Use natural Urdu spelling and correct Urdu phonetics.
+- Do not translate the meaning of the name.
+- Do not invent unusual spellings.
+- Preserve first name and last name separately.
+- Return ONLY the Urdu name.
+- No explanation.
+- No quotation marks.
+
+Examples of correct natural Urdu spellings:
+Amna -> آمنہ
+Aamna -> آمنہ
+Ayesha -> عائشہ
+Fatima -> فاطمہ
+Hina -> حنا
+Usman -> عثمان
+Saleha -> صالحہ
+Asad -> اسد
+Muhammad -> محمد
+
+Name to transliterate:
+{name}
+"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0
+        )
+
+        urdu_name = response.choices[0].message.content.strip()
+
+        return urdu_name if urdu_name else name
+
+    except Exception as e:
+        print("Urdu name generation error:", e)
+        return name
+    
+    def get_urdu_name_for_account(account_id):
+        if not account_id:
+            return ""
+
+    db = get_db()
+
+    row = db.execute(
+        "SELECT full_name, urdu_name FROM accounts WHERE id = ?",
+        (account_id,)
+    ).fetchone()
+
+    if not row:
+        return ""
+
+    # If Urdu name already exists, use it
+    if row["urdu_name"]:
+        return row["urdu_name"]
+
+    # Generate it only the first time
+    urdu_name = generate_urdu_name(row["full_name"])
+
+    if urdu_name:
+        db.execute(
+            "UPDATE accounts SET urdu_name = ? WHERE id = ?",
+            (urdu_name, account_id)
+        )
+        db.commit()
+
+    return urdu_name
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -944,56 +1038,108 @@ def get_idp_context_line(role, hardships):
 # ─────────────────────────────────────────────
 # WELLBEING EXTRACTION: SLEEP / MOOD / ENERGY
 # ─────────────────────────────────────────────
+
 MOOD_KEYWORDS = {
     "very_low": [
         "very sad", "depressed", "hopeless", "broken", "empty",
-        "i want to cry", "i feel dead", "nothing matters"
+        "i want to cry", "i feel dead", "nothing matters",
+        "بہت اداس ہوں", "بہت زیادہ اداس", "بہت مایوس ہوں",
+        "دل بہت اداس ہے", "بہت زیادہ پریشان ہوں"
     ],
     "low": [
-    "sad", "down", "not okay", "not fine", "upset",
-    "feeling bad", "low mood", "mood is low",
-    "my mood is low", "mood is bad", "my mood is bad"
-],
+        "sad", "down", "not okay", "not fine", "upset",
+        "feeling bad", "low mood", "mood is low",
+        "my mood is low", "mood is bad", "my mood is bad",
+        "not a good day", "bad day", "my day was bad",
+        "a difficult day", "rough day",
+        "آج میرا دن اچھا نہیں گزرا",
+        "میرا دن اچھا نہیں گزرا",
+        "آج کا دن اچھا نہیں تھا",
+        "آج دن اچھا نہیں گزرا",
+        "آج اچھا محسوس نہیں کر رہا",
+        "آج اچھا محسوس نہیں کر رہی",
+        "دل اداس ہے", "میں اداس ہوں", "اداس ہوں",
+        "پریشان ہوں", "طبیعت اچھی نہیں",
+        "دل نہیں لگ رہا", "موڈ خراب ہے",
+        "میرا موڈ خراب ہے", "اچھا محسوس نہیں ہو رہا",
+        "اچھا محسوس نہیں ہو رہی", "برا دن تھا",
+        "دن برا گزرا", "دل پریشان ہے"
+    ],
     "anxious": [
         "anxious", "worried", "scared", "fear", "panic",
-        "ghabrahat", "bechain"
+        "ghabrahat", "bechain",
+        "گھبراہٹ", "بے چین ہوں", "بے چینی",
+        "فکر ہو رہی ہے", "بہت فکر ہے", "ڈر لگ رہا ہے",
+        "خوف محسوس ہو رہا ہے", "پریشانی ہو رہی ہے"
     ],
     "okay": [
-        "okay", "fine", "normal", "manageable"
+        "okay", "fine", "normal", "manageable",
+        "ٹھیک ہوں", "میں ٹھیک ہوں", "معمول کے مطابق"
     ],
     "good": [
-        "better", "good", "calm", "relaxed", "peaceful"
+        "better", "good", "calm", "relaxed", "peaceful",
+        "اچھا محسوس کر رہا ہوں", "اچھا محسوس کر رہی ہوں",
+        "آج دن اچھا تھا", "میرا دن اچھا گزرا",
+        "بہتر محسوس کر رہا ہوں", "بہتر محسوس کر رہی ہوں",
+        "خوش ہوں", "پرسکون ہوں"
     ]
 }
+
 
 ENERGY_KEYWORDS = {
     "very_low": [
         "no energy", "completely tired", "dead tired", "exhausted",
-        "drained", "can't move"
+        "drained", "can't move",
+        "بالکل توانائی نہیں", "بہت زیادہ تھکا ہوا",
+        "بہت زیادہ تھکی ہوئی", "انتہائی تھکا ہوا",
+        "انتہائی تھکی ہوئی", "بالکل نڈھال"
     ],
     "low": [
         "tired", "weak", "fatigue", "low energy",
-        "thaka hua", "thaki hui","energy is low", "my energy is low",
-    "energy is bad", "my energy is bad",
+        "thaka hua", "thaki hui", "energy is low",
+        "my energy is low", "energy is bad", "my energy is bad",
+      
+        "اتنی تھکن ہوتی ہے",
+        "کچھ کرنے کا دل نہیں کرتا",
+        "میں بہت تھکی ہوئی ہوں",
+        "میں بہت تھکا ہوا ہوں",
+        "ذہنی تھکن ہے",
+        "جسم میں کمزوری محسوس ہو رہی ہے",
+        "جسمانی تھکن محسوس ہو رہی ہے",
+        "کسی کام میں دل نہیں لگتا",
+
     ],
     "medium": [
-        "okay energy", "some energy", "manageable energy"
+        "okay energy", "some energy", "manageable energy",
+        "توانائی ٹھیک ہے", "تھوڑی توانائی ہے"
     ],
     "high": [
-        "energetic", "active", "full energy", "motivated", "high"
+        "energetic", "active", "full energy", "motivated",
+        "پُرجوش ہوں", "توانائی اچھی ہے",
+        "بہت چاق و چوبند ہوں"
     ]
 }
+
+
+SLEEP_KEYWORDS = [
+    "sleep", "slept", "sleeping", "bed", "insomnia",
+    "night", "awake", "rest", "neend", "nend",
+    "نیند", "سویا", "سوئی", "سونا", "رات کو جاگتا",
+    "رات کو جاگتی", "نیند نہیں آئی", "نیند نہیں آتی",
+    "سو نہیں سکا", "سو نہیں سکی", "نیند پوری نہیں ہوئی"
+]
+
 
 def extract_sleep_hours(text):
     t = text.lower()
 
+    # English numeric sleep statements
     patterns = [
         r"(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)\s*(?:of sleep|sleep)?",
         r"slept\s*(?:for\s*)?(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
         r"sleep(?:ing)?\s*(?:for\s*)?(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
         r"only slept\s*(\d+(?:\.\d+)?)",
         r"i slept\s*(\d+(?:\.\d+)?)",
-        r"i can sleep at night\s*\.??\s*only\s*(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
         r"i sleep only\s*(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
         r"just\s*(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)"
     ]
@@ -1005,9 +1151,10 @@ def extract_sleep_hours(text):
                 hours = float(match.group(1))
                 if 0 <= hours <= 24:
                     return hours
-            except:
+            except (ValueError, IndexError):
                 pass
 
+    # English number words
     word_number_map = {
         "one": 1, "two": 2, "three": 3, "four": 4,
         "five": 5, "six": 6, "seven": 7, "eight": 8,
@@ -1015,35 +1162,71 @@ def extract_sleep_hours(text):
     }
 
     for word, num in word_number_map.items():
-        if re.search(rf"(slept|sleep|sleeping).{{0,10}}\b{word}\b", t) or re.search(rf"\b{word}\b.{{0,10}}(hours|hour|hrs|hr)", t):
+        if (
+            re.search(rf"(slept|sleep|sleeping).{{0,10}}\b{word}\b", t)
+            or re.search(rf"\b{word}\b.{{0,10}}(hours|hour|hrs|hr)", t)
+        ):
             return float(num)
 
-    match = re.search(r"(only|just)\s*(\d+(?:\.\d+)?)", t)
-    if match:
-        try:
-            hours = float(match.group(2))
-            if 0 <= hours <= 24:
-                return hours
-        except:
-            pass
+    # Urdu numerals: ۰۱۲۳۴۵۶۷۸۹
+    urdu_digits = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+    normalized = text.translate(urdu_digits)
+
+    # Example: میں نے ۵ گھنٹے نیند لی
+    urdu_patterns = [
+        r"(\d+(?:\.\d+)?)\s*(?:گھنٹے|گھنٹہ|گھنٹوں)",
+        r"(?:نیند|سویا|سوئی).{0,20}?(\d+(?:\.\d+)?)\s*(?:گھنٹے|گھنٹہ|گھنٹوں)",
+    ]
+
+    for pattern in urdu_patterns:
+        match = re.search(pattern, normalized)
+        if match:
+            try:
+                hours = float(match.group(1))
+                if 0 <= hours <= 24:
+                    return hours
+            except (ValueError, IndexError):
+                pass
+
+    # Urdu number words, only when sleep is mentioned
+    urdu_word_numbers = {
+        "ایک": 1, "دو": 2, "تین": 3, "چار": 4,
+        "پانچ": 5, "چھ": 6, "سات": 7, "آٹھ": 8,
+        "نو": 9, "دس": 10, "گیارہ": 11, "بارہ": 12
+    }
+
+    if any(word in normalized for word in SLEEP_KEYWORDS):
+        for word, num in urdu_word_numbers.items():
+            if word in normalized and any(
+                unit in normalized for unit in ["گھنٹے", "گھنٹہ", "گھنٹوں"]
+            ):
+                return float(num)
 
     return None
+
 
 def extract_mood(text):
     t = text.lower()
-    for label, keywords in MOOD_KEYWORDS.items():
-        for kw in keywords:
-            if kw in t:
+
+    # Check stronger moods first
+    for label in ["very_low", "anxious", "low", "good", "okay"]:
+        for keyword in MOOD_KEYWORDS[label]:
+            if keyword in t:
                 return label
+
     return None
+
 
 def extract_energy(text):
     t = text.lower()
-    for label, keywords in ENERGY_KEYWORDS.items():
-        for kw in keywords:
-            if kw in t:
+
+    for label in ["very_low", "low", "medium", "high"]:
+        for keyword in ENERGY_KEYWORDS[label]:
+            if keyword in t:
                 return label
+
     return None
+
 
 def extract_wellbeing_info(text):
     sleep_hours = extract_sleep_hours(text)
@@ -1053,16 +1236,27 @@ def extract_wellbeing_info(text):
     text_l = text.lower()
 
     mentioned_sleep = (
-        sleep_hours is not None or
-        any(word in text_l for word in ["sleep", "slept", "sleeping", "bed", "insomnia", "night", "awake", "rest"])
+        sleep_hours is not None
+        or any(word in text_l for word in SLEEP_KEYWORDS)
     )
+
     mentioned_mood = (
-        mood is not None or
-        any(word in text_l for word in ["mood", "sad", "down", "depressed", "okay", "fine", "hopeless", "anxious", "worst", "not feeling well", "not good"])
+        mood is not None
+        or any(word in text_l for word in [
+            "mood", "sad", "down", "depressed", "okay", "fine",
+            "hopeless", "anxious", "worst", "not feeling well",
+            "not good", "دن", "اداس", "پریشان", "خوش",
+            "موڈ", "مایوس", "گھبراہٹ", "پرسکون"
+        ])
     )
+
     mentioned_energy = (
-        energy is not None or
-        any(word in text_l for word in ["energy", "tired", "exhausted", "drained", "fatigue", "weak"])
+        energy is not None
+        or any(word in text_l for word in [
+            "energy", "tired", "exhausted", "drained", "fatigue",
+            "weak", "توانائی", "تھکا", "تھکی", "تھکن",
+            "کمزوری", "نڈھال"
+        ])
     )
 
     return {
@@ -1072,8 +1266,13 @@ def extract_wellbeing_info(text):
         "mentioned_sleep": mentioned_sleep,
         "mentioned_mood": mentioned_mood,
         "mentioned_energy": mentioned_energy,
-        "has_any": any([mentioned_sleep, mentioned_mood, mentioned_energy])
+        "has_any": any([
+            mentioned_sleep,
+            mentioned_mood,
+            mentioned_energy
+        ])
     }
+
 
 def save_wellbeing_if_mentioned(user_id, user_message):
     if not user_id:
@@ -1094,25 +1293,44 @@ def save_wellbeing_if_mentioned(user_id, user_message):
         ORDER BY id DESC
         LIMIT 1
     """, (user_id,))
+
     today_log = cursor.fetchone()
 
     if today_log:
-        sleep = extracted["sleep_hours"] if extracted["sleep_hours"] is not None else today_log["sleep_hours"]
-        mood = extracted["mood"] if extracted["mood"] is not None else today_log["mood"]
-        energy = extracted["energy"] if extracted["energy"] is not None else today_log["energy"]
+        sleep = (
+            extracted["sleep_hours"]
+            if extracted["sleep_hours"] is not None
+            else today_log["sleep_hours"]
+        )
+        mood = (
+            extracted["mood"]
+            if extracted["mood"] is not None
+            else today_log["mood"]
+        )
+        energy = (
+            extracted["energy"]
+            if extracted["energy"] is not None
+            else today_log["energy"]
+        )
 
         new_source = user_message
-        if today_log["source_text"] and user_message.strip().lower() not in today_log["source_text"].lower():
-            new_source = f'{today_log["source_text"]} | {user_message}'
+        old_source = today_log["source_text"] or ""
+
+        if user_message.strip().lower() not in old_source.lower():
+            new_source = f"{old_source} | {user_message}" if old_source else user_message
 
         cursor.execute("""
             UPDATE wellbeing_logs
             SET sleep_hours = ?, mood = ?, energy = ?, source_text = ?
             WHERE id = ?
-        """, (sleep, mood, energy, new_source, today_log["id"]))
+        """, (
+            sleep, mood, energy, new_source, today_log["id"]
+        ))
+
     else:
         cursor.execute("""
-            INSERT INTO wellbeing_logs (user_id, sleep_hours, mood, energy, source_text)
+            INSERT INTO wellbeing_logs
+                (user_id, sleep_hours, mood, energy, source_text)
             VALUES (?, ?, ?, ?, ?)
         """, (
             user_id,
@@ -1124,6 +1342,10 @@ def save_wellbeing_if_mentioned(user_id, user_message):
 
     db.commit()
     return extracted
+
+# ─────────────────────────────────────────────
+# END WELLBEING EXTRACTION
+# ─────────────────────────────────────────────
 
 # ─────────────────────────────────────────────
 # SURVEY INSIGHTS
@@ -1322,8 +1544,11 @@ def retrieve_from_training_data(user_text, emotion=None, role=None, top_k=2):
 # HELPERS
 # ─────────────────────────────────────────────
 def init_session():
+    current_language = session.get("language", "en")
+    
     session["stage"] = STAGE_NAME
     session["name"] = ""
+    session["language"] = current_language
     session["role"] = "default"
     session["history"] = []
     session["phq"] = {}
@@ -2713,22 +2938,110 @@ def get_crisis_support_message(name, memory=None):
 def chat_app():
     session_name = session.get("account_name", "")
     crisis_transition = request.args.get("crisis") == "1"
-    # Keep account info but clear chat session state
+
     account_id = session.get("account_id")
     account_name = session.get("account_name")
+    language = session.get("language", "en")
+
+    # Get the same Urdu name used by dashboard/assessment
+    urdu_name = get_urdu_name_for_account(account_id)
+
     session.clear()
+
     session.permanent = True
     session["account_id"] = account_id
     session["account_name"] = account_name
+    session["language"] = language
+
     if crisis_transition:
         session["crisis_transition_pending"] = True
-    return render_template("index.html", user_name=session_name)
 
+    return render_template(
+        "index.html",
+        user_name=session_name,
+        user_name_urdu=urdu_name
+    )
+
+def generate_urdu_name(name):
+    if not name:
+        return ""
+
+    try:
+        prompt = f"""
+Convert this person's name from Roman/English script into natural Urdu script.
+
+Rules:
+- This is a person's name.
+- Transliterate the name, do not translate its meaning.
+- Keep first and last names separate.
+- Return ONLY the Urdu name.
+- Do not add explanation or quotation marks.
+
+Name: {name}
+"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0
+        )
+
+        urdu_name = response.choices[0].message.content.strip()
+
+        return urdu_name if urdu_name else name
+
+    except Exception as e:
+        print("Urdu name generation error:", e)
+        return name
+
+
+def get_urdu_name_for_account(account_id):
+    if not account_id:
+        return ""
+
+    db = get_db()
+
+    row = db.execute(
+        "SELECT full_name, urdu_name FROM accounts WHERE id = ?",
+        (account_id,)
+    ).fetchone()
+
+    if not row:
+        return ""
+
+    if row["urdu_name"]:
+        return row["urdu_name"]
+
+    urdu_name = generate_urdu_name(row["full_name"])
+
+    if urdu_name:
+        db.execute(
+            "UPDATE accounts SET urdu_name = ? WHERE id = ?",
+            (urdu_name, account_id)
+        )
+        db.commit()
+
+    return urdu_name
 
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", user_name=session.get("account_name", ""))
+
+    account_id = session.get("account_id")
+    english_name = session.get("account_name", "")
+
+    urdu_name = get_urdu_name_for_account(account_id)
+
+    return render_template(
+        "dashboard.html",
+        user_name=english_name,
+        user_name_urdu=urdu_name
+    )
 # ================== PRO RESPONSE ENGINE ==================
 
 def simple_memory_update(session, msg):
@@ -2802,19 +3115,31 @@ def chat_page_redirect():
 
 @app.route("/init", methods=["GET"])
 def init():
+    language = request.args.get("language", session.get("language", "en")).lower()
+
+    if language not in ("en", "ur"):
+        language = "en"
+
+    session["language"] = language
+
     account_id = session.get("account_id")
     account_name = (session.get("account_name") or "").strip()
 
     init_db()
 
     if not account_id or not account_name:
-        init_session()
+     init_session()
+
+    if language == "ur":
+        welcome = "السلام علیکم۔ میں آپ کی بات سننے اور آپ کا ساتھ دینے کے لیے یہاں ہوں۔ آپ کو میں کس نام سے پکاروں؟"
+    else:
         welcome = "Hello. I am here to listen and support you. What should I call you?"
         add_to_history("assistant", welcome)
         return jsonify({
             "response": welcome,
             "stage": session.get("stage"),
             "name": session.get("name", ""),
+            "name_urdu": get_urdu_name_for_account(account_id) if account_id else "",
             "is_returning_user": False,
             "type": "normal"
         })
@@ -2853,24 +3178,45 @@ def init():
         if real_history:
             session["is_returning_user"] = True
             session["stage"] = STAGE_LISTEN
+
             if session.get("user_memory_profile"):
-                welcome = (
-                    f"Welcome back, {first_name}. I remember the support context you have shared before, "
-                    f"so we can continue gently from there. How are things feeling today?"
-                )
+                if language == "ur":
+                    welcome = (
+                        f"خوش آمدید، {first_name}۔ مجھے آپ کی پہلے شیئر کی گئی باتیں یاد ہیں، "
+                        f"اس لیے ہم وہیں سے آہستہ آہستہ بات جاری رکھ سکتے ہیں۔ آج آپ کیسا محسوس کر رہے ہیں؟"
+                    )
+                else:
+                    welcome = (
+                        f"Welcome back, {first_name}. I remember the support context you have shared before, "
+                        f"so we can continue gently from there. How are things feeling today?"
+                    )
             else:
-                welcome = (
-                    f"Welcome back, {first_name}. "
-                    f"How have you been feeling lately?"
-                )
+                if language == "ur":
+                    welcome = f"خوش آمدید، {first_name}۔ آج کل آپ کیسا محسوس کر رہے ہیں؟"
+                else:
+                    welcome = (
+                        f"Welcome back, {first_name}. "
+                        f"How have you been feeling lately?"
+                    )
+
         else:
             session["is_returning_user"] = False
             session["stage"] = STAGE_ROLE
-            welcome = (
-                f"Hello, {first_name}. It's nice to meet you. "
-                f"Can you tell me a little about yourself — are you a student, working, "
-                f"a housewife/homemaker, unemployed, or something else?"
-            )
+
+            if language == "ur":
+                welcome = (
+                    f"ہیلو، {first_name}۔ آپ سے مل کر خوشی ہوئی۔ "
+                    f"کیا آپ اپنے بارے میں تھوڑا بتا سکتے ہیں — "
+                    f"کیا آپ طالب علم ہیں، ملازمت کرتے ہیں، گھریلو خاتون ہیں، "
+                    f"بے روزگار ہیں، یا کچھ اور؟"
+                )
+            else:
+                welcome = (
+                    f"Hello, {first_name}. It's nice to meet you. "
+                    f"Can you tell me a little about yourself — are you a student, working, "
+                    f"a housewife/homemaker, unemployed, or something else?"
+                )
+
     else:
         new_user_id = create_user(first_name, account_id=account_id)
         session["user_id"] = new_user_id
@@ -2879,11 +3225,20 @@ def init():
         load_recent_self_assessment(new_user_id)
 
         session["stage"] = STAGE_ROLE
-        welcome = (
-            f"Hello, {first_name}. It's nice to meet you. "
-            f"Can you tell me a little about yourself — are you a student, working, "
-            f"a housewife/homemaker, unemployed, or something else?"
-        )
+
+        if language == "ur":
+            welcome = (
+                f"ہیلو، {first_name}۔ آپ سے مل کر خوشی ہوئی۔ "
+                f"کیا آپ اپنے بارے میں تھوڑا بتا سکتے ہیں — "
+                f"کیا آپ طالب علم ہیں، ملازمت کرتے ہیں، گھریلو خاتون ہیں، "
+                f"بے روزگار ہیں، یا کچھ اور؟"
+            )
+        else:
+            welcome = (
+                f"Hello, {first_name}. It's nice to meet you. "
+                f"Can you tell me a little about yourself — are you a student, working, "
+                f"a housewife/homemaker, unemployed, or something else?"
+            )
 
     if session.get("crisis_transition_pending"):
         session["crisis_transition_pending"] = False
@@ -2897,6 +3252,7 @@ def init():
         "response": welcome,
         "stage": session.get("stage"),
         "name": session.get("name", first_name),
+        "name_urdu": get_urdu_name_for_account(account_id) if account_id else "",
         "is_returning_user": session.get("is_returning_user", False),
         "type": "normal"
     })
@@ -2979,53 +3335,105 @@ def _avoid_repeated_opening(text):
             text = re.sub(re.escape(phrase), random.choice(alternatives), text, flags=re.IGNORECASE)
     return text
 
-def _hopeful_idp_line(user_message="", sess=None):
-    """Return one soft IDP-sensitive line that validates real-life context without reducing hope."""
-    t = normalize_for_safety(user_message or "")
+def _add_hopeful_idp_line(text, user_message="", sess=None):
+    """Insert exactly one hopeful IDP-sensitive line before the final follow-up question."""
+    text = (text or "").strip()
 
-    if any(w in t for w in ["happy", "good news", "thankful", "grateful", "better", "hope", "peace", "peaceful", "handled", "managed"]):
-        options = [
-            "Even with so much change around you, this brighter moment is worth holding onto.",
-            "After everything you have been managing, noticing a good moment shows real strength.",
-            "When life has felt unsettled, moments like this can become small signs of hope.",
-            "In difficult circumstances, this kind of light feeling can quietly give you strength."
-        ]
-    elif any(w in t for w in ["sleep", "tired", "exhausted", "drained", "energy", "weak"]):
-        options = [
-            "When life has been unsettled, rest can become harder, but your body still deserves gentleness.",
-            "After everything you have been carrying, even small rest and care can help you regain strength.",
-            "With so much change around you, low energy makes sense, and it can improve step by step.",
-            "This tiredness is not weakness; it may be your body asking for care after a difficult stretch."
-        ]
-    elif any(w in t for w in ["job", "work", "money", "income", "unemployed", "earn", "fees", "expense"]):
-        options = [
-            "When stability has been shaken, work and money worries can feel heavier, but small practical steps still matter.",
-            "After everything you have been managing, this pressure is real, yet it does not define your worth.",
-            "In uncertain circumstances, even one small step toward support or work can bring a little hope back.",
-            "With so much responsibility around you, it makes sense to feel pressure, and you still deserve support too."
-        ]
-    elif any(w in t for w in ["family", "children", "parents", "responsibility", "pressure"]):
-        options = [
-            "After everything your family has been managing, even small acts of care can hold a lot of meaning.",
-            "When life around the family feels unsettled, love and responsibility can both feel heavy, but they also show your strength.",
-            "With so much change around you, caring for family is not easy, and your effort still matters.",
-            "In difficult circumstances, trying to stay present for family is already a meaningful form of support."
-        ]
-    elif any(w in t for w in ["sad", "low", "worse", "worst", "hopeless", "empty", "cry", "stress", "worried", "anxious", "fear", "panic"]):
-        options = [
-            "When life has been unsettled for a while, heavy feelings can grow louder, but they can still be worked through slowly.",
-            "After everything you have been carrying, this feeling makes sense, and you do not have to face it alone.",
-            "With so much change around you, even small worries can feel bigger, but small steady steps can still help.",
-            "In difficult circumstances, feeling overwhelmed does not mean you are failing; it means you need support and kindness."
-        ]
-    else:
-        options = [
-            "Even with so much change around you, your feelings still deserve space and care.",
-            "After everything you have been managing, taking this one moment gently can still help.",
-            "When life feels unsettled, being heard clearly can become one small source of steadiness.",
-            "In difficult circumstances, small honest conversations can bring a little more clarity."
-        ]
-    return random.choice(options)
+    if not text or _has_idp_sensitive_line(text):
+        return text
+
+    line = _hopeful_idp_line(user_message, sess)
+
+    # Detect selected language
+    language = sess.get("language", "en") if sess else session.get("language", "en")
+
+    # ============================================================
+    # URDU MODE
+    # ============================================================
+    if language == "ur":
+
+        # Urdu question mark
+        qpos = text.rfind("؟")
+
+        if qpos != -1:
+            before = text[:qpos + 1]
+
+            # Find the beginning of the final question
+            split_at = max(
+                before.rfind("\n", 0, qpos),
+                before.rfind("۔ ", 0, qpos),
+                before.rfind("! ", 0, qpos)
+            )
+
+            if split_at != -1:
+
+                if before[split_at:split_at + 2] in ["۔ ", "! "]:
+                    question = before[split_at + 2:].strip()
+                    main = text[:split_at + 1].strip()
+
+                else:
+                    question = before[split_at:].strip()
+                    main = text[:split_at].strip()
+
+                if question.endswith("؟"):
+                    return (
+                        main
+                        + "\n\n"
+                        + line
+                        + "\n\n"
+                        + question
+                    ).strip()
+
+            # If we cannot split properly, put hopeful line before the question
+            main = text[:qpos].strip()
+            question = text[qpos:].strip()
+
+            if question.endswith("؟"):
+                return (
+                    main
+                    + "\n\n"
+                    + line
+                    + "\n\n"
+                    + question
+                ).strip()
+
+        # If no Urdu question exists, add the line normally
+        return (text.rstrip() + "\n\n" + line).strip()
+
+    # ============================================================
+    # ENGLISH MODE — ORIGINAL BEHAVIOR
+    # ============================================================
+    qpos = text.rfind("?")
+
+    if qpos != -1:
+        before = text[:qpos + 1]
+
+        split_at = max(
+            before.rfind("\n", 0, qpos),
+            before.rfind(". ", 0, qpos),
+            before.rfind("! ", 0, qpos)
+        )
+
+        if split_at != -1:
+
+            if before[split_at:split_at + 2] in [". ", "! "]:
+                question = before[split_at + 2:].strip()
+                main = text[:split_at + 1].strip()
+
+            else:
+                question = before[split_at:].strip()
+                main = text[:split_at].strip()
+
+            if question.endswith("?"):
+                return (
+                    main
+                    + "\n\n"
+                    + line
+                    + "\n\n"
+                    + question
+                ).strip()
+
+    return (text.rstrip() + "\n\n" + line).strip()
 
 
 def _has_idp_sensitive_line(text):
@@ -3038,6 +3446,74 @@ def _has_idp_sensitive_line(text):
     ]
     return any(m in t for m in markers)
 
+def _hopeful_idp_line(user_message="", sess=None):
+    """Return one soft IDP-sensitive hopeful line in the selected language."""
+
+    t = normalize_for_safety(user_message or "")
+    language = sess.get("language", "en") if sess else session.get("language", "en")
+
+    # URDU MODE
+    if language == "ur":
+        if any(w in t for w in ["sleep", "tired", "exhausted", "drained", "energy", "weak"]):
+            options = [
+                "آپ نے جو کچھ برداشت کیا ہے، اس کے بعد تھوڑا سا آرام اور اپنا خیال رکھنا آپ کی طاقت بحال کرنے میں مدد دے سکتا ہے۔",
+                "اتنی تبدیلیوں کے درمیان کم توانائی محسوس ہونا فطری ہے، اور آپ آہستہ آہستہ بہتر محسوس کر سکتی ہیں۔",
+                "یہ تھکن کمزوری نہیں ہے؛ شاید آپ کا جسم مشکل وقت کے بعد آرام اور توجہ مانگ رہا ہے۔"
+            ]
+
+        elif any(w in t for w in ["job", "work", "money", "income", "unemployed", "earn", "fees", "expense"]):
+            options = [
+                "غیر یقینی حالات میں بھی ایک چھوٹا عملی قدم امید واپس لا سکتا ہے۔",
+                "یہ دباؤ حقیقی ہے، لیکن یہ آپ کی قدر کا تعین نہیں کرتا۔",
+                "اتنی ذمہ داریوں کے درمیان دباؤ محسوس ہونا فطری ہے، اور آپ مدد اور سہارا حاصل کرنے کی مستحق ہیں۔"
+            ]
+
+        elif any(w in t for w in ["sad", "low", "worse", "worst", "hopeless", "empty", "cry", "stress", "worried", "anxious", "fear", "panic"]):
+            options = [
+                "آپ کو یہ سب کچھ اکیلے برداشت کرنے کی ضرورت نہیں، اور آہستہ آہستہ حالات کو سنبھالا جا سکتا ہے۔",
+                "مشکل حالات میں خود کو پریشان محسوس کرنا ناکامی نہیں؛ آپ کے جذبات توجہ اور نرمی کے مستحق ہیں۔",
+                "چھوٹے اور مستقل قدم مشکل وقت میں بھی کچھ سکون اور امید پیدا کر سکتے ہیں۔"
+            ]
+
+        else:
+            options = [
+                "اتنی تبدیلیوں کے باوجود، آپ کے احساسات توجہ اور خیال کے مستحق ہیں۔",
+                "آپ نے جو کچھ سنبھالا ہے، اس کے بعد اس لمحے کو نرمی سے لینا بھی مددگار ثابت ہو سکتا ہے۔",
+                "مشکل حالات میں دل کی بات کرنا کبھی کبھی حالات کو تھوڑا زیادہ واضح کرنے میں مدد دے سکتا ہے۔"
+            ]
+
+        return random.choice(options)
+
+    # ENGLISH MODE
+    if any(w in t for w in ["sleep", "tired", "exhausted", "drained", "energy", "weak"]):
+        options = [
+            "After everything you have been carrying, giving yourself some rest can help you regain your strength.",
+            "Feeling low on energy during times of change is understandable, and you can take things one step at a time.",
+            "This tiredness is not a weakness; your mind and body may simply need some care and rest."
+        ]
+
+    elif any(w in t for w in ["job", "work", "money", "income", "unemployed", "earn", "fees", "expense"]):
+        options = [
+            "Even in uncertain circumstances, one small practical step can help bring back a sense of hope.",
+            "This pressure is real, but it does not define your worth.",
+            "With so many responsibilities, feeling pressured is understandable, and you also deserve support."
+        ]
+
+    elif any(w in t for w in ["sad", "low", "worse", "worst", "hopeless", "empty", "cry", "stress", "worried", "anxious", "fear", "panic"]):
+        options = [
+            "You do not have to carry everything alone, and things can be managed one step at a time.",
+            "Feeling overwhelmed in difficult circumstances is not a failure; your feelings deserve care and attention.",
+            "Small and steady steps can still create some relief and hope during difficult times."
+        ]
+
+    else:
+        options = [
+            "Even with so much change around you, your feelings still deserve space and care.",
+            "After everything you have been managing, taking this one moment gently can still help.",
+            "When life feels unsettled, being heard clearly can become one small source of steadiness."
+        ]
+
+    return random.choice(options)
 
 def _add_hopeful_idp_line(text, user_message="", sess=None):
     """Insert exactly one hopeful IDP-sensitive line before the final follow-up question."""
@@ -3048,7 +3524,8 @@ def _add_hopeful_idp_line(text, user_message="", sess=None):
     line = _hopeful_idp_line(user_message, sess)
 
     # Put the IDP-sensitive line before the final question, so the response still ends with one question.
-    qpos = text.rfind("?")
+    question_mark = "؟" if sess and sess.get("language", "en") == "ur" else "?"
+    qpos = text.rfind(question_mark)
     if qpos != -1:
         before = text[:qpos + 1]
         split_at = max(before.rfind("\n", 0, qpos), before.rfind(". ", 0, qpos), before.rfind("! ", 0, qpos))
@@ -3059,34 +3536,87 @@ def _add_hopeful_idp_line(text, user_message="", sess=None):
             else:
                 question = before[split_at:].strip()
                 main = text[:split_at].strip()
-            if question.endswith("?"):
+            if question.endswith(question_mark):
                 return (main + "\n\n" + line + "\n\n" + question).strip()
 
     return (text.rstrip() + "\n\n" + line).strip()
 
 
-def _ensure_one_followup(text, user_message):
+def _ensure_one_followup(text, user_message, sess=None):
     """Ensure the response ends with exactly one relevant, natural follow-up question."""
+
     text = _remove_extra_questions(_avoid_repeated_opening(text))
+
+    # Detect selected application language
+    language = sess.get("language", "en") if sess else session.get("language", "en")
+
+    # ============================================================
+    # URDU MODE
+    # ============================================================
+    if language == "ur":
+
+        if "؟" in text:
+            return _add_hopeful_idp_line(text, user_message, sess)
+
+        t = normalize_for_safety(user_message or "")
+
+        if any(w in t for w in ["peace", "peaceful", "prayer", "praying", "allah", "dua", "namaz"]):
+            q = "اس احساس میں آپ کو سب سے زیادہ سکون کس چیز سے ملا؟"
+
+        elif any(w in t for w in ["good news", "happy", "joy", "thankful", "grateful"]):
+            q = "اس لمحے کو آپ کے لیے خاص کس چیز نے بنایا؟"
+
+        elif any(w in t for w in ["job", "work", "money", "income", "unemployed"]):
+            q = "اس وقت آپ کے لیے سب سے زیادہ فوری دباؤ کس چیز کا ہے؟"
+
+        elif any(w in t for w in ["family", "children", "parents", "responsibility"]):
+            q = "اس وقت آپ کے خاندان کو کس طرح کی مدد کی سب سے زیادہ ضرورت ہے؟"
+
+        elif any(w in t for w in ["sleep", "tired", "energy", "exhausted", "drained"]):
+            q = "کیا اس کا اثر آپ کے پورے دن پر پڑ رہا ہے یا صرف کچھ خاص اوقات میں؟"
+
+        elif any(w in t for w in ["sad", "low", "hopeless", "stress", "worried", "anxious"]):
+            q = "اس وقت آپ کو سب سے زیادہ کس چیز کا بوجھ محسوس ہو رہا ہے؟"
+
+        else:
+            q = "آپ مزید کیا بات میرے ساتھ شیئر کرنا چاہیں گی؟"
+
+        text = text.rstrip(".۔") + "\n\n" + q
+
+        return _add_hopeful_idp_line(text, user_message, sess)
+
+    # ============================================================
+    # ENGLISH MODE — ORIGINAL LOGIC
+    # ============================================================
     if "?" in text:
-        return _add_hopeful_idp_line(text, user_message)
+        return _add_hopeful_idp_line(text, user_message, sess)
+
     t = normalize_for_safety(user_message or "")
+
     if any(w in t for w in ["peace", "peaceful", "prayer", "praying", "allah", "dua", "namaz"]):
         q = "What part of that feeling brought you the most comfort?"
+
     elif any(w in t for w in ["good news", "happy", "joy", "thankful", "grateful"]):
         q = "What made that moment feel special for you?"
+
     elif any(w in t for w in ["job", "work", "money", "income", "unemployed"]):
         q = "What feels like the most urgent pressure for you right now?"
+
     elif any(w in t for w in ["family", "children", "parents", "responsibility"]):
         q = "What kind of support does your family need most right now?"
+
     elif any(w in t for w in ["sleep", "tired", "energy", "exhausted", "drained"]):
         q = "Has this been affecting your whole day or mostly certain times?"
+
     elif any(w in t for w in ["sad", "low", "hopeless", "stress", "worried", "anxious"]):
         q = "What feels heaviest in this moment?"
+
     else:
         q = "What would you like to share next?"
+
     text = text.rstrip(".") + "\n\n" + q
-    return _add_hopeful_idp_line(text, user_message)
+
+    return _add_hopeful_idp_line(text, user_message, sess)
 
 
 # ─────────────────────────────────────────────
@@ -3424,7 +3954,27 @@ def generate_natural_chat_response(user_message, sess, emotion="unknown", wellbe
             system_prompt = """
 You are Empath AI, a warm mental-health support chatbot for internally displaced people in Pakistan.
 Your job is to respond like a thoughtful supportive friend: gentle, emotionally intelligent, natural, respectful, and specific to the user's exact message.
+LANGUAGE REQUIREMENT — VERY IMPORTANT:
+- The selected application language is provided separately.
+- If the selected language is "ur", respond ONLY in natural Urdu script.
+- Every sentence must be in Urdu.
+- Every question must be in Urdu.
+- Every suggestion must be in Urdu.
+- Every supportive/emotional statement must be in Urdu.
+- The response MUST NOT contain any English sentence.
+- DO NOT add an English translation after the Urdu response.
+- DO NOT add an English summary or English closing message.
+- DO NOT append an English follow-up question.
+- DO NOT use Roman Urdu.
+- If the selected language is "en", respond entirely in English.
+- Follow the selected application language consistently from beginning to END.
+- When Urdu is selected, the FINAL character/sentence of the response must also be Urdu.
 
+IMPORTANT:
+If the selected language is "ur", NEVER produce output like:
+"After everything you have been managing..."
+or
+"What would you like to share next?"
 Core behaviour:
 - Use the user's role, recent conversation, saved memory, wellbeing trends, assessments, ML emotion signal, and dataset guidance to understand the situation; generate fresh wording rather than fixed templates.
 - Keep IDP context as quiet background. Assume life may be unsettled, but do NOT repeatedly say "as an IDP", "because you are displaced", or ask whether they are displaced.
@@ -3463,6 +4013,8 @@ Last assistant response to avoid repeating:
 Current user message:
 {user_message}
 
+Selected application language: {sess.get("language", "en")}
+
 Write the next Empath AI reply now.
 """.strip()
             result = client.chat.completions.create(
@@ -3475,7 +4027,7 @@ Write the next Empath AI reply now.
                 max_tokens=220,
             )
             response = result.choices[0].message.content.strip()
-            return _ensure_one_followup(response, user_message)
+            return _ensure_one_followup(response, user_message, sess)
         except Exception as e:
             print("Natural OpenAI response error:", e)
 
@@ -3578,7 +4130,20 @@ def _early_safety_response_if_needed(user_message):
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.json or {}
+
     user_message = data.get("message", "").strip()
+
+    if not user_message:
+        return jsonify({"response": "I did not catch that. Could you say that again?"})
+
+    # Detect the language from the user's actual message.
+    # Urdu script = Urdu, otherwise English.
+    if re.search(r"[\u0600-\u06FF]", user_message):
+        language = "ur"
+    else:
+        language = "en"
+
+    session["language"] = language
 
     if not user_message:
         return jsonify({"response": "I did not catch that. Could you say that again?"})
@@ -4405,30 +4970,131 @@ def self_assessment():
 
 SA_QUESTIONS = [
     # PHQ-9
-    {"key": "phq1", "scale": "phq", "text": "Over the past one week — how often have you had little interest or pleasure in doing things?"},
-    {"key": "phq2", "scale": "phq", "text": "How often have you been feeling down, depressed, or hopeless?"},
-    {"key": "phq3", "scale": "phq", "text": "How often have you had trouble falling or staying asleep, or sleeping too much?"},
-    {"key": "phq4", "scale": "phq", "text": "How often have you felt tired or had little energy?"},
-    {"key": "phq5", "scale": "phq", "text": "How often have you had poor appetite or been overeating?"},
-    {"key": "phq6", "scale": "phq", "text": "How often have you felt bad about yourself — or that you are a failure or have let yourself or your family down?"},
-    {"key": "phq7", "scale": "phq", "text": "How often have you had trouble concentrating on things, such as reading or watching something?"},
-    {"key": "phq8", "scale": "phq", "text": "How often have you been moving or speaking more slowly than usual, or been so restless that others have noticed?"},
-    {"key": "phq9", "scale": "phq", "text": "How often have thoughts come up that you would be better off dead, or thoughts of hurting yourself in some way?"},
+    {"key": "phq1", "scale": "phq",
+     "text": "Over the past one week — how often have you had little interest or pleasure in doing things?"},
+    {"key": "phq2", "scale": "phq",
+     "text": "How often have you been feeling down, depressed, or hopeless?"},
+    {"key": "phq3", "scale": "phq",
+     "text": "How often have you had trouble falling or staying asleep, or sleeping too much?"},
+    {"key": "phq4", "scale": "phq",
+     "text": "How often have you felt tired or had little energy?"},
+    {"key": "phq5", "scale": "phq",
+     "text": "How often have you had poor appetite or been overeating?"},
+    {"key": "phq6", "scale": "phq",
+     "text": "How often have you felt bad about yourself — or that you are a failure or have let yourself or your family down?"},
+    {"key": "phq7", "scale": "phq",
+     "text": "How often have you had trouble concentrating on things, such as reading or watching something?"},
+    {"key": "phq8", "scale": "phq",
+     "text": "How often have you been moving or speaking more slowly than usual, or been so restless that others have noticed?"},
+    {"key": "phq9", "scale": "phq",
+     "text": "How often have thoughts come up that you would be better off dead, or thoughts of hurting yourself in some way?"},
+
     # GAD-7
-    {"key": "gad1", "scale": "gad", "text": "Now a few questions about worry and anxiety. How often have you felt nervous, anxious, or on edge?"},
-    {"key": "gad2", "scale": "gad", "text": "How often have you been unable to stop or control worrying?"},
-    {"key": "gad3", "scale": "gad", "text": "How often have you been worrying too much about different things?"},
-    {"key": "gad4", "scale": "gad", "text": "How often have you had trouble relaxing?"},
-    {"key": "gad5", "scale": "gad", "text": "How often have you been so restless that it was hard to sit still?"},
-    {"key": "gad6", "scale": "gad", "text": "How often have you become easily annoyed or irritable?"},
-    {"key": "gad7", "scale": "gad", "text": "How often have you felt afraid — as if something awful might happen?"},
+    {"key": "gad1", "scale": "gad",
+     "text": "Now a few questions about worry and anxiety. How often have you felt nervous, anxious, or on edge?"},
+    {"key": "gad2", "scale": "gad",
+     "text": "How often have you been unable to stop or control worrying?"},
+    {"key": "gad3", "scale": "gad",
+     "text": "How often have you been worrying too much about different things?"},
+    {"key": "gad4", "scale": "gad",
+     "text": "How often have you had trouble relaxing?"},
+    {"key": "gad5", "scale": "gad",
+     "text": "How often have you been so restless that it was hard to sit still?"},
+    {"key": "gad6", "scale": "gad",
+     "text": "How often have you become easily annoyed or irritable?"},
+    {"key": "gad7", "scale": "gad",
+     "text": "How often have you felt afraid — as if something awful might happen?"},
+
     # WHO-5
-    {"key": "who1", "scale": "who", "text": "Last few questions about wellbeing. Over the past two weeks, how often have you felt cheerful and in good spirits?"},
-    {"key": "who2", "scale": "who", "text": "How often have you felt calm and relaxed?"},
-    {"key": "who3", "scale": "who", "text": "How often have you felt active and full of energy?"},
-    {"key": "who4", "scale": "who", "text": "How often did you wake up feeling fresh and rested?"},
-    {"key": "who5", "scale": "who", "text": "How often has your daily life been filled with things that interest you?"},
+    {"key": "who1", "scale": "who",
+     "text": "Last few questions about wellbeing. Over the past two weeks, how often have you felt cheerful and in good spirits?"},
+    {"key": "who2", "scale": "who",
+     "text": "How often have you felt calm and relaxed?"},
+    {"key": "who3", "scale": "who",
+     "text": "How often have you felt active and full of energy?"},
+    {"key": "who4", "scale": "who",
+     "text": "How often did you wake up feeling fresh and rested?"},
+    {"key": "who5", "scale": "who",
+     "text": "How often has your daily life been filled with things that interest you?"},
 ]
+
+
+# ─────────────────────────────────────────────
+# URDU QUESTIONS
+# ─────────────────────────────────────────────
+
+SA_QUESTIONS_URDU = [
+    # PHQ-9
+    {"key": "phq1", "scale": "phq",
+     "text": "گزشتہ ایک ہفتے کے دوران آپ کو کام کرنے میں دلچسپی یا خوشی کتنی بار کم محسوس ہوئی؟"},
+
+    {"key": "phq2", "scale": "phq",
+     "text": "آپ نے کتنی بار خود کو اداس، مایوس یا بے اُمید محسوس کیا؟"},
+
+    {"key": "phq3", "scale": "phq",
+     "text": "آپ کو کتنی بار سونے میں، نیند برقرار رکھنے میں، یا بہت زیادہ سونے میں دشواری ہوئی؟"},
+
+    {"key": "phq4", "scale": "phq",
+     "text": "آپ نے کتنی بار خود کو تھکا ہوا یا توانائی سے محروم محسوس کیا؟"},
+
+    {"key": "phq5", "scale": "phq",
+     "text": "آپ کو کتنی بار بھوک کم محسوس ہوئی یا آپ نے ضرورت سے زیادہ کھانا کھایا؟"},
+
+    {"key": "phq6", "scale": "phq",
+     "text": "آپ نے کتنی بار اپنے بارے میں برا محسوس کیا، یا یہ سوچا کہ آپ ناکام ہیں یا آپ نے خود کو یا اپنے خاندان کو مایوس کیا ہے؟"},
+
+    {"key": "phq7", "scale": "phq",
+     "text": "آپ کو کتنی بار چیزوں پر توجہ مرکوز کرنے میں دشواری ہوئی، جیسے پڑھنے یا کچھ دیکھنے میں؟"},
+
+    {"key": "phq8", "scale": "phq",
+     "text": "آپ کتنی بار معمول سے زیادہ آہستہ چلتے یا بولتے رہے، یا اتنے بے چین رہے کہ دوسروں نے بھی محسوس کیا؟"},
+
+    {"key": "phq9", "scale": "phq",
+     "text": "آپ کے ذہن میں کتنی بار یہ خیال آیا کہ آپ کا مر جانا بہتر ہوگا، یا آپ نے خود کو کسی طرح نقصان پہنچانے کے بارے میں سوچا؟"},
+
+    # GAD-7
+    {"key": "gad1", "scale": "gad",
+     "text": "اب پریشانی اور بے چینی سے متعلق چند سوالات ہیں۔ آپ نے کتنی بار خود کو گھبرایا ہوا، بے چین یا پریشان محسوس کیا؟"},
+
+    {"key": "gad2", "scale": "gad",
+     "text": "آپ کتنی بار اپنی پریشانی کو روکنے یا قابو کرنے سے قاصر رہے؟"},
+
+    {"key": "gad3", "scale": "gad",
+     "text": "آپ نے کتنی بار مختلف چیزوں کے بارے میں بہت زیادہ فکر کی؟"},
+
+    {"key": "gad4", "scale": "gad",
+     "text": "آپ کو کتنی بار سکون کرنے یا آرام کرنے میں دشواری ہوئی؟"},
+
+    {"key": "gad5", "scale": "gad",
+     "text": "آپ کتنی بار اتنے بے چین رہے کہ ایک جگہ بیٹھنا مشکل محسوس ہوا؟"},
+
+    {"key": "gad6", "scale": "gad",
+     "text": "آپ کتنی بار آسانی سے چڑچڑے یا غصے میں آ گئے؟"},
+
+    {"key": "gad7", "scale": "gad",
+     "text": "آپ نے کتنی بار خوف محسوس کیا، جیسے کوئی بہت بری چیز ہونے والی ہو؟"},
+
+    # WHO-5
+    {"key": "who1", "scale": "who",
+     "text": "اب آخری چند سوالات آپ کی ذہنی خوشحالی کے بارے میں ہیں۔ گزشتہ دو ہفتوں کے دوران آپ نے کتنی بار خود کو خوش اور اچھے موڈ میں محسوس کیا؟"},
+
+    {"key": "who2", "scale": "who",
+     "text": "آپ نے کتنی بار خود کو پرسکون اور مطمئن محسوس کیا؟"},
+
+    {"key": "who3", "scale": "who",
+     "text": "آپ نے کتنی بار خود کو فعال اور توانائی سے بھرپور محسوس کیا؟"},
+
+    {"key": "who4", "scale": "who",
+     "text": "آپ کتنی بار صبح تازہ دم اور آرام محسوس کرتے ہوئے بیدار ہوئے؟"},
+
+    {"key": "who5", "scale": "who",
+     "text": "آپ کی روزمرہ زندگی کتنی بار ایسی چیزوں سے بھری رہی جن میں آپ کی دلچسپی تھی؟"},
+]
+
+
+# ─────────────────────────────────────────────
+# OPTIONS
+# ─────────────────────────────────────────────
 
 PHQ_GAD_OPTIONS = [
     {"label": "0 — Not at all", "value": "0"},
@@ -4436,6 +5102,14 @@ PHQ_GAD_OPTIONS = [
     {"label": "2 — More than half the days", "value": "2"},
     {"label": "3 — Nearly every day", "value": "3"},
 ]
+
+PHQ_GAD_OPTIONS_URDU = [
+    {"label": "0 — بالکل نہیں", "value": "0"},
+    {"label": "1 — کئی دن", "value": "1"},
+    {"label": "2 — آدھے سے زیادہ دن", "value": "2"},
+    {"label": "3 — تقریباً ہر روز", "value": "3"},
+]
+
 
 WHO_OPTIONS = [
     {"label": "0 — At no time", "value": "0"},
@@ -4445,81 +5119,181 @@ WHO_OPTIONS = [
     {"label": "4 — All of the time", "value": "4"},
 ]
 
+WHO_OPTIONS_URDU = [
+    {"label": "0 — بالکل بھی نہیں", "value": "0"},
+    {"label": "1 — کچھ وقت", "value": "1"},
+    {"label": "2 — آدھے سے کم وقت", "value": "2"},
+    {"label": "3 — آدھے سے زیادہ وقت", "value": "3"},
+    {"label": "4 — ہر وقت", "value": "4"},
+]
+
+
+# ─────────────────────────────────────────────
+# HELPER FUNCTIONS
+# ─────────────────────────────────────────────
 
 def score_to_10(raw, max_raw):
     """Normalise a raw score to a 0-10 scale, rounded to 1 decimal."""
     return round(raw / max_raw * 10, 1)
 
+
 def sa_get_phq9_severity(score):
-    if score <= 4:   return ("Minimal",          "Your score suggests minimal depression symptoms right now.")
-    if score <= 9:   return ("Mild",              "Your score suggests mild depression. These feelings are real and worth addressing.")
-    if score <= 14:  return ("Moderate",          "Your score suggests moderate depression. Speaking with a counselor is strongly recommended.")
-    if score <= 19:  return ("Moderately Severe", "Your score suggests moderately severe depression. Please seek professional support soon.")
-    return              ("Severe",           "Your score suggests severe depression. Please reach out for professional help immediately.")
+    if score <= 4:
+        return ("Minimal", "Your score suggests minimal depression symptoms right now.")
+    if score <= 9:
+        return ("Mild", "Your score suggests mild depression. These feelings are real and worth addressing.")
+    if score <= 14:
+        return ("Moderate", "Your score suggests moderate depression. Speaking with a counselor is strongly recommended.")
+    if score <= 19:
+        return ("Moderately Severe", "Your score suggests moderately severe depression. Please seek professional support soon.")
+    return ("Severe", "Your score suggests severe depression. Please reach out for professional help immediately.")
 
 
 def sa_get_gad7_severity(score):
-    if score <= 4:  return ("Minimal",  "Your anxiety levels appear minimal right now.")
-    if score <= 9:  return ("Mild",     "Your score suggests mild anxiety. Managing stress and rest can help.")
-    if score <= 14: return ("Moderate", "Your score suggests moderate anxiety. Talking to someone can make a real difference.")
-    return              ("Severe",  "Your score suggests severe anxiety. Professional support is strongly recommended.")
+    if score <= 4:
+        return ("Minimal", "Your anxiety levels appear minimal right now.")
+    if score <= 9:
+        return ("Mild", "Your score suggests mild anxiety. Managing stress and rest can help.")
+    if score <= 14:
+        return ("Moderate", "Your score suggests moderate anxiety. Talking to someone can make a real difference.")
+    return ("Severe", "Your score suggests severe anxiety. Professional support is strongly recommended.")
 
 
 def sa_get_who5_interpretation(score):
     pct = score * 4
-    if pct >= 72:  return "Your wellbeing score is good. You are showing positive signs of mental wellness."
-    if pct >= 52:  return "Your wellbeing score is moderate. There may be room to improve your daily sense of ease and energy."
-    if pct >= 28:  return "Your wellbeing score is low. This may suggest emotional fatigue or risk of depression — support is available."
-    return             "Your wellbeing score is very low. This strongly suggests a need for professional mental health support."
+
+    if pct >= 72:
+        return "Your wellbeing score is good. You are showing positive signs of mental wellness."
+
+    if pct >= 52:
+        return "Your wellbeing score is moderate. There may be room to improve your daily sense of ease and energy."
+
+    if pct >= 28:
+        return "Your wellbeing score is low. This may suggest emotional fatigue or risk of depression — support is available."
+
+    return "Your wellbeing score is very low. This strongly suggests a need for professional mental health support."
 
 
 def sa_build_result(phq_scores, gad_scores, who_scores):
+
     phq_total = sum(phq_scores.values())
     gad_total = sum(gad_scores.values())
     who_total = sum(who_scores.values())
-    phq_q9   = phq_scores.get("phq9", 0)
+
+    phq_q9 = phq_scores.get("phq9", 0)
 
     phq_sev = sa_get_phq9_severity(phq_total)[0]
     gad_sev = sa_get_gad7_severity(gad_total)[0]
+
     crisis_flag = phq_q9 >= 2
 
-    # ── Score summary ─────────────────────────────────────
-    lines = [
-        "Thank you for completing this assessment. Here is a summary of your results:\n",
-        f"PHQ-9 (Depression) — Score: {score_to_10(phq_total, 27)}/10 — {phq_sev}",
-        f"GAD-7 (Anxiety)    — Score: {score_to_10(gad_total, 21)}/10 — {gad_sev}",
-        f"WHO-5 (Wellbeing)  — Score: {score_to_10(who_total, 25)}/10",
-    ]
+    language = session.get("language", "en")
 
-    # ── Personalised guidance (same engine as main chat) ──
-    advice, risk_level = generate_assessment_advice(phq_total, gad_total, who_total, phq_q9)
-    if advice:
-        lines.append(f"\n── Personal Guidance ──\n\n{advice}")
+    if language == "ur":
 
-    # ── CTA to main chat ──────────────────────────────────
-    if risk_level == "crisis" or crisis_flag:
-        lines.append(
-            "\nFor immediate, ongoing support please open the main chat — "
-            "Empath AI will follow up on your results and guide you step by step. "
-            "[Go to Main Chat →](/)"
+        lines = [
+            "یہ assessment مکمل کرنے کا شکریہ۔ آپ کے نتائج کا خلاصہ یہ ہے:\n",
+
+            f"PHQ-9 (ڈپریشن) — اسکور: "
+            f"{score_to_10(phq_total, 27)}/10 — {phq_sev}",
+
+            f"GAD-7 (بے چینی) — اسکور: "
+            f"{score_to_10(gad_total, 21)}/10 — {gad_sev}",
+
+            f"WHO-5 (ذہنی خوشحالی) — اسکور: "
+            f"{score_to_10(who_total, 25)}/10",
+        ]
+
+        advice, risk_level = generate_assessment_advice(
+            phq_total,
+            gad_total,
+            who_total,
+            phq_q9
         )
-    elif risk_level in ("high", "moderate"):
-        lines.append(
-            "\nFor more personalised guidance and to keep track of your progress over time, "
-            "visit the main chat where Empath AI can talk with you directly. "
-            "[Go to Main Chat →](/)"
-        )
+
+        if advice:
+            lines.append(
+                f"\n── ذاتی رہنمائی ──\n\n{advice}"
+            )
+
+        if risk_level == "crisis" or crisis_flag:
+            lines.append(
+                "\nفوری اور مسلسل مدد کے لیے Main Chat کھولیں۔ "
+                "Empath AI آپ کے نتائج کے مطابق آپ کی رہنمائی کرے گا۔ "
+                "[Main Chat پر جائیں →](/)"
+            )
+
+        elif risk_level in ("high", "moderate"):
+            lines.append(
+                "\nمزید ذاتی رہنمائی اور اپنی progress کو track کرنے کے لیے "
+                "Main Chat پر جائیں، جہاں Empath AI آپ سے براہ راست بات کر سکتا ہے۔ "
+                "[Main Chat پر جائیں →](/)"
+            )
+
+        else:
+            lines.append(
+                "\nاگر آپ کو کچھ پریشان کر رہا ہو یا آپ اپنے احساسات کے بارے میں بات کرنا چاہیں "
+                "تو Main Chat ہمیشہ آپ کے لیے موجود ہے۔ "
+                "[Main Chat پر جائیں →](/)"
+            )
+
     else:
-        lines.append(
-            "\nIf anything feels heavy or you want to talk through what you are feeling, "
-            "the main chat is always open for you. "
-            "[Go to Main Chat →](/)"
+
+        lines = [
+            "Thank you for completing this assessment. Here is a summary of your results:\n",
+
+            f"PHQ-9 (Depression) — Score: "
+            f"{score_to_10(phq_total, 27)}/10 — {phq_sev}",
+
+            f"GAD-7 (Anxiety) — Score: "
+            f"{score_to_10(gad_total, 21)}/10 — {gad_sev}",
+
+            f"WHO-5 (Wellbeing) — Score: "
+            f"{score_to_10(who_total, 25)}/10",
+        ]
+
+        advice, risk_level = generate_assessment_advice(
+            phq_total,
+            gad_total,
+            who_total,
+            phq_q9
         )
+
+        if advice:
+            lines.append(
+                f"\n── Personal Guidance ──\n\n{advice}"
+            )
+
+        if risk_level == "crisis" or crisis_flag:
+            lines.append(
+                "\nFor immediate, ongoing support please open the main chat — "
+                "Empath AI will follow up on your results and guide you step by step. "
+                "[Go to Main Chat →](/)"
+            )
+
+        elif risk_level in ("high", "moderate"):
+            lines.append(
+                "\nFor more personalised guidance and to keep track of your progress over time, "
+                "visit the main chat where Empath AI can talk with you directly. "
+                "[Go to Main Chat →](/)"
+            )
+
+        else:
+            lines.append(
+                "\nIf anything feels heavy or you want to talk through what you are feeling, "
+                "the main chat is always open for you. "
+                "[Go to Main Chat →](/)"
+            )
 
     return "\n".join(lines), crisis_flag
 
 
+# ─────────────────────────────────────────────
+# SESSION
+# ─────────────────────────────────────────────
+
 def sa_init_session():
+
     session["sa_q_index"] = 0
     session["sa_phq"] = {}
     session["sa_gad"] = {}
@@ -4528,25 +5302,93 @@ def sa_init_session():
     session["sa_awaiting_name"] = session.get("user_id") is None
     session["sa_user_id"] = session.get("user_id")
 
+    # Keep selected language
+    if "language" not in session:
+        session["language"] = "en"
+
+
+# ─────────────────────────────────────────────
+# ALREADY COMPLETED RESPONSE
+# ─────────────────────────────────────────────
 
 def _sa_already_done_response(last_row, name=""):
+
+    language = session.get("language", "en")
+
     next_date = (
-        datetime.fromisoformat(str(last_row["assessment_date"])) + timedelta(days=7)
+        datetime.fromisoformat(
+            str(last_row["assessment_date"])
+        ) + timedelta(days=7)
     ).strftime("%B %d")
-    greeting = f"Hi {name}. " if name else ""
-    saved_advice = (last_row["advice_given"] or "").strip()
-    saved_advice = (last_row["advice_given"] or "").strip()
-    response_text = (
-        f"{greeting}You have already completed your weekly assessment. "
-        f"Your next one will be available on {next_date}.\n\n"
-        f"Saved scores:\n"
-        f"PHQ-9 (Depression): {score_to_10(last_row['phq9_total'], 27)}/10\n"
-        f"GAD-7 (Anxiety): {score_to_10(last_row['gad7_total'], 21)}/10\n"
-        f"WHO-5 (Wellbeing): {score_to_10(last_row['who5_total'], 25)}/10"
-    )
-    if saved_advice:
-        response_text += f"\n\nSaved comments and guidance:\n{saved_advice}"
-    response_text += "\n\nIf something feels urgent, please return to the main chat or call Umang: 0317-4288665."
+
+    if language == "ur":
+
+        greeting = f"السلام علیکم {name}۔ " if name else ""
+
+        response_text = (
+            f"{greeting}"
+            f"آپ نے اپنا ہفتہ وار assessment پہلے ہی مکمل کر لیا ہے۔ "
+            f"آپ کا اگلا assessment {next_date} کو دستیاب ہوگا۔\n\n"
+
+            f"محفوظ شدہ اسکور:\n"
+
+            f"PHQ-9 (ڈپریشن): "
+            f"{score_to_10(last_row['phq9_total'], 27)}/10\n"
+
+            f"GAD-7 (بے چینی): "
+            f"{score_to_10(last_row['gad7_total'], 21)}/10\n"
+
+            f"WHO-5 (ذہنی خوشحالی): "
+            f"{score_to_10(last_row['who5_total'], 25)}/10"
+        )
+
+        saved_advice = (last_row["advice_given"] or "").strip()
+
+        if saved_advice:
+            response_text += (
+                f"\n\nمحفوظ شدہ تبصرے اور رہنمائی:\n"
+                f"{saved_advice}"
+            )
+
+        response_text += (
+            "\n\nاگر کوئی صورتحال فوری ہو تو Main Chat پر واپس جائیں "
+            "یا Umang: 0317-4288665 پر رابطہ کریں۔"
+        )
+
+    else:
+
+        greeting = f"Hi {name}. " if name else ""
+
+        response_text = (
+            f"{greeting}"
+            f"You have already completed your weekly assessment. "
+            f"Your next one will be available on {next_date}.\n\n"
+
+            f"Saved scores:\n"
+
+            f"PHQ-9 (Depression): "
+            f"{score_to_10(last_row['phq9_total'], 27)}/10\n"
+
+            f"GAD-7 (Anxiety): "
+            f"{score_to_10(last_row['gad7_total'], 21)}/10\n"
+
+            f"WHO-5 (Wellbeing): "
+            f"{score_to_10(last_row['who5_total'], 25)}/10"
+        )
+
+        saved_advice = (last_row["advice_given"] or "").strip()
+
+        if saved_advice:
+            response_text += (
+                f"\n\nSaved comments and guidance:\n"
+                f"{saved_advice}"
+            )
+
+        response_text += (
+            "\n\nIf something feels urgent, please return to the main chat "
+            "or call Umang: 0317-4288665."
+        )
+
     return jsonify({
         "response": response_text,
         "options": [],
@@ -4554,34 +5396,143 @@ def _sa_already_done_response(last_row, name=""):
     })
 
 
-def _sa_start_questions(name=""):
-    first_q = SA_QUESTIONS[0]
-    greeting = f"Hello{', ' + name if name else ''}. "
-    return jsonify({
-        "response": (
-            greeting +
-            "I will ask you 21 short questions covering depression, anxiety, and wellbeing. "
-            "There are no right or wrong answers — just answer as honestly as you can.\n\n" +
-            first_q["text"]
-        ),
-        "options": PHQ_GAD_OPTIONS,
-    })
+# ─────────────────────────────────────────────
+# START QUESTIONS
+# ─────────────────────────────────────────────
 
+def _sa_start_questions(name=""):
+
+    language = session.get("language", "en")
+
+    if language == "ur":
+
+        first_q = SA_QUESTIONS_URDU[0]
+
+        greeting = f"السلام علیکم {name}۔ " if name else "السلام علیکم۔ "
+
+        response_text = (
+            greeting +
+            "میں آپ سے ڈپریشن، بے چینی اور ذہنی خوشحالی کے بارے میں "
+            "21 مختصر سوالات پوچھوں گا۔ "
+            "اس میں کوئی صحیح یا غلط جواب نہیں ہے — بس ایمانداری سے جواب دیں۔\n\n" +
+            first_q["text"]
+        )
+
+        return jsonify({
+            "response": response_text,
+            "options": PHQ_GAD_OPTIONS_URDU,
+        })
+
+    else:
+
+        first_q = SA_QUESTIONS[0]
+
+        greeting = f"Hello{', ' + name if name else ''}. "
+
+        return jsonify({
+            "response": (
+                greeting +
+                "I will ask you 21 short questions covering depression, anxiety, and wellbeing. "
+                "There are no right or wrong answers — just answer as honestly as you can.\n\n" +
+                first_q["text"]
+            ),
+            "options": PHQ_GAD_OPTIONS,
+        })
+
+
+# ─────────────────────────────────────────────
+# INIT
+# ─────────────────────────────────────────────
 
 @app.route("/assessment_chat_init", methods=["GET"])
 def assessment_chat_init():
+
+    # Get language from frontend
+    language = request.args.get("language", "en")
+
+    if language not in ["en", "ur"]:
+        language = "en"
+
+    # Save selected language
+    session["language"] = language
+    session["sa_language"] = language
+
+    # -----------------------------------------
+    # GET LOGGED-IN USER AUTOMATICALLY
+    # -----------------------------------------
+
+    if not session.get("user_id") and session.get("account_id"):
+
+        linked_user = get_user_by_account_id(
+            session.get("account_id")
+        )
+
+        if not linked_user:
+            linked_user = get_or_create_user_for_account(
+                session.get("account_id"),
+                session.get("account_name", "User")
+            )
+
+        if linked_user:
+            session["user_id"] = linked_user["id"]
+            session["name"] = linked_user["name"]
+
+    # Initialize assessment AFTER user is found
     sa_init_session()
 
     user_id = session.get("user_id")
+
+    # -----------------------------------------
+    # LOGGED-IN USER
+    # -----------------------------------------
+
     if user_id:
+
         last = get_last_assessment_for_user(user_id)
+
+        # Assessment already completed within 7 days
         if days_since_assessment(last) < 7:
+
             session["sa_done"] = True
+
             user = get_user_by_id(user_id)
-            return _sa_already_done_response(last, user["name"] if user else "")
+
+            return _sa_already_done_response(
+                last,
+                user["name"] if user else ""
+            )
+
         user = get_user_by_id(user_id)
+
         session["sa_awaiting_name"] = False
-        return _sa_start_questions(user["name"] if user else "")
+        session["sa_user_id"] = user_id
+
+        # Use Urdu name when Urdu is selected
+        if language == "ur":
+
+            display_name = get_urdu_name_for_account(
+                session.get("account_id")
+            )
+
+            if not display_name:
+                display_name = user["name"] if user else ""
+
+        else:
+
+            display_name = user["name"] if user else ""
+
+        return _sa_start_questions(display_name)
+
+    # -----------------------------------------
+    # NO LOGIN
+    # -----------------------------------------
+
+    if language == "ur":
+
+        return jsonify({
+            "response": "اپنے ہفتہ وار خود جائزے میں خوش آمدید۔ شروع کرنے سے پہلے، آپ کا نام کیا ہے؟",
+            "options": [],
+        })
 
     return jsonify({
         "response": "Welcome to your weekly self-assessment. Before we begin, what is your name?",
@@ -4589,156 +5540,511 @@ def assessment_chat_init():
     })
 
 
+# ─────────────────────────────────────────────
+# ASSESSMENT CHAT
+# ─────────────────────────────────────────────
+
 @app.route("/assessment_chat", methods=["POST"])
 def assessment_chat():
+
     data = request.json or {}
+
     user_message = data.get("message", "").strip()
 
+    # Get language from frontend/session
+    language = data.get(
+        "language",
+        session.get("language", "en")
+    )
+
+    if language not in ["en", "ur"]:
+        language = "en"
+
+    session["language"] = language
+
+    # Empty message
     if not user_message:
-        return jsonify({"response": "I did not catch that. Please choose an option or type a number.", "options": []})
 
+        if language == "ur":
+            return jsonify({
+                "response": "مجھے یہ سمجھ نہیں آیا۔ براہ کرم نیچے دیے گئے options میں سے ایک منتخب کریں یا نمبر لکھیں۔",
+                "options": PHQ_GAD_OPTIONS_URDU
+            })
+
+        return jsonify({
+            "response": "I did not catch that. Please choose an option or type a number.",
+            "options": []
+        })
+
+    # Already completed
     if session.get("sa_done"):
-        return jsonify({"response": "You have already completed this assessment. Press Restart to begin again.", "options": []})
 
-    # ── Name step ──────────────────────────────────────────────────
+        if language == "ur":
+            return jsonify({
+                "response": "آپ یہ assessment پہلے ہی مکمل کر چکے ہیں۔ دوبارہ شروع کرنے کے لیے Restart دبائیں۔",
+                "options": []
+            })
+
+        return jsonify({
+            "response": "You have already completed this assessment. Press Restart to begin again.",
+            "options": []
+        })
+
+
+    # ─────────────────────────────────────────────
+    # NAME STEP
+    # ─────────────────────────────────────────────
+
     if session.get("sa_awaiting_name"):
+
         raw_name = user_message.strip().split()[0].capitalize()
+
         if len(raw_name) < 2:
-            return jsonify({"response": "Please enter your name to continue.", "options": []})
+
+            if language == "ur":
+                return jsonify({
+                    "response": "براہ کرم جاری رکھنے کے لیے اپنا نام درج کریں۔",
+                    "options": []
+                })
+
+            return jsonify({
+                "response": "Please enter your name to continue.",
+                "options": []
+            })
 
         existing = find_existing_user(raw_name)
+
         if existing:
+
             sa_uid = existing["id"]
+
             update_user_last_seen(sa_uid)
+
         else:
+
             sa_uid = create_user(raw_name)
 
         session["sa_user_id"] = sa_uid
         session["sa_awaiting_name"] = False
 
         last = get_last_assessment_for_user(sa_uid)
+
         if days_since_assessment(last) < 7:
+
             session["sa_done"] = True
-            return _sa_already_done_response(last, raw_name)
+
+            return _sa_already_done_response(
+                last,
+                raw_name
+            )
 
         return _sa_start_questions(raw_name)
 
-    # ── Question answering step ─────────────────────────────────────
+
+    # ─────────────────────────────────────────────
+    # QUESTION ANSWERING
+    # ─────────────────────────────────────────────
+
     q_index = session.get("sa_q_index", 0)
 
-    number_match = re.search(r"\b([0-4])\b", user_message)
-    score = int(number_match.group(1)) if number_match else None
+    number_match = re.search(
+        r"\b([0-4])\b",
+        user_message
+    )
 
+    score = (
+        int(number_match.group(1))
+        if number_match
+        else None
+    )
+
+
+    # Invalid answer
     if score is None:
-        current_q = SA_QUESTIONS[q_index] if q_index < len(SA_QUESTIONS) else None
-        options = WHO_OPTIONS if (current_q and current_q["scale"] == "who") else PHQ_GAD_OPTIONS
-        return jsonify({"response": "Please choose one of the options below, or type a number.", "options": options})
+
+        current_q = (
+            SA_QUESTIONS[q_index]
+            if q_index < len(SA_QUESTIONS)
+            else None
+        )
+
+        if language == "ur":
+
+            options = (
+                WHO_OPTIONS_URDU
+                if (
+                    current_q
+                    and current_q["scale"] == "who"
+                )
+                else PHQ_GAD_OPTIONS_URDU
+            )
+
+            return jsonify({
+                "response": "براہ کرم نیچے دیے گئے options میں سے ایک منتخب کریں یا نمبر لکھیں۔",
+                "options": options
+            })
+
+        options = (
+            WHO_OPTIONS
+            if (
+                current_q
+                and current_q["scale"] == "who"
+            )
+            else PHQ_GAD_OPTIONS
+        )
+
+        return jsonify({
+            "response": "Please choose one of the options below, or type a number.",
+            "options": options
+        })
+
+
+    # ─────────────────────────────────────────────
+    # SAVE ANSWER
+    # ─────────────────────────────────────────────
 
     if q_index < len(SA_QUESTIONS):
-        prev_q = SA_QUESTIONS[q_index]
-        clamped = min(max(score, 0), 4 if prev_q["scale"] == "who" else 3)
 
+        prev_q = SA_QUESTIONS[q_index]
+
+        clamped = min(
+            max(score, 0),
+            4 if prev_q["scale"] == "who" else 3
+        )
+
+
+        # PHQ
         if prev_q["scale"] == "phq":
-            phq = dict(session.get("sa_phq", {}))
+
+            phq = dict(
+                session.get("sa_phq", {})
+            )
+
             phq[prev_q["key"]] = clamped
+
             session["sa_phq"] = phq
-            if prev_q["key"] == "phq9" and clamped >= 2:
+
+
+            # PHQ-9 crisis question
+            if (
+                prev_q["key"] == "phq9"
+                and clamped >= 2
+            ):
+
                 session["sa_q_index"] = q_index + 1
+
+                if language == "ur":
+
+                    return jsonify({
+                        "response": (
+                            "میں یہاں ایک لمحے کے لیے رکنا چاہتا ہوں۔ "
+                            "آپ کے جواب سے لگتا ہے کہ آپ اس وقت بہت مشکل صورتحال سے گزر رہے ہیں۔ "
+                            "براہ کرم یاد رکھیں کہ یہ کیفیت ہمیشہ ایک جیسی نہیں رہتی۔ "
+                            "آپ اس وقت مدد کے مستحق ہیں۔ "
+                            "براہ کرم Umang: 0317-4288665 پر رابطہ کریں، "
+                            "کسی قابلِ اعتماد شخص سے بات کریں، "
+                            "اور جب آپ خود کو کچھ زیادہ محفوظ محسوس کریں تو واپس آئیں۔"
+                        ),
+                        "options": [],
+                        "type": "crisis",
+                    })
+
                 return jsonify({
                     "response": (
-                        "I want to pause here for a moment. Your answer suggests you may be going through something very heavy. "
+                        "I want to pause here for a moment. "
+                        "Your answer suggests you may be going through something very heavy. "
                         "Please know this can be a phase, and life does not stay the same forever. "
-                        "You deserve support right now — please call Umang: 0317-4288665, reach out to someone you trust, and come back only when you feel a little safer."
+                        "You deserve support right now — please call Umang: 0317-4288665, "
+                        "reach out to someone you trust, and come back only when you feel a little safer."
                     ),
                     "options": [],
                     "type": "crisis",
                 })
+
+
+        # GAD
         elif prev_q["scale"] == "gad":
-            gad = dict(session.get("sa_gad", {}))
+
+            gad = dict(
+                session.get("sa_gad", {})
+            )
+
             gad[prev_q["key"]] = clamped
+
             session["sa_gad"] = gad
+
+
+        # WHO
         elif prev_q["scale"] == "who":
-            who = dict(session.get("sa_who", {}))
+
+            who = dict(
+                session.get("sa_who", {})
+            )
+
             who[prev_q["key"]] = clamped
+
             session["sa_who"] = who
 
+
         session["sa_q_index"] = q_index + 1
+
         q_index += 1
 
-    # ── All questions answered ──────────────────────────────────────
-    if q_index >= len(SA_QUESTIONS):
-        session["sa_done"] = True
-        phq_scores = session.get("sa_phq", {})
-        gad_scores = session.get("sa_gad", {})
-        who_scores = session.get("sa_who", {})
-        result_text, crisis = sa_build_result(phq_scores, gad_scores, who_scores)
 
-        sa_uid = session.get("sa_user_id") or session.get("user_id")
-        phq_total = sum(phq_scores.values())
-        gad_total = sum(gad_scores.values())
-        who_total = sum(who_scores.values())
-        phq_q9 = phq_scores.get("phq9", 0)
-        prev_assess = get_last_assessment_for_user(sa_uid) if sa_uid else None
-        if prev_assess and prev_assess["phq9_total"] is None:
+    # ─────────────────────────────────────────────
+    # ALL QUESTIONS COMPLETED
+    # ─────────────────────────────────────────────
+
+    if q_index >= len(SA_QUESTIONS):
+
+        session["sa_done"] = True
+
+        phq_scores = session.get(
+            "sa_phq",
+            {}
+        )
+
+        gad_scores = session.get(
+            "sa_gad",
+            {}
+        )
+
+        who_scores = session.get(
+            "sa_who",
+            {}
+        )
+
+        result_text, crisis = sa_build_result(
+            phq_scores,
+            gad_scores,
+            who_scores
+        )
+
+        sa_uid = (
+            session.get("sa_user_id")
+            or session.get("user_id")
+        )
+
+        phq_total = sum(
+            phq_scores.values()
+        )
+
+        gad_total = sum(
+            gad_scores.values()
+        )
+
+        who_total = sum(
+            who_scores.values()
+        )
+
+        phq_q9 = phq_scores.get(
+            "phq9",
+            0
+        )
+
+        prev_assess = (
+            get_last_assessment_for_user(sa_uid)
+            if sa_uid
+            else None
+        )
+
+        if (
+            prev_assess
+            and prev_assess["phq9_total"] is None
+        ):
             prev_assess = None
-        advice_text, risk_level = generate_assessment_advice(phq_total, gad_total, who_total, phq_q9, prev_assess)
+
+
+        advice_text, risk_level = generate_assessment_advice(
+            phq_total,
+            gad_total,
+            who_total,
+            phq_q9,
+            prev_assess
+        )
 
         session["last_advice"] = advice_text
-        session["last_assessment_scores"] = {"phq9": phq_total, "gad7": gad_total, "who5": who_total}
+
+        session["last_assessment_scores"] = {
+            "phq9": phq_total,
+            "gad7": gad_total,
+            "who5": who_total
+        }
+
         session["sa_followup_count"] = 0
         session["sa_followup_needed"] = True
         session["sa_listen_turns"] = 0
+
+
         if phq_total >= 20 or gad_total >= 18:
+
             session["sa_dominant_concern"] = "crisis_risk"
+
         elif phq_total >= 10:
+
             session["sa_dominant_concern"] = "depression_high"
+
         elif gad_total >= 10:
+
             session["sa_dominant_concern"] = "anxiety_high"
+
         elif who_total * 4 < 40:
+
             session["sa_dominant_concern"] = "wellbeing_low"
+
         elif phq_total >= 5 or gad_total >= 5:
+
             session["sa_dominant_concern"] = "mild"
+
         else:
+
             session["sa_dominant_concern"] = "minimal"
 
+
+        # ─────────────────────────────────────────────
+        # SAVE TO DATABASE
+        # ─────────────────────────────────────────────
+
         if sa_uid:
+
             try:
+
                 db = get_db()
+
                 db.execute("""
                     INSERT INTO assessments (
-                        user_id, phq9_total, gad7_total, who5_total,
-                        severity, emotion_detected, displacement_cause, idp_hardships,
-                        advice_given, prev_phq9, prev_gad7, prev_who5
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        user_id,
+                        phq9_total,
+                        gad7_total,
+                        who5_total,
+                        severity,
+                        emotion_detected,
+                        displacement_cause,
+                        idp_hardships,
+                        advice_given,
+                        prev_phq9,
+                        prev_gad7,
+                        prev_who5
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
+
                     sa_uid,
+
                     phq_total,
+
                     gad_total,
+
                     who_total,
-                    sa_get_phq9_severity(phq_total)[0],
-                    session.get("emotion", "Unknown"),
-                    session.get("displacement_cause", "Unknown"),
+
+                    sa_get_phq9_severity(
+                        phq_total
+                    )[0],
+
+                    session.get(
+                        "emotion",
+                        "Unknown"
+                    ),
+
+                    session.get(
+                        "displacement_cause",
+                        "Unknown"
+                    ),
+
                     json.dumps([]),
+
                     advice_text,
-                    prev_assess["phq9_total"] if prev_assess else None,
-                    prev_assess["gad7_total"] if prev_assess else None,
-                    prev_assess["who5_total"] if prev_assess else None,
+
+                    prev_assess["phq9_total"]
+                    if prev_assess
+                    else None,
+
+                    prev_assess["gad7_total"]
+                    if prev_assess
+                    else None,
+
+                    prev_assess["who5_total"]
+                    if prev_assess
+                    else None,
+
                 ))
+
                 db.commit()
+
             except Exception as e:
-                print("SA DB save error:", e)
 
-        return jsonify({"response": result_text, "options": [], "type": "crisis" if (crisis or risk_level == 'crisis') else "result"})
+                print(
+                    "SA DB save error:",
+                    e
+                )
 
-    # ── Next question ───────────────────────────────────────────────
-    next_q = SA_QUESTIONS[q_index]
-    options = WHO_OPTIONS if next_q["scale"] == "who" else PHQ_GAD_OPTIONS
-    return jsonify({"response": next_q["text"], "options": options})
+
+        return jsonify({
+            "response": result_text,
+            "options": [],
+            "type": (
+                "crisis"
+                if (
+                    crisis
+                    or risk_level == "crisis"
+                )
+                else "result"
+            )
+        })
+
+
+    # ─────────────────────────────────────────────
+    # NEXT QUESTION
+    # ─────────────────────────────────────────────
+
+    if language == "ur":
+
+        next_q = SA_QUESTIONS_URDU[q_index]
+
+        options = (
+            WHO_OPTIONS_URDU
+            if next_q["scale"] == "who"
+            else PHQ_GAD_OPTIONS_URDU
+        )
+
+        return jsonify({
+            "response": next_q["text"],
+            "options": options
+        })
+
+    else:
+
+        next_q = SA_QUESTIONS[q_index]
+
+        options = (
+            WHO_OPTIONS
+            if next_q["scale"] == "who"
+            else PHQ_GAD_OPTIONS
+        )
+
+        return jsonify({
+            "response": next_q["text"],
+            "options": options
+        })
+
+
+# ─────────────────────────────────────────────
+# RESET
+# ─────────────────────────────────────────────
 
 @app.route("/assessment_chat_reset", methods=["POST"])
 def assessment_chat_reset():
+
+    # Keep selected language during restart
+    language = session.get("language", "en")
+
     sa_init_session()
-    return jsonify({"status": "reset"})
+
+    session["language"] = language
+
+    return jsonify({
+        "status": "reset"
+    })
 
 
 @app.route("/wellness")
@@ -4884,7 +6190,8 @@ def wellness():
             "who_values": who
         },
         assessment_rows=assessment_rows[::-1],
-        has_data=bool(wellbeing_rows or assessment_rows_raw)
+        has_data=bool(wellbeing_rows or assessment_rows_raw),
+        user_name_urdu=get_urdu_name_for_account(session.get("account_id"))
     )
 
 # ─────────────────────────────────────────────
@@ -4898,64 +6205,281 @@ def quotes_page():
 @app.route("/api/quotes", methods=["GET"])
 @login_required
 def get_quotes():
+
+    # Get language selected on the intro page
+    language = request.args.get("language", "en").strip().lower()
+
+    if language not in ["en", "ur"]:
+        language = "en"
+
     categories = ["Hope", "Resilience", "Family", "Patience", "Strength", "Home"]
-    import random
+
     chosen = random.sample(categories, 3)
 
-    system_prompt = """You generate short, soft, comforting quotes for internally displaced people (IDPs) in Pakistan who have lost their homes due to floods, conflict, or earthquakes. These people are going through grief, trauma, displacement, and loss.
+    # -----------------------------------------
+    # LANGUAGE-SPECIFIC AI INSTRUCTIONS
+    # -----------------------------------------
+
+    if language == "ur":
+
+        language_instruction = """
+IMPORTANT LANGUAGE RULES:
+
+- Generate ALL quotes in Urdu script.
+- The quote itself MUST be in Urdu.
+- The person's name MUST be in Urdu where possible.
+- The title MUST be in Urdu.
+- The category MUST be in Urdu.
+- Do NOT return English quotes.
+- Do NOT return Roman Urdu.
+- Quran and Hadith meanings must be written respectfully in Urdu.
+- Preserve the original meaning of the quote.
+"""
+
+        language_name = "Urdu"
+
+    else:
+
+        language_instruction = """
+IMPORTANT LANGUAGE RULES:
+
+- Generate ALL quotes in English.
+- The quote itself MUST be in English.
+- The person's name MUST be in English.
+- The title MUST be in English.
+- The category MUST be in English.
+- Do NOT return Urdu.
+- Do NOT return Roman Urdu.
+- Quran and Hadith meanings must be written respectfully in English.
+"""
+
+        language_name = "English"
+
+    # -----------------------------------------
+    # SYSTEM PROMPT
+    # -----------------------------------------
+
+    system_prompt = f"""
+You generate short, soft, comforting quotes for internally displaced
+people (IDPs) in Pakistan who have lost their homes due to floods,
+conflict, or earthquakes.
+
+These people may be experiencing grief, trauma, displacement and loss.
+
+The required output language is: {language_name}
 
 RULES:
-- Each quote must feel warm, gentle, and human — NOT clinical or motivational-speaker style
-- Mix sources: Quran verses, Hadith of Prophet Muhammad (PBUH), Quaid-e-Azam Muhammad Ali Jinnah, Allama Iqbal, and famous international figures (Maya Angelou, Nelson Mandela, Victor Hugo etc.)
-- Quran and Hadith quotes should be the actual meaning in simple English — not overly formal
-- Do NOT use hard or dramatic language like "conquer", "warrior", "battle", "fight"
-- Keep each quote under 30 words
-- Return ONLY valid JSON, no markdown, no extra text
+
+- Each quote must feel warm, gentle, and human.
+- Do NOT use clinical or motivational-speaker style.
+- Mix sources such as:
+  Quran,
+  Hadith of Prophet Muhammad (PBUH),
+  Quaid-e-Azam Muhammad Ali Jinnah,
+  Allama Iqbal,
+  Maya Angelou,
+  Nelson Mandela,
+  Victor Hugo,
+  and other famous personalities.
+- Do NOT use hard or dramatic language such as:
+  "conquer", "warrior", "battle", "fight".
+- Keep each quote under 30 words.
+- Return ONLY valid JSON.
+- Do NOT return markdown.
+- Do NOT return explanations.
+
+{language_instruction}
 
 Return exactly this JSON structure:
+
 [
-  {
+  {{
     "quote": "...",
     "person": "...",
     "title": "...",
     "category": "Hope",
     "type": "international"
-  }
+  }}
 ]
 
-type must be one of: "quran", "hadith", "quaid", "iqbal", "international"
+type must be one of:
+
+"quran"
+"hadith"
+"quaid"
+"iqbal"
+"international"
 """
 
-    user_prompt = f"Generate exactly 3 quotes, one for each of these categories: {', '.join(chosen)}. Return only the JSON array."
+    # -----------------------------------------
+    # USER PROMPT
+    # -----------------------------------------
+
+    user_prompt = f"""
+Generate exactly 3 quotes.
+
+Generate one quote for each of these categories:
+
+{', '.join(chosen)}
+
+The entire response must be in {language_name}.
+
+Return ONLY the JSON array.
+"""
+
+    # -----------------------------------------
+    # CALL OPENAI
+    # -----------------------------------------
 
     try:
+
         response = client.responses.create(
             model="gpt-4.1-mini",
             instructions=system_prompt,
-            input=[{"role": "user", "content": user_prompt}],
-            max_output_tokens=600,
+            input=[
+                {
+                    "role": "user",
+                    "content": user_prompt
+                }
+            ],
+            max_output_tokens=800,
         )
+
         raw = response.output_text.strip()
-        # strip markdown fences if any
-        raw = raw.replace("```json", "").replace("```", "").strip()
+
+        # Remove markdown code fences if AI adds them
+        raw = raw.replace("```json", "")
+        raw = raw.replace("```", "")
+        raw = raw.strip()
+
         quotes = json.loads(raw)
-        return jsonify({"quotes": quotes, "status": "ok"})
+
+        # Return the language together with the quotes
+        return jsonify({
+            "quotes": quotes,
+            "language": language,
+            "status": "ok"
+        })
+
     except Exception as e:
+
         print(f"Quotes API error: {e}")
-        # fallback quotes
-        fallback = [
-            {"quote": "Verily, with every hardship comes ease.", "person": "The Holy Quran", "title": "Surah Al-Inshirah 94:6", "category": "Hope", "type": "quran"},
-            {"quote": "You never know how strong you are until being strong is your only choice.", "person": "Bob Marley", "title": "Musician & Poet", "category": "Resilience", "type": "international"},
-            {"quote": "With faith, discipline and selfless devotion to duty, there is nothing worthwhile you cannot achieve.", "person": "Quaid-e-Azam M.A. Jinnah", "title": "Founder of Pakistan", "category": "Strength", "type": "quaid"},
-        ]
-        return jsonify({"quotes": fallback, "status": "fallback"})
+
+        # -----------------------------------------
+        # URDU FALLBACK
+        # -----------------------------------------
+
+        if language == "ur":
+
+            fallback = [
+
+                {
+                    "quote": "بے شک ہر مشکل کے ساتھ آسانی ہے۔",
+                    "person": "قرآن مجید",
+                    "title": "سورۃ الانشراح 94:6",
+                    "category": "امید",
+                    "type": "quran"
+                },
+
+                {
+                    "quote": "تم میں بہترین وہ ہیں جو اپنے اہلِ خانہ کے لیے بہترین ہیں۔",
+                    "person": "حضرت محمد ﷺ",
+                    "title": "حدیث",
+                    "category": "خاندان",
+                    "type": "hadith"
+                },
+
+                {
+                    "quote": "کوئی بھی چیز اس روشنی کو مدھم نہیں کر سکتی جو اندر سے چمکتی ہے۔",
+                    "person": "مایا اینجلو",
+                    "title": "شاعرہ اور مصنفہ",
+                    "category": "طاقت",
+                    "type": "international"
+                }
+
+            ]
+
+        # -----------------------------------------
+        # ENGLISH FALLBACK
+        # -----------------------------------------
+
+        else:
+
+            fallback = [
+
+                {
+                    "quote": "Verily, with every hardship comes ease.",
+                    "person": "The Holy Quran",
+                    "title": "Surah Al-Inshirah 94:6",
+                    "category": "Hope",
+                    "type": "quran"
+                },
+
+                {
+                    "quote": "The best of you are those who are best to their families.",
+                    "person": "Prophet Muhammad (PBUH)",
+                    "title": "Hadith",
+                    "category": "Family",
+                    "type": "hadith"
+                },
+
+                {
+                    "quote": "Nothing can dim the light which shines from within.",
+                    "person": "Maya Angelou",
+                    "title": "Poet and Author",
+                    "category": "Strength",
+                    "type": "international"
+                }
+
+            ]
+
+        return jsonify({
+            "quotes": fallback,
+            "language": language,
+            "status": "fallback"
+        })
         
+@app.route("/tts/urdu", methods=["POST"])
+def urdu_tts():
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+
+    if len(text) > 3000:
+        return jsonify({"error": "Text is too long"}), 400
+
+    async def generate_audio():
+        audio_buffer = io.BytesIO()
+        communicate = edge_tts.Communicate(
+            text,
+            voice="ur-PK-UzmaNeural"
+        )
+
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_buffer.write(chunk["data"])
+
+        audio_buffer.seek(0)
+        return audio_buffer
+
+    try:
+        audio = asyncio.run(generate_audio())
+        return send_file(audio, mimetype="audio/mpeg")
+    except Exception as e:
+        print("Urdu TTS error:", e)
+        return jsonify({"error": "Urdu voice could not be generated"}), 500      
 # ==============================
 # RUN APP
 # ==============================
 if __name__ == "__main__":
     with app.app_context():
         init_db()
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
     
+    test_message = "کبھی کبھی اتنی تھکن ہوتی ہے کہ کچھ کرنے کا دل نہیں کرتا۔"
+
+    print("ENERGY:", extract_energy(test_message))
+    print("WELLBEING:", extract_wellbeing_info(test_message))    
     

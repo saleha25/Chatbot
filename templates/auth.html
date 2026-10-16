@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Empath AI — Login / Sign Up</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --brown: #4b2e23;
@@ -261,7 +262,241 @@ body {
   .left-panel { display: none; }
   .right-panel { padding: 32px 20px; }
 }
+
+/* ===== LANGUAGE / URDU LAYOUT FIX =====
+   The page structure stays unchanged.
+   English: Welcome panel LEFT, Auth panel RIGHT.
+   Urdu:    Auth panel LEFT, Welcome panel RIGHT.
+   Only the Urdu content direction/typography changes.
+*/
+
+html[lang="ur"] body {
+  direction: ltr;
+}
+
+html[lang="ur"] .navbar {
+  direction: ltr;
+}
+
+html[lang="ur"] .page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  direction: ltr;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Urdu desktop positions */
+@media (min-width: 861px) {
+  html[lang="ur"] .right-panel {
+    grid-column: 1;
+    grid-row: 1;
+    direction: rtl;
+  }
+
+  html[lang="ur"] .left-panel {
+    grid-column: 2;
+    grid-row: 1;
+    direction: rtl;
+  }
+}
+
+/* Urdu typography and text direction */
+html[lang="ur"] .left-panel,
+html[lang="ur"] .right-panel,
+html[lang="ur"] .auth-card,
+html[lang="ur"] .tabs,
+html[lang="ur"] .form-group,
+html[lang="ur"] .switch-text,
+html[lang="ur"] .submit-btn {
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+}
+
+html[lang="ur"] .left-panel {
+  text-align: right;
+}
+
+html[lang="ur"] .left-eyebrow {
+  direction: rtl;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  gap: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: right;
+}
+
+html[lang="ur"] .left-panel h1 {
+  direction: rtl;
+  text-align: right;
+  line-height: 1.35;
+}
+
+html[lang="ur"] .left-panel > p {
+  direction: rtl;
+  text-align: right;
+  line-height: 2;
+}
+
+html[lang="ur"] .left-quote {
+  direction: rtl;
+  text-align: right;
+}
+
+html[lang="ur"] .left-quote p {
+  text-align: right;
+  line-height: 1.9;
+}
+
+html[lang="ur"] .left-quote::before {
+  right: auto;
+  left: 16px;
+}
+
+html[lang="ur"] .left-quote-src {
+  display: block;
+  text-align: right;
+}
+
+html[lang="ur"] .left-trust {
+  direction: rtl;
+  align-items: stretch;
+}
+
+html[lang="ur"] .trust-row {
+  direction: rtl;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: right;
+  line-height: 1.8;
+}
+
+html[lang="ur"] .trust-dot {
+  flex: 0 0 6px;
+  margin-top: 9px;
+}
+
+/* Auth card */
+html[lang="ur"] .right-panel {
+  direction: rtl;
+}
+
+html[lang="ur"] .auth-card {
+  direction: rtl;
+  text-align: right;
+}
+
+html[lang="ur"] .auth-header {
+  direction: rtl;
+  text-align: center;
+}
+
+html[lang="ur"] .auth-header h2,
+html[lang="ur"] .auth-header p {
+  text-align: center;
+}
+
+html[lang="ur"] .tabs {
+  direction: ltr;
+}
+
+html[lang="ur"] .tab-btn {
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+  font-size: 14px;
+}
+
+html[lang="ur"] .form-group {
+  direction: rtl;
+  text-align: right;
+}
+
+html[lang="ur"] .form-group label {
+  display: block;
+  text-align: right;
+  letter-spacing: 0;
+  line-height: 1.7;
+}
+
+html[lang="ur"] .form-group input {
+  direction: rtl;
+  text-align: right;
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+html[lang="ur"] .form-group input[type="email"],
+html[lang="ur"] .form-group input[type="password"],
+html[lang="ur"] .form-group input[type="text"],
+html[lang="ur"] .form-group input[type="date"] {
+  direction: rtl;
+}
+
+html[lang="ur"] .age-notice,
+html[lang="ur"] .field-hint {
+  direction: rtl;
+  text-align: right;
+  line-height: 1.8;
+}
+
+html[lang="ur"] .submit-btn {
+  direction: rtl;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+html[lang="ur"] .or-divider {
+  direction: ltr;
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+}
+
+html[lang="ur"] .switch-text {
+  direction: rtl;
+  text-align: center;
+  line-height: 1.8;
+}
+
+html[lang="ur"] .switch-text button {
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+  font-size: 14px;
+}
+
+/* Keep the navbar itself in its original LTR structure.
+   Only the button text is translated. */
+html[lang="ur"] .logo,
+html[lang="ur"] .back-home {
+  direction: ltr;
+}
+
+html[lang="ur"] .back-home {
+  font-family: 'Noto Naskh Arabic', 'DM Sans', sans-serif;
+  font-size: 14px;
+}
+
+/* Mobile: stack naturally; no forced desktop ordering */
+@media (max-width: 860px) {
+  html[lang="ur"] .page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  html[lang="ur"] .right-panel,
+  html[lang="ur"] .left-panel {
+    width: 100%;
+    order: initial;
+  }
+
+  html[lang="ur"] .left-panel {
+    display: none;
+  }
+}
+
 </style>
+
 </head>
 <body>
 
@@ -274,28 +509,28 @@ body {
         <rect x="7" y="11" width="4" height="5" rx="1" fill="white"/>
       </svg>
     </div>
-    Empath AI
+    <span data-i18n="brand">Empath AI</span>
   </a>
-  <a class="back-home" href="/">Back to Home</a>
+  <a class="back-home" href="/"><span data-i18n="backHome">Back to Home</span></a>
 </nav>
 
 <div class="page">
 
   <!-- LEFT PANEL -->
   <div class="left-panel">
-    <p class="left-eyebrow"><span class="eyebrow-line"></span>IDP Mental Health Support</p>
-    <h1>Welcome<br>to <em>Empath AI</em></h1>
-    <p>A compassionate mental health companion built specifically for internally displaced people in Pakistan — available 24/7, always private.</p>
+    <p class="left-eyebrow"><span class="eyebrow-line"></span><span data-i18n="eyebrow">IDP Mental Health Support</span></p>
+    <h1><span data-i18n="welcome">Welcome<br>to <em>Empath AI</em></span></h1>
+    <p><span data-i18n="leftDescription">A compassionate mental health companion built specifically for internally displaced people in Pakistan — available 24/7, always private.</span></p>
 
     <div class="left-quote">
-      <p>"Indeed, with every hardship comes ease."</p>
-      <span class="left-quote-src">— Quran, Surah Ash-Sharh 94:5</span>
+      <p><span data-i18n="quote">"Indeed, with every hardship comes ease."</span></p>
+      <span class="left-quote-src"><span data-i18n="quoteSource">— Quran, Surah Ash-Sharh 94:5</span></span>
     </div>
 
     <div class="left-trust">
-      <div class="trust-row"><div class="trust-dot"></div>Clinically validated — PHQ-9, GAD-7, WHO-5</div>
-      <div class="trust-row"><div class="trust-dot"></div>Fully anonymous & end-to-end encrypted</div>
-      <div class="trust-row"><div class="trust-dot"></div>Culturally aware, available in Urdu</div>
+      <div class="trust-row"><div class="trust-dot"></div><span data-i18n="trust1">Clinically validated — PHQ-9, GAD-7, WHO-5</span></div>
+      <div class="trust-row"><div class="trust-dot"></div><span data-i18n="trust2">Fully anonymous & end-to-end encrypted</span></div>
+      <div class="trust-row"><div class="trust-dot"></div><span data-i18n="trust3">Culturally aware, available in Urdu</span></div>
     </div>
   </div>
 
@@ -304,14 +539,14 @@ body {
     <div class="auth-card">
 
       <div class="auth-header">
-        <h2>Hello, welcome back</h2>
-        <p>Sign in or create your account below</p>
+        <h2><span data-i18n="welcomeBack">Hello, welcome back</span></h2>
+        <p><span data-i18n="authSubtitle">Sign in or create your account below</span></p>
       </div>
 
       <!-- TABS -->
       <div class="tabs">
-        <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">Login</button>
-        <button class="tab-btn" id="signupTab" onclick="switchTab('signup')">Sign Up</button>
+        <button class="tab-btn active" id="loginTab" onclick="switchTab('login')" data-i18n="login">Login</button>
+        <button class="tab-btn" id="signupTab" onclick="switchTab('signup')" data-i18n="signUp">Sign Up</button>
       </div>
 
       <!-- ALERTS -->
@@ -321,47 +556,49 @@ body {
       <!-- LOGIN FORM -->
       <form id="loginForm" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label for="loginEmail">Email Address</label>
-          <input type="email" id="loginEmail" placeholder="you@example.com" required />
+          <label for="loginEmail" data-i18n="emailLabel">Email Address</label>
+          <input type="email" id="loginEmail" data-i18n-placeholder="emailPlaceholder" placeholder="you@example.com" required />
         </div>
         <div class="form-group">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" placeholder="Enter your password" required />
+          <label for="loginPassword" data-i18n="passwordLabel">Password</label>
+          <input type="password" id="loginPassword" data-i18n-placeholder="passwordPlaceholder" placeholder="Enter your password" required />
         </div>
-        <button type="submit" class="submit-btn" id="loginBtn">Login →</button>
-        <div class="or-divider">or</div>
+        <button type="submit" class="submit-btn" id="loginBtn" data-i18n="loginButton">Login →</button>
+        <div class="or-divider" data-i18n="or">or</div>
         <div class="switch-text">
-          Don't have an account? <button type="button" onclick="switchTab('signup')">Sign Up</button>
+          <span data-i18n="noAccount">Don't have an account?</span>
+          <button type="button" onclick="switchTab('signup')" data-i18n="signUp">Sign Up</button>
         </div>
       </form>
 
       <!-- SIGNUP FORM -->
       <form id="signupForm" onsubmit="handleSignup(event)">
         <div class="form-group">
-          <label for="signupName">Full Name</label>
-          <input type="text" id="signupName" placeholder="Your full name" required />
+          <label for="signupName" data-i18n="nameLabel">Full Name</label>
+          <input type="text" id="signupName" data-i18n-placeholder="namePlaceholder" placeholder="Your full name" required />
         </div>
         <div class="form-group">
-          <label for="signupEmail">Email Address</label>
-          <input type="email" id="signupEmail" placeholder="you@example.com" required />
+          <label for="signupEmail" data-i18n="emailLabel">Email Address</label>
+          <input type="email" id="signupEmail" data-i18n-placeholder="emailPlaceholder" placeholder="you@example.com" required />
         </div>
         <div class="form-group">
-          <label for="signupDob">Date of Birth</label>
+          <label for="signupDob" data-i18n="dobLabel">Date of Birth</label>
           <input type="date" id="signupDob" required />
-          <p class="age-notice">⚠ You must be 18 or older to use Empath AI.</p>
+          <p class="age-notice">⚠ You must be 18 or older to use <span data-i18n="brand">Empath AI</span>.</p>
         </div>
         <div class="form-group">
-          <label for="signupPassword">Password</label>
-          <input type="password" id="signupPassword" placeholder="At least 6 characters" required minlength="6" />
+          <label for="signupPassword" data-i18n="passwordLabel">Password</label>
+          <input type="password" id="signupPassword" data-i18n-placeholder="passwordPlaceholderSignup" placeholder="At least 6 characters" required minlength="6" />
         </div>
         <div class="form-group">
-          <label for="signupConfirm">Confirm Password</label>
-          <input type="password" id="signupConfirm" placeholder="Repeat your password" required />
+          <label for="signupConfirm" data-i18n="confirmPasswordLabel">Confirm Password</label>
+          <input type="password" id="signupConfirm" data-i18n-placeholder="confirmPlaceholder" placeholder="Repeat your password" required />
         </div>
-        <button type="submit" class="submit-btn" id="signupBtn">Create Account →</button>
-        <div class="or-divider">or</div>
+        <button type="submit" class="submit-btn" id="signupBtn" data-i18n="createAccount">Create Account →</button>
+        <div class="or-divider" data-i18n="or">or</div>
         <div class="switch-text">
-          Already have an account? <button type="button" onclick="switchTab('login')">Login</button>
+          <span data-i18n="alreadyAccount">Already have an account?</span>
+          <button type="button" onclick="switchTab('login')" data-i18n="login">Login</button>
         </div>
       </form>
 
@@ -371,6 +608,119 @@ body {
 </div>
 
 <script>
+
+/* ============================================================
+   EMPATH AI — AUTH PAGE LANGUAGE
+   Language is selected ONLY on index.html.
+   This page reads the saved value and never asks again.
+   ============================================================ */
+
+const EMPATH_LANGUAGE_KEY = "empathLanguage";
+
+/*
+ * IMPORTANT:
+ * The user chooses the language ONLY on intro.html.
+ * This page NEVER asks again and NEVER overwrites localStorage.
+ * It simply reads the saved language and applies it.
+ */
+
+const AUTH_TRANSLATIONS = {
+  en: {
+    brand: "Empath AI",
+    backHome: "Back to Home",
+    eyebrow: "IDP Mental Health Support",
+    welcome: "Welcome<br>to <em>Empath AI</em>",
+    leftDescription: "A compassionate mental health companion built specifically for internally displaced people in Pakistan — available 24/7, always private.",
+    quote: "\"Indeed, with every hardship comes ease.\"",
+    quoteSource: "— Quran, Surah Ash-Sharh 94:5",
+    trust1: "Clinically validated — PHQ-9, GAD-7, WHO-5",
+    trust2: "Fully anonymous & end-to-end encrypted",
+    trust3: "Culturally aware, available in Urdu",
+    welcomeBack: "Hello, welcome back",
+    authSubtitle: "Sign in or create your account below",
+    login: "Login",
+    signUp: "Sign Up",
+    emailLabel: "Email Address",
+    passwordLabel: "Password",
+    loginButton: "Login →",
+    or: "or",
+    noAccount: "Don't have an account?",
+    nameLabel: "Full Name",
+    dobLabel: "Date of Birth",
+    ageNotice: "⚠ You must be 18 or older to use Empath AI.",
+    confirmPasswordLabel: "Confirm Password",
+    createAccount: "Create Account →",
+    alreadyAccount: "Already have an account?",
+    emailPlaceholder: "you@example.com",
+    passwordPlaceholder: "Enter your password",
+    namePlaceholder: "Your full name",
+    passwordPlaceholderSignup: "At least 6 characters",
+    confirmPlaceholder: "Repeat your password"
+  },
+
+  ur: {
+    brand: "Empath AI",
+    backHome: "ہوم پیج پر واپس جائیں",
+    eyebrow: "آئی ڈی پی ذہنی صحت کی مدد",
+    welcome: "خوش آمدید<br><em>ایمپاتھ اے آئی</em> میں",
+    leftDescription: "پاکستان میں اندرونِ ملک بے گھر افراد کے لیے خصوصی طور پر تیار کردہ ایک ہمدردانہ ذہنی صحت کا معاون — 24 گھنٹے دستیاب اور مکمل رازداری کے ساتھ۔",
+    quote: "\"بے شک ہر مشکل کے ساتھ آسانی ہے۔\"",
+    quoteSource: "— قرآن، سورۃ الشرح 94:5",
+    trust1: "طبی طور پر مستند — PHQ-9، GAD-7، WHO-5",
+    trust2: "مکمل طور پر گمنام اور محفوظ",
+    trust3: "ثقافتی طور پر حساس، اردو میں دستیاب",
+    welcomeBack: "خوش آمدید، دوبارہ",
+    authSubtitle: "نیچے لاگ اِن کریں یا اپنا اکاؤنٹ بنائیں",
+    login: "لاگ اِن",
+    signUp: "سائن اَپ",
+    emailLabel: "ای میل ایڈریس",
+    passwordLabel: "پاس ورڈ",
+    loginButton: "لاگ اِن ←",
+    or: "یا",
+    noAccount: "کیا آپ کا اکاؤنٹ نہیں ہے؟",
+    nameLabel: "پورا نام",
+    dobLabel: "تاریخِ پیدائش",
+    ageNotice: "⚠ Empath AI استعمال کرنے کے لیے آپ کی عمر 18 سال یا اس سے زیادہ ہونی چاہیے۔",
+    confirmPasswordLabel: "پاس ورڈ کی تصدیق",
+    createAccount: "اکاؤنٹ بنائیں ←",
+    alreadyAccount: "کیا آپ کا پہلے سے اکاؤنٹ ہے؟",
+    emailPlaceholder: "you@example.com",
+    passwordPlaceholder: "اپنا پاس ورڈ درج کریں",
+    namePlaceholder: "اپنا پورا نام",
+    passwordPlaceholderSignup: "کم از کم 6 حروف",
+    confirmPlaceholder: "اپنا پاس ورڈ دوبارہ درج کریں"
+  }
+};
+
+function applyAuthLanguage() {
+  const lang = localStorage.getItem(EMPATH_LANGUAGE_KEY) || "en";
+  const t = AUTH_TRANSLATIONS[lang] || AUTH_TRANSLATIONS.en;
+
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ur" ? "rtl" : "ltr";
+
+  document.querySelectorAll("[data-i18n]").forEach(function(el) {
+    const key = el.getAttribute("data-i18n");
+    if (t[key] !== undefined) {
+      el.innerHTML = t[key];
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(function(el) {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (t[key] !== undefined) {
+      el.placeholder = t[key];
+    }
+  });
+
+  // Keep browser validation messages and dynamically generated button text
+  // consistent with the selected interface language.
+  window.EMPATH_AUTH_LANG = lang;
+  window.EMPATH_AUTH_TRANSLATIONS = t;
+}
+
+document.addEventListener("DOMContentLoaded", applyAuthLanguage);
+
 function switchTab(tab) {
   const loginForm  = document.getElementById('loginForm');
   const signupForm = document.getElementById('signupForm');
@@ -389,6 +739,43 @@ function switchTab(tab) {
     signupTab.classList.add('active');
     loginTab.classList.remove('active');
   }
+}
+
+
+/* ---------- localized dynamic messages ---------- */
+function authText(key) {
+  const lang = localStorage.getItem(EMPATH_LANGUAGE_KEY) || "en";
+
+  const messages = {
+    en: {
+      creating: "Creating account…",
+      accountCreated: "Account created! Redirecting to dashboard…",
+      signupFailed: "Signup failed. Please try again.",
+      network: "Network error. Please try again.",
+      loggingIn: "Logging in…",
+      welcomeUser: "Welcome back, {name}! Redirecting…",
+      loginFailed: "Login failed. Please check your credentials.",
+      dobRequired: "Please enter your date of birth.",
+      age: "You must be 18 or older. You are {age} years old.",
+      mismatch: "Passwords do not match.",
+      shortPassword: "Password must be at least 6 characters."
+    },
+    ur: {
+      creating: "اکاؤنٹ بنایا جا رہا ہے…",
+      accountCreated: "اکاؤنٹ بن گیا! ڈیش بورڈ پر منتقل کیا جا رہا ہے…",
+      signupFailed: "سائن اَپ ناکام ہوگیا۔ دوبارہ کوشش کریں۔",
+      network: "نیٹ ورک کا مسئلہ ہے۔ دوبارہ کوشش کریں۔",
+      loggingIn: "لاگ اِن کیا جا رہا ہے…",
+      welcomeUser: "خوش آمدید، {name}! منتقل کیا جا رہا ہے…",
+      loginFailed: "لاگ اِن ناکام ہوگیا۔ اپنی معلومات چیک کریں۔",
+      dobRequired: "براہِ کرم اپنی تاریخِ پیدائش درج کریں۔",
+      age: "آپ کی عمر 18 سال یا اس سے زیادہ ہونی چاہیے۔ آپ کی عمر {age} سال ہے۔",
+      mismatch: "پاس ورڈ ایک جیسے نہیں ہیں۔",
+      shortPassword: "پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔"
+    }
+  };
+
+  return (messages[lang] || messages.en)[key];
 }
 
 function showError(msg) {
@@ -422,14 +809,14 @@ async function handleSignup(e) {
   const password = document.getElementById('signupPassword').value;
   const confirm  = document.getElementById('signupConfirm').value;
 
-  if (!dob) { showError('Please enter your date of birth.'); return; }
+  if (!dob) { showError(authText('dobRequired')); return; }
   const age = calcAge(dob);
-  if (age < 18) { showError(`You must be 18 or older. You are ${age} years old.`); return; }
-  if (password !== confirm) { showError('Passwords do not match.'); return; }
-  if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
+  if (age < 18) { showError(authText('age').replace('{age}', age)); return; }
+  if (password !== confirm) { showError(authText('mismatch')); return; }
+  if (password.length < 6) { showError(authText('shortPassword')); return; }
 
   const btn = document.getElementById('signupBtn');
-  btn.disabled = true; btn.textContent = 'Creating account…';
+  btn.disabled = true; btn.textContent = authText('creating');
 
   try {
     const res  = await fetch('/signup', {
@@ -439,13 +826,13 @@ async function handleSignup(e) {
     });
     const data = await res.json();
     if (res.ok) {
-      showSuccess('Account created! Redirecting to dashboard…');
+      showSuccess(authText('accountCreated'));
       setTimeout(() => window.location.href = '/dashboard', 1200);
     } else {
-      showError(data.error || 'Signup failed. Please try again.');
+      showError(data.error || authText('signupFailed'));
     }
-  } catch { showError('Network error. Please try again.'); }
-  finally { btn.disabled = false; btn.textContent = 'Create Account →'; }
+  } catch { showError(authText('network')); }
+  finally { btn.disabled = false; btn.textContent = AUTH_TRANSLATIONS[localStorage.getItem(EMPATH_LANGUAGE_KEY) || 'en'].createAccount; }
 }
 
 async function handleLogin(e) {
@@ -454,7 +841,7 @@ async function handleLogin(e) {
   const password = document.getElementById('loginPassword').value;
 
   const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = 'Logging in…';
+  btn.disabled = true; btn.textContent = authText('loggingIn');
 
   try {
     const res  = await fetch('/login', {
@@ -464,13 +851,13 @@ async function handleLogin(e) {
     });
     const data = await res.json();
     if (res.ok) {
-      showSuccess(`Welcome back, ${data.name}! Redirecting…`);
+      showSuccess(authText('welcomeUser').replace('{name}', data.name));
       setTimeout(() => window.location.href = '/dashboard', 1000);
     } else {
-      showError(data.error || 'Login failed. Please check your credentials.');
+      showError(data.error || authText('loginFailed'));
     }
-  } catch { showError('Network error. Please try again.'); }
-  finally { btn.disabled = false; btn.textContent = 'Login →'; }
+  } catch { showError(authText('network')); }
+  finally { btn.disabled = false; btn.textContent = AUTH_TRANSLATIONS[localStorage.getItem(EMPATH_LANGUAGE_KEY) || 'en'].loginButton; }
 }
 
 const urlParams = new URLSearchParams(window.location.search);

@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Words of Hope — Empath AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -296,7 +297,10 @@ nav {
   justify-content: center;
   align-items: center;
 }
-.helpline-footer strong { color: var(--dark-2); }
+
+.helpline-footer strong {
+  color: var(--dark-2);
+}
 
 @media (max-width: 600px) {
   nav { padding: 12px 16px; }
@@ -321,20 +325,20 @@ nav {
       </div>
       <div class="brand-text">
         <span class="brand-name">Empath AI</span>
-        <span class="brand-sub">IDP Mental Health</span>
+        <span class="brand-sub" data-i18n="brandSub">IDP Mental Health</span>
       </div>
     </a>
     <div class="nav-divider"></div>
-    <span class="nav-page-label">Words of Hope</span>
+    <span class="nav-page-label" data-i18n="pageLabel">Words of Hope</span>
   </div>
   <div class="nav-right">
-    <a href="/dashboard" class="nav-btn-green">Dashboard</a>
+    <a href="/dashboard" class="nav-btn-green" data-i18n="dashboard">Dashboard</a>
     <button class="nav-btn-orange" onclick="loadQuotes()">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
         <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
         <path d="M12 2l.4 2.7L9.7 5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      New Words
+      <span data-i18n="newWords">New Words</span>
     </button>
   </div>
 </nav>
@@ -343,33 +347,43 @@ nav {
 <div class="main">
 
   <div class="page-title">
-    <h1>Words of Hope</h1>
+    <h1 data-i18n="pageTitle">Words of Hope</h1>
     <div class="subtitle">
-      <span>Quran &amp; Hadith</span>
+      <span data-i18n="quranHadith">Quran &amp; Hadith</span>
       <span class="subtitle-sep">·</span>
-      <span>Pakistani Leaders</span>
+      <span data-i18n="pakistaniLeaders">Pakistani Leaders</span>
       <span class="subtitle-sep">·</span>
-      <span>World Voices</span>
+      <span data-i18n="worldVoices">World Voices</span>
     </div>
   </div>
 
   <div class="quotes-grid" id="quotesGrid">
     <div class="loading-wrap">
       <div class="loading-dots"><span></span><span></span><span></span></div>
-      <span>Finding words for you...</span>
+      <span data-i18n="loading">Finding words for you...</span>
     </div>
   </div>
 
   <p class="footer-note">
-    These words are here to remind you that you are not alone — many have walked through hardship and found their way through.
+    <span data-i18n="footerNote">These words are here to remind you that you are not alone — many have walked through hardship and found their way through.</span>
   </p>
 
 </div>
 
+
 <!-- HELPLINE FOOTER -->
 <div class="helpline-footer">
-  <span>🆘 Crisis helplines always available:</span>
-  <span><strong>1122</strong> Emergency &nbsp;|&nbsp; <strong>0317-4288665</strong> Umang &nbsp;|&nbsp; <strong>051-2890505</strong> Rozan</span>
+    <span id="helplineLabel"></span>
+    <span>
+        <strong dir="ltr">1122</strong>
+        <span id="emergencyLabel"></span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">0317-4288665</strong>
+        <span id="umangLabel"></span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">051-2890505</strong>
+        <span id="rozanLabel"></span>
+    </span>
 </div>
 
 </div>
@@ -384,51 +398,180 @@ const BADGE_CLASS = {
   home:       'badge-home'
 };
 
+/*
+ * IMPORTANT:
+ * Quotes are NOT passed through the normal UI translation dictionary.
+ * This prevents a translation key from changing the meaning of a quote.
+ *
+ * The API is asked for the selected language. For Urdu it should return
+ * the Urdu version in one of these fields:
+ *   quoteUr / quote_ur / urdu_quote / translation_ur
+ *
+ * If the API does not provide an Urdu quote, the original quote is kept
+ * instead of silently machine-translating or changing its meaning.
+ */
+
+const translations = {
+  en: {
+    brandSub: "IDP Mental Health",
+    pageLabel: "Words of Hope",
+    dashboard: "Dashboard",
+    newWords: "New Words",
+    pageTitle: "Words of Hope",
+    quranHadith: "Quran & Hadith",
+    pakistaniLeaders: "Pakistani Leaders",
+    worldVoices: "World Voices",
+    loading: "Finding words for you...",
+    footerNote: "These words are here to remind you that you are not alone — many have walked through hardship and found their way through.",
+    helpline: "🆘 Crisis helplines always available:",
+emergency: "Emergency",
+umang: "Umang",
+rozan: "Rozan",
+    
+    loadError: "Could not load quotes right now. Please try again."
+  },
+  ur: {
+    brandSub: "اندرونِ ملک بے گھر افراد کی ذہنی صحت",
+    pageLabel: "امید کے الفاظ",
+    dashboard: "ڈیش بورڈ",
+    newWords: "نئے الفاظ",
+    pageTitle: "امید کے الفاظ",
+    quranHadith: "قرآن اور حدیث",
+    pakistaniLeaders: "پاکستانی رہنما",
+    worldVoices: "دنیا بھر کی آوازیں",
+    loading: "آپ کے لیے الفاظ تلاش کیے جا رہے ہیں...",
+    footerNote: "یہ الفاظ آپ کو یاد دلانے کے لیے ہیں کہ آپ اکیلے نہیں ہیں — بہت سے لوگوں نے مشکلات کا سامنا کیا اور ان سے گزرنے کا راستہ پایا۔",
+   helpline: "🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:",
+emergency: "ایمرجنسی",
+umang: "اُمنگ",
+rozan: "روزن",
+    loadError: "اس وقت اقوال لوڈ نہیں ہو سکے۔ براہِ کرم دوبارہ کوشش کریں۔"
+  }
+};
+
+function getCurrentLanguage() {
+  return localStorage.getItem("empathLanguage") || "en";
+}
+
+function applyLanguage(language) {
+  const lang = language === "ur" ? "ur" : "en";
+  const dict = translations[lang];
+
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ur" ? "rtl" : "ltr";
+
+  document.querySelectorAll("[data-i18n]").forEach(function(el) {
+    const key = el.getAttribute("data-i18n");
+    if (dict[key] !== undefined) el.textContent = dict[key];
+  });
+
+  // Helpline footer
+  document.getElementById("helplineLabel").textContent = dict.helpline;
+  document.getElementById("emergencyLabel").textContent = dict.emergency;
+  document.getElementById("umangLabel").textContent = dict.umang;
+  document.getElementById("rozanLabel").textContent = dict.rozan;
+
+  return lang;
+}
+
+
 async function loadQuotes() {
   const grid = document.getElementById('quotesGrid');
+  const language = getCurrentLanguage();
+  applyLanguage(language);
 
   grid.innerHTML = `<div class="loading-wrap">
     <div class="loading-dots"><span></span><span></span><span></span></div>
-    <span>Finding words for you...</span>
+    <span data-i18n="loading">${translations[language].loading}</span>
   </div>`;
 
   try {
-    const res  = await fetch('/api/quotes');
+    /*
+     * The selected language is sent to the quotes API.
+     * This is separate from the UI translation dictionary so quote meaning
+     * is never altered by a generic translation key.
+     */
+    const res = await fetch('/api/quotes?language=' + encodeURIComponent(language));
     const data = await res.json();
 
     grid.innerHTML = '';
-    data.quotes.forEach(q => {
-      const cat      = (q.category || 'hope').toLowerCase();
-      const type     = (q.type || 'international').toLowerCase();
-      const badgeCls = BADGE_CLASS[cat] || 'badge-hope';
-      const cardCls  = ['quran','hadith'].includes(type) ? `card-${type}`
-                     : type === 'quaid' ? 'card-quaid'
-                     : type === 'iqbal' ? 'card-iqbal'
-                     : 'card-international';
+
+    (data.quotes || []).forEach(q => {
+     const cat      = (q.category_key || q.category || 'hope').toLowerCase();
+const type     = (q.type || 'international').toLowerCase();
+
+const badgeCls = BADGE_CLASS[cat] || 'badge-hope';
+
+const cardCls  = ['quran', 'hadith'].includes(type)
+               ? `card-${type}`
+               : type === 'quaid'
+               ? 'card-quaid'
+               : type === 'iqbal'
+               ? 'card-iqbal'
+               : 'card-international';
+
+/*
+ * IMPORTANT:
+ * The API already returns the quote in the selected language.
+ * Do NOT translate the quote here.
+ */
+const quoteText = q.quote || "";
+const personText = q.person || "";
+const titleText = q.title || "";
+const categoryText = q.category || "";
 
       const card = document.createElement('div');
       card.className = `quote-card ${cardCls}`;
-      card.innerHTML = `
-        <span class="quote-mark">\u201C</span>
-        <p class="quote-text">${q.quote}</p>
-        <div class="quote-footer">
-          <div class="quote-person">
-            <span class="person-name">${q.person}</span>
-            <span class="person-title">${q.title}</span>
-          </div>
-          <span class="badge ${badgeCls}">${q.category}</span>
-        </div>`;
+
+      const mark = document.createElement('span');
+      mark.className = 'quote-mark';
+      mark.textContent = '\u201C';
+
+      const quote = document.createElement('p');
+      quote.className = 'quote-text';
+      quote.textContent = quoteText || "";
+
+      const footer = document.createElement('div');
+      footer.className = 'quote-footer';
+
+      const person = document.createElement('div');
+      person.className = 'quote-person';
+
+      const personName = document.createElement('span');
+      personName.className = 'person-name';
+      personName.textContent = personText || "";
+
+      const personTitle = document.createElement('span');
+      personTitle.className = 'person-title';
+      personTitle.textContent = titleText || "";
+
+      const badge = document.createElement('span');
+      badge.className = `badge ${badgeCls}`;
+      badge.textContent = categoryText || "";
+
+      person.appendChild(personName);
+      person.appendChild(personTitle);
+      footer.appendChild(person);
+      footer.appendChild(badge);
+
+      card.appendChild(mark);
+      card.appendChild(quote);
+      card.appendChild(footer);
       grid.appendChild(card);
     });
 
   } catch (err) {
     grid.innerHTML = `<div class="loading-wrap" style="color:#9a7060;">
-      <span>Could not load quotes right now. Please try again.</span>
+      <span data-i18n="loadError">${translations[language].loadError}</span>
     </div>`;
   }
 }
 
-loadQuotes();
+/* Read the language chosen on the intro page. */
+document.addEventListener("DOMContentLoaded", function() {
+  applyLanguage(getCurrentLanguage());
+  loadQuotes();
+});
 </script>
 </body>
 </html>

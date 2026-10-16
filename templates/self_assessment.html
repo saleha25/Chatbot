@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
     <title>Weekly Self Assessment — Empath AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -66,12 +67,20 @@
         }
         .nav-btn-orange:hover { background: var(--orange-2); }
 
-        .disclaimer {
-            background: #fff8f0; border-bottom: 1px solid rgba(217,106,53,0.18);
-            padding: 9px 32px; font-size: 12.5px; color: #7a4a20;
-            text-align: center; flex-shrink: 0; line-height: 1.5;
-        }
-        .disclaimer strong { color: var(--orange); }
+       .disclaimer {
+    background: #fff8f0;
+    border-bottom: 1px solid rgba(217,106,53,0.18);
+    padding: 9px 32px;
+    font-size: 12.5px;
+    color: #7a4a20;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1.5;
+}
+
+.disclaimer strong {
+    color: var(--orange);
+}
 
         .main { flex: 1; padding: 40px 20px 56px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
 
@@ -204,7 +213,40 @@
             display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center;
         }
         .helpline-footer strong { color: var(--dark-2); }
-    </style>
+            .urdu-page { font-family: 'DM Sans', 'Noto Nastaliq Urdu', Tahoma, sans-serif; }
+        .urdu-page .q-text, .urdu-page .opt-btn, .urdu-page .disclaimer,
+        .urdu-page .helpline-footer, .urdu-page .page-title, .urdu-page .nav-page-label,
+        .urdu-page .progress-label-text, .urdu-page .progress-count, .urdu-page .answered-val,
+        .urdu-page .result-card, .urdu-page .crisis-card { direction: rtl; text-align: right; }
+        .urdu-page .q-opts { padding-left: 0; padding-right: 54px; }
+        .urdu-page .name-input-wrap { padding-left: 0; padding-right: 54px; }
+        .urdu-page .loading-dots { padding-left: 0; padding-right: 54px; }
+        .urdu-page .q-card-top { flex-direction: row-reverse; }
+        .urdu-page .progress-meta { direction: rtl; }
+        .urdu-page .subtitle { direction: rtl; }
+        .ltr-number {
+    direction: ltr !important;
+    unicode-bidi: isolate !important;
+    display: inline-block;
+}
+/* FINAL CENTERING — DISCLAIMER + FOOTER ONLY */
+
+html[dir="rtl"] .disclaimer {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    direction: rtl !important;
+    text-align: center !important;
+}
+
+html[dir="rtl"] .helpline-footer {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    direction: rtl !important;
+    text-align: center !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+</style>
 </head>
 <body>
 <div class="page">
@@ -220,27 +262,31 @@
                 </div>
                 <div class="brand-text">
                     <span class="brand-name">Empath AI</span>
-                    <span class="brand-sub">IDP Mental Health</span>
+                    <span class="brand-sub" id="brandSub">IDP Mental Health</span>
                 </div>
             </a>
             <div class="nav-divider"></div>
-            <span class="nav-page-label">Self Assessment</span>
+            <span class="nav-page-label" id="navPageLabel">Self Assessment</span>
         </div>
         <div class="nav-right">
-            <a href="/dashboard" class="nav-btn-green">Dashboard</a>
-            <button class="nav-btn-orange" onclick="restartAssessment()">↺ Restart</button>
+            <a href="/dashboard" class="nav-btn-green" id="dashboardBtn">Dashboard</a>
+            <button class="nav-btn-orange" onclick="restartAssessment()" id="restartBtn">↺ Restart</button>
         </div>
     </nav>
 
     <div class="disclaimer">
-        This is a support tool, not a replacement for professional care. &nbsp;
-        If you are in immediate danger, call <strong>1122</strong> or Umang: <strong>0317-4288665</strong>
-    </div>
+    <span id="disclaimerText">This is a support tool, not a replacement for professional care.</span>
+    &nbsp;
+    <span id="dangerText">If you are in immediate danger, call</span>
+    <strong dir="ltr" class="ltr-number">1122</strong>
+    <span id="umangCall">or Umang:</span>
+    <strong dir="ltr" class="ltr-number">0317-4288665</strong>
+</div>
 
     <div class="main">
 
         <div class="page-title">
-            <h1>Weekly Self Assessment</h1>
+            <h1 id="pageTitle">Weekly Self Assessment</h1>
             <div class="subtitle">
                 <span>PHQ-9</span><span class="subtitle-sep">·</span>
                 <span>GAD-7</span><span class="subtitle-sep">·</span>
@@ -261,14 +307,104 @@
 
     </div>
 
-    <div class="helpline-footer">
-        <span>🆘 Crisis helplines always available:</span>
-        <span><strong>1122</strong> Emergency &nbsp;|&nbsp; <strong>0317-4288665</strong> Umang &nbsp;|&nbsp; <strong>051-2890505</strong> Rozan</span>
-    </div>
+<div class="helpline-footer">
+    <span id="helplineLabel">🆘 Crisis helplines always available:</span>
+    <span>
+        <strong dir="ltr">1122</strong>
+        <span id="emergencyLabel">Emergency</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">0317-4288665</strong>
+        <span id="umangLabel">Umang</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">051-2890505</strong>
+        <span id="rozanLabel">Rozan</span>
+    </span>
+</div>
 </div>
 
 <script>
+    // Read the language selected on the starting/intro page.
+    // Supports the URL (?language=ur) and common localStorage keys.
+    const urlLanguage = new URLSearchParams(window.location.search).get('language');
+    const storedLanguage =
+        localStorage.getItem('empathLanguage') ||
+        localStorage.getItem('language') ||
+        localStorage.getItem('selectedLanguage') ||
+        localStorage.getItem('appLanguage') ||
+        'en';
+    const language = (urlLanguage || storedLanguage).toLowerCase() === 'ur' ? 'ur' : 'en';
+    const isUrdu = language === 'ur';
+
+    document.documentElement.lang = language;
+    document.documentElement.dir = isUrdu ? 'rtl' : 'ltr';
+
+    if (isUrdu) {
+        document.body.classList.add('urdu-page');
+    }
+
+    const UI = isUrdu ? {
+        page: 'خود جائزہ',
+        dashboard: 'ڈیش بورڈ',
+        restart: '↺ دوبارہ شروع کریں',
+        disclaimer: 'یہ ایک معاونت کا ذریعہ ہے، پیشہ ورانہ علاج کا متبادل نہیں۔',
+        danger: 'اگر آپ فوری خطرے میں ہیں تو',
+        umangCall: 'یا اُمنگ:',
+        gettingStarted: 'شروع کرتے ہیں...',
+        complete: '✓ مکمل ہوگیا!',
+        question: 'سوال',
+        of: 'میں سے',
+        allDone: '✓ تمام سوالات مکمل ہوگئے!',
+        supportNeeded: 'مدد کی ضرورت ہے',
+        results: 'آپ کے نتائج',
+       crisisHelplines: '🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:',
+        emergency: 'ایمرجنسی',
+        umangLabel: 'اُمنگ',
+        rozanLabel: 'روزن',
+        talkResults: 'اپنے نتائج کے بارے میں Empath AI سے بات کریں →',
+        talkNow: 'ابھی Empath AI سے بات کریں →',
+        brandSub: 'آئی ڈی پی ذہنی صحت',
+        namePlaceholder: 'اپنا نام درج کریں...',
+        continueBtn: 'جاری رکھیں →'
+    } : {
+        page: 'Self Assessment',
+        dashboard: 'Dashboard',
+        restart: '↺ Restart',
+        disclaimer: 'This is a support tool, not a replacement for professional care.',
+        danger: 'If you are in immediate danger, call',
+        umangCall: 'or Umang:',
+        gettingStarted: 'Getting started...',
+        complete: '✓ All done!',
+        question: 'Question',
+        of: 'of',
+        allDone: '✓ All done!',
+        supportNeeded: 'Support needed',
+        results: 'Your Results',
+        crisisHelplines: '🆘 Crisis helplines always available:',
+        emergency: 'Emergency',
+        umangLabel: 'Umang',
+        rozanLabel: 'Rozan',
+        talkResults: 'Talk to Empath AI about your results →',
+        talkNow: 'Talk to Empath AI now →',
+        brandSub: 'IDP Mental Health',
+        namePlaceholder: 'Enter your name...',
+        continueBtn: 'Continue →'
+    };
+
     const TOTAL = 21;
+    document.getElementById('navPageLabel').textContent = UI.page;
+    document.getElementById('brandSub').textContent = UI.brandSub;
+    document.getElementById('dashboardBtn').textContent = UI.dashboard;
+    document.getElementById('restartBtn').textContent = UI.restart;
+    document.getElementById('pageTitle').textContent = isUrdu ? 'ہفتہ وار خود جائزہ' : 'Weekly Self Assessment';
+    document.getElementById('disclaimerText').textContent = UI.disclaimer;
+    document.getElementById('dangerText').textContent = UI.danger;
+    document.getElementById('umangCall').textContent = UI.umangCall;
+    document.getElementById('helplineLabel').textContent = UI.crisisHelplines;
+    document.getElementById('emergencyLabel').textContent = UI.emergency;
+    document.getElementById('umangLabel').textContent = UI.umangLabel;
+    document.getElementById('rozanLabel').textContent = UI.rozanLabel;
+
+
     let qAnswered = 0;
     let currentQIndex = 0;
     let isNameStep = false;
@@ -287,10 +423,10 @@
         const pct = Math.round((answered / TOTAL) * 100);
         document.getElementById('progressFill').style.width = pct + '%';
         document.getElementById('progressCount').textContent =
-            answered >= TOTAL ? 'Complete!' : `${answered} of ${TOTAL}`;
+            answered >= TOTAL ? UI.complete : (isUrdu ? `${answered} ${UI.of} ${TOTAL}` : `${answered} of ${TOTAL}`);
         document.getElementById('progressLabel').textContent =
-            label || (answered === 0 ? 'Getting started...' :
-            answered >= TOTAL ? '✓ All done!' : `Question ${answered} of ${TOTAL}`);
+            label || (answered === 0 ? UI.gettingStarted :
+            answered >= TOTAL ? UI.allDone : (isUrdu ? `${UI.question} ${answered} ${UI.of} ${TOTAL}` : `Question ${answered} of ${TOTAL}`));
 
         for (let i = 0; i < TOTAL; i++) {
             const dot = document.getElementById('dot-' + i);
@@ -324,8 +460,8 @@
         let body = '';
         if (isName) {
             body = `<div class="name-input-wrap">
-                <input id="nameInput" type="text" placeholder="Enter your name..." autocomplete="off"/>
-                <button onclick="submitName()">Continue →</button>
+                <input id="nameInput" type="text" placeholder="${UI.namePlaceholder}" autocomplete="off"/>
+                <button onclick="submitName()">${UI.continueBtn}</button>
             </div>`;
         } else {
             body = `<div class="q-opts" id="currentOpts">` +
@@ -395,7 +531,7 @@
             if (
                 line.toLowerCase().includes('personal guidance') ||
                 line.toLowerCase().includes('comments') ||
-                line.toLowerCase().includes('advice')
+                line.toLowerCase().includes('advice') || line.includes('ذاتی رہنمائی') || line.includes('رہنمائی')
             ) {
                 inAdvice = true;
                 return;
@@ -408,7 +544,7 @@
             }
         });
 
-        let html = `<h3>Your Results</h3>`;
+        let html = `<h3>${UI.results}</h3>`;
 
         if (otherLines.length > 0) {
             html += `<div class="advice-block" style="margin-bottom:16px;">${otherLines.join('<br>')}</div>`;
@@ -435,9 +571,9 @@
 
                 const sevLower = sev.toLowerCase();
                 const sevClass =
-                    sevLower.includes('severe') ? 'sev-severe' :
-                    sevLower.includes('moderate') ? 'sev-moderate' :
-                    sevLower.includes('mild') ? 'sev-mild' :
+                    sevLower.includes('severe') || sev.includes('شدید') ? 'sev-severe' :
+                    sevLower.includes('moderate') || sev.includes('درمیانہ') ? 'sev-moderate' :
+                    sevLower.includes('mild') || sev.includes('ہلکا') ? 'sev-mild' :
                     'sev-minimal';
 
                 html += `
@@ -458,7 +594,7 @@
             html += `<div class="advice-block">${adviceLines.join('<br>')}</div>`;
         }
 
-       html += `<a class="chat-cta" href="/app?crisis=1">Talk to Empath AI about your results →</a>`;
+       html += `<a class="chat-cta" href="/app?crisis=1">${UI.talkResults}</a>`;
 
         card.innerHTML = html;
         wrap.appendChild(card);
@@ -476,7 +612,7 @@
         card.innerHTML = `
             <p>${text.replace(/\n/g, '<br>')}</p>
             <a class="chat-cta" href="/app?crisis=1" style="margin-top:16px;display:block;">
-    Talk to Empath AI now →
+    ${UI.talkNow}
 </a>`;
         wrap.appendChild(card);
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -541,7 +677,7 @@
             const res = await fetch('/assessment_chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
+                body: JSON.stringify({ message, language })
             });
             const data = await res.json();
             removeLoading();
@@ -557,13 +693,13 @@
 
         if (type === 'already_done' || type === 'result') {
             renderResult(response);
-            updateProgress(TOTAL, '✓ Assessment complete!');
+            updateProgress(TOTAL, UI.complete);
             return;
         }
 
         if (type === 'crisis') {
             renderCrisis(response);
-            updateProgress(TOTAL, 'Support needed');
+            updateProgress(TOTAL, UI.supportNeeded);
             return;
         }
 
@@ -574,25 +710,25 @@
     }
 
     async function restartAssessment() {
-        await fetch('/assessment_chat_reset', { method: 'POST' });
+        await fetch('/assessment_chat_reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language }) });
         document.getElementById('questionsWrap').innerHTML = '';
         document.getElementById('progressWrap').style.display = '';
         qAnswered = 0;
         currentQIndex = 0;
         isNameStep = false;
-        updateProgress(0, 'Getting started...');
+        updateProgress(0, UI.gettingStarted);
         initAssessment();
     }
 
     async function initAssessment() {
         try {
-            const res = await fetch('/assessment_chat_init');
+            const res = await fetch('/assessment_chat_init?language=' + encodeURIComponent(language));
             const data = await res.json();
             const { response, options, type } = data;
 
             if (type === 'already_done' || type === 'result') {
                 renderResult(response);
-                updateProgress(TOTAL, '✓ Assessment complete!');
+                updateProgress(TOTAL, UI.complete);
                 return;
             }
 
@@ -609,6 +745,7 @@
             console.error('Init error:', err);
         }
     }
+    updateProgress(0, UI.gettingStarted);
 
     window.onload = initAssessment;
 </script>

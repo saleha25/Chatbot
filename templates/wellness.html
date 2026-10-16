@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
     <title>Wellness Progress — Empath AI</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -255,6 +256,30 @@
         }
         .helpline-footer strong { color: var(--dark-2); }
 
+
+        /* ── URDU LANGUAGE SUPPORT ── */
+        .urdu-page { font-family: Tahoma, 'Noto Naskh Arabic', 'Noto Nastaliq Urdu', sans-serif; }
+        .urdu-page .brand-sub,
+        .urdu-page .nav-page-label,
+        .urdu-page .page-header,
+        .urdu-page .mini-label,
+        .urdu-page .subtext,
+        .urdu-page .chart-title,
+        .urdu-page .chart-subtitle,
+        .urdu-page .table-card,
+        .urdu-page .empty-box,
+        .urdu-page .helpline-footer { direction: rtl; text-align: right; }
+        .urdu-page .main,
+        .urdu-page .summary-grid,
+        .urdu-page .chart-grid { direction: rtl; }
+        .urdu-page .summary-card,
+        .urdu-page .chart-card,
+        .urdu-page .chart-header { text-align: right; direction: rtl; }
+        .urdu-page table { direction: rtl; }
+        .urdu-page thead th,
+        .urdu-page tbody td { text-align: right; }
+        .urdu-page .nav-left { flex-direction: row-reverse; }
+
         /* ── RESPONSIVE ── */
         @media (max-width: 1080px) {
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -267,6 +292,42 @@
             .chart-grid { grid-template-columns: 1fr; }
         }
     </style>
+
+<style>
+html[dir="rtl"] .empty-state,
+html[dir="rtl"] .empty,
+html[dir="rtl"] [data-i18n="emptyState"] {
+    direction: rtl !important;
+    text-align: center !important;
+    unicode-bidi: plaintext;
+    font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Jameel Noori Nastaleeq", serif;
+    line-height: 2.1;
+}
+html[dir="rtl"] body {
+    direction: rtl;
+}
+</style>
+
+
+<style id="urdu-wellness-title-fix">
+html[dir="rtl"] .wellness-title,
+html[dir="rtl"] h1.wellness-title {
+    direction: rtl !important;
+    text-align: right !important;
+    font-family: "Noto Nastaliq Urdu", "Noto Naskh Arabic", "Jameel Noori Nastaleeq", serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.65 !important;
+    font-size: clamp(32px, 3.2vw, 52px) !important;
+}
+html[dir="rtl"] .wellness-subtitle {
+    direction: rtl !important;
+    text-align: right !important;
+    font-family: "Noto Naskh Arabic", "Noto Nastaliq Urdu", serif !important;
+    line-height: 2 !important;
+}
+</style>
+
 </head>
 <body>
 <div class="page">
@@ -283,14 +344,14 @@
                 </div>
                 <div class="brand-text">
                     <span class="brand-name">Empath AI</span>
-                    <span class="brand-sub">IDP Mental Health</span>
+                    <span class="brand-sub" id="brandSub">IDP Mental Health</span>
                 </div>
             </a>
             <div class="nav-divider"></div>
-            <span class="nav-page-label">Wellness Progress</span>
+            <span class="nav-page-label" id="navPageLabel">Wellness Progress</span>
         </div>
         <div class="nav-right">
-            <a href="/dashboard" class="nav-btn-green">Dashboard</a>
+            <a href="/dashboard" class="nav-btn-green" id="dashboardBtn">Dashboard</a>
         </div>
     </nav>
 
@@ -298,8 +359,8 @@
     <div class="main">
 
         <div class="page-header">
-            <h1>{{ session.get('name', 'Your') }}'s Wellness Progress</h1>
-            <p>Tracking mood, sleep, and energy from your conversations — updated automatically as you chat.</p>
+            <h1 class="wellness-title" id="pageTitle">{{ session.get('name', 'Your') }}'s Wellness Progress</h1>
+            <p id="pageSubtitle">Tracking mood, sleep, and energy from your conversations — updated automatically as you chat.</p>
         </div>
 
         {% if has_data %}
@@ -307,24 +368,24 @@
         <!-- SUMMARY -->
         <div class="summary-grid">
             <div class="summary-card">
-                <div class="mini-label">Avg Sleep</div>
+                <div class="mini-label" data-i18n="avgSleep">Avg Sleep</div>
                 <div class="big-value">{{ summary.avg_sleep }}</div>
-                <div class="subtext">hours per night</div>
+                <div class="subtext" data-i18n="hoursPerNight">hours per night</div>
             </div>
             <div class="summary-card">
-                <div class="mini-label">Latest Mood</div>
+                <div class="mini-label" data-i18n="latestMood">Latest Mood</div>
                 <div class="value-text">{{ summary.latest_mood }}</div>
-                <div class="subtext">from last chat</div>
+                <div class="subtext" data-i18n="fromLastChat">from last chat</div>
             </div>
             <div class="summary-card">
-                <div class="mini-label">Latest Energy</div>
+                <div class="mini-label" data-i18n="latestEnergy">Latest Energy</div>
                 <div class="value-text">{{ summary.latest_energy }}</div>
-                <div class="subtext">from last chat</div>
+                <div class="subtext" data-i18n="fromLastChat">from last chat</div>
             </div>
             <div class="summary-card">
-                <div class="mini-label">Assessments Done</div>
+                <div class="mini-label" data-i18n="assessmentsDone">Assessments Done</div>
                 <div class="value-text">{{ summary.total_assessments }} check-ins</div>
-                <div class="subtext">weekly assessments</div>
+                <div class="subtext" data-i18n="weeklyAssessments">weekly assessments</div>
             </div>
         </div>
 
@@ -332,32 +393,32 @@
         <div class="chart-grid">
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3 class="chart-title">Sleep Hours</h3>
-                    <p class="chart-subtitle">Hours slept — mentioned naturally in conversation</p>
+                    <h3 class="chart-title" data-i18n="sleepHours">Sleep Hours</h3>
+                    <p class="chart-subtitle" data-i18n="sleepSubtitle">Hours slept — mentioned naturally in conversation</p>
                 </div>
                 <div class="chart-box"><canvas id="sleepChart"></canvas></div>
             </div>
 
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3 class="chart-title">Mood Over Time</h3>
-                    <p class="chart-subtitle">How your mood has been — extracted from what you shared</p>
+                    <h3 class="chart-title" data-i18n="moodOverTime">Mood Over Time</h3>
+                    <p class="chart-subtitle" data-i18n="moodSubtitle">How your mood has been — extracted from what you shared</p>
                 </div>
                 <div class="chart-box"><canvas id="moodChart"></canvas></div>
             </div>
 
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3 class="chart-title">Energy Level</h3>
-                    <p class="chart-subtitle">Energy levels mentioned in conversation</p>
+                    <h3 class="chart-title" data-i18n="energyLevel">Energy Level</h3>
+                    <p class="chart-subtitle" data-i18n="energySubtitle">Energy levels mentioned in conversation</p>
                 </div>
                 <div class="chart-box"><canvas id="energyChart"></canvas></div>
             </div>
 
             <div class="chart-card">
                 <div class="chart-header">
-                    <h3 class="chart-title">Assessment Score Trend</h3>
-                    <p class="chart-subtitle">PHQ-9, GAD-7 and WHO-5 over weekly check-ins — out of 10</p>
+                    <h3 class="chart-title" data-i18n="assessmentTrend">Assessment Score Trend</h3>
+                    <p class="chart-subtitle" data-i18n="assessmentTrendSubtitle">PHQ-9, GAD-7 and WHO-5 over weekly check-ins — out of 10</p>
                 </div>
                 <div class="chart-box"><canvas id="assessmentChart"></canvas></div>
             </div>
@@ -366,18 +427,18 @@
         <!-- TABLE -->
         <div class="table-card">
             <div class="chart-header">
-                <h3 class="chart-title">Assessment History</h3>
-                <p class="chart-subtitle">All your weekly self-assessment results</p>
+                <h3 class="chart-title" data-i18n="assessmentHistory">Assessment History</h3>
+                <p class="chart-subtitle" data-i18n="assessmentHistorySubtitle">All your weekly self-assessment results</p>
             </div>
             <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>PHQ-9 Depression</th>
-                            <th>GAD-7 Anxiety</th>
-                            <th>WHO-5 Wellbeing</th>
-                            <th>Severity</th>
+                            <th data-i18n="date">Date</th>
+                            <th data-i18n="phqDepression">PHQ-9 Depression</th>
+                            <th data-i18n="gadAnxiety">GAD-7 Anxiety</th>
+                            <th data-i18n="whoWellbeing">WHO-5 Wellbeing</th>
+                            <th data-i18n="severity">Severity</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -398,7 +459,7 @@
         {% else %}
 
         <div class="empty-box">
-            <p>No wellness data found yet. Start chatting or complete a self-assessment to see your progress here.</p>
+            <p id="emptyMessage">No wellness data found yet. Start chatting or complete a self-assessment to see your progress here.</p>
         </div>
 
         {% endif %}
@@ -406,12 +467,166 @@
     </div>
 
     <!-- HELPLINE FOOTER -->
-    <div class="helpline-footer">
-        <span>🆘 Crisis helplines always available:</span>
-        <span><strong>1122</strong> Emergency &nbsp;|&nbsp; <strong>0317-4288665</strong> Umang &nbsp;|&nbsp; <strong>051-2890505</strong> Rozan</span>
-    </div>
+   <div class="helpline-footer">
+    <span id="helplineLabel">🆘 Crisis helplines always available:</span>
+    <span>
+        <strong dir="ltr">1122</strong>
+        <span id="emergencyLabel">Emergency</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">0317-4288665</strong>
+        <span id="umangLabel">Umang</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">051-2890505</strong>
+        <span id="rozanLabel">Rozan</span>
+    </span>
+</div>
 
 </div>
+
+
+<script>
+const savedWellnessLanguage = (
+    localStorage.getItem('empathLanguage') ||
+    localStorage.getItem('language') ||
+    localStorage.getItem('selectedLanguage') ||
+    localStorage.getItem('appLanguage') ||
+    {{ session.get('language', 'en')|tojson }} ||
+    'en'
+).toLowerCase().trim();
+
+const wellnessLanguage =
+    savedWellnessLanguage === 'ur' ||
+    savedWellnessLanguage === 'urdu' ||
+    savedWellnessLanguage.startsWith('ur-')
+        ? 'ur'
+        : 'en';
+
+const wellnessIsUrdu = wellnessLanguage === 'ur';
+
+const W = {
+    en: {
+        brandSub:'IDP Mental Health', page:'Wellness Progress', dashboard:'Dashboard',
+        pageSubtitle:'Tracking mood, sleep, and energy from your conversations — updated automatically as you chat.',
+        avgSleep:'Avg Sleep', hoursPerNight:'hours per night', latestMood:'Latest Mood',
+        latestEnergy:'Latest Energy', fromLastChat:'from last chat', assessmentsDone:'Assessments Done',
+        weeklyAssessments:'weekly assessments', sleepHours:'Sleep Hours',
+        sleepSubtitle:'Hours slept — mentioned naturally in conversation', moodOverTime:'Mood Over Time',
+        moodSubtitle:'How your mood has been — extracted from what you shared', energyLevel:'Energy Level',
+        energySubtitle:'Energy levels mentioned in conversation', assessmentTrend:'Assessment Score Trend',
+        assessmentTrendSubtitle:'PHQ-9, GAD-7 and WHO-5 over weekly check-ins — out of 10',
+        assessmentHistory:'Assessment History', assessmentHistorySubtitle:'All your weekly self-assessment results',
+        date:'Date', phqDepression:'PHQ-9 Depression', gadAnxiety:'GAD-7 Anxiety',
+        whoWellbeing:'WHO-5 Wellbeing', severity:'Severity',
+        emptyMessage:'No wellness data found yet. Start chatting or complete a self-assessment to see your progress here.',
+        helpline:'🆘 Crisis helplines always available:',
+emergency:'Emergency',
+umang:'Umang',
+rozan:'Rozan',
+        moodVeryLow:'Very Low', moodLow:'Low', moodOkay:'Okay', moodBetter:'Better',
+        energyVeryLow:'Very Low', energyLow:'Low', energyMedium:'Medium', energyHigh:'High',
+        minimal:'Minimal', mild:'Mild', moderate:'Moderate', severe:'Severe'
+    },
+    ur: {
+        brandSub:'آئی ڈی پی ذہنی صحت', page:'صحت کی پیش رفت', dashboard:'ڈیش بورڈ',
+        pageSubtitle:'آپ کی گفتگو سے موڈ، نیند اور توانائی کا خودکار طور پر ریکارڈ اور جائزہ لیا جا رہا ہے۔',
+        avgSleep:'اوسط نیند', hoursPerNight:'فی رات گھنٹے', latestMood:'حالیہ موڈ',
+        latestEnergy:'حالیہ توانائی', fromLastChat:'آخری گفتگو سے', assessmentsDone:'مکمل جائزے', checkIns:'چیک اِنز',
+        weeklyAssessments:'ہفتہ وار جائزے', sleepHours:'نیند کے گھنٹے',
+        sleepSubtitle:'گفتگو میں بتائے گئے نیند کے گھنٹے', moodOverTime:'وقت کے ساتھ موڈ',
+        moodSubtitle:'آپ کی گفتگو سے موڈ کی صورتحال', energyLevel:'توانائی کی سطح',
+        energySubtitle:'گفتگو میں بتائی گئی توانائی کی سطح', assessmentTrend:'جائزہ اسکور میں تبدیلی',
+        assessmentTrendSubtitle:'ہفتہ وار PHQ-9، GAD-7 اور WHO-5 اسکور — 10 میں سے',
+        assessmentHistory:'جائزوں کی تاریخ', assessmentHistorySubtitle:'آپ کے تمام ہفتہ وار خود جائزوں کے نتائج',
+        date:'تاریخ', phqDepression:'PHQ-9 ڈپریشن', gadAnxiety:'GAD-7 بے چینی',
+        whoWellbeing:'WHO-5 ذہنی بہبود', severity:'شدت',
+        emptyMessage:'ابھی صحت سے متعلق کوئی ڈیٹا موجود نہیں۔ گفتگو شروع کریں یا خود جائزہ مکمل کریں تاکہ آپ کی پیش رفت یہاں نظر آئے۔',
+        helpline:'🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:',
+emergency:'ایمرجنسی',
+umang:'اُمنگ',
+rozan:'روزن',
+        moodVeryLow:'بہت کم', moodLow:'کم', moodOkay:'ٹھیک', moodBetter:'بہتر',
+        energyVeryLow:'بہت کم', energyLow:'کم', energyMedium:'درمیانی', energyHigh:'زیادہ',
+        minimal:'کم سے کم', mild:'ہلکی', moderate:'درمیانی', severe:'شدید'
+    }
+}[wellnessLanguage];
+
+document.documentElement.lang = wellnessLanguage;
+document.documentElement.dir = wellnessIsUrdu ? 'rtl' : 'ltr';
+if (wellnessIsUrdu) document.body.classList.add('urdu-page');
+
+document.getElementById('brandSub').textContent = W.brandSub;
+document.getElementById('navPageLabel').textContent = W.page;
+document.getElementById('dashboardBtn').textContent = W.dashboard;
+document.getElementById('pageSubtitle').textContent = W.pageSubtitle;
+document.getElementById('helplineLabel').textContent = W.helpline;
+document.getElementById('emergencyLabel').textContent = W.emergency;
+document.getElementById('umangLabel').textContent = W.umang;
+document.getElementById('rozanLabel').textContent = W.rozan;
+const emptyMessage = document.getElementById('emptyMessage');
+if (emptyMessage) {
+    emptyMessage.textContent = W.emptyMessage;
+}
+
+// Translate the dynamic assessment count too.
+const assessmentCount = document.querySelector('.summary-card:nth-child(4) .value-text');
+if (assessmentCount && wellnessIsUrdu) {
+    const count = assessmentCount.textContent.trim().split(/\s+/)[0];
+    assessmentCount.textContent = `${count} ${W.checkIns}`;
+}
+
+const userName = {{ session.get('name', 'Your')|tojson }};
+const userNameUrdu = {{ user_name_urdu|default('', true)|tojson }};
+
+document.getElementById('pageTitle').textContent =
+    wellnessIsUrdu
+        ? `${userNameUrdu || userName} کی صحت کی پیش رفت`
+        : `${userName}'s Wellness Progress`;
+document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (W[key] !== undefined) el.textContent = W[key];
+});
+
+function translateMood(value) {
+    const v = String(value || '').toLowerCase().replace(/_/g,' ');
+    if (!wellnessIsUrdu) return String(value || '—');
+    return ({
+        'very low':W.moodVeryLow, 'low':W.moodLow, 'anxious':'پریشان',
+        'okay':W.moodOkay, 'good':'اچھا', 'better':W.moodBetter
+    })[v] || value || '—';
+}
+
+function translateEnergy(value) {
+    const v = String(value || '').toLowerCase().replace(/_/g,' ');
+    if (!wellnessIsUrdu) return String(value || '—');
+    return ({
+        'very low':W.energyVeryLow, 'low':W.energyLow,
+        'medium':W.energyMedium, 'high':W.energyHigh
+    })[v] || value || '—';
+}
+
+function translateSeverity(value) {
+    const v = String(value || '').trim().toLowerCase();
+    if (!wellnessIsUrdu) return String(value || '—');
+    return ({minimal:W.minimal,mild:W.mild,moderate:W.moderate,severe:W.severe})[v] || value || '—';
+}
+
+const cards = document.querySelectorAll('.summary-card');
+if (cards.length >= 4) {
+    const mood = cards[1].querySelector('.value-text');
+    const energy = cards[2].querySelector('.value-text');
+    if (mood) mood.textContent = translateMood(mood.textContent);
+    if (energy) energy.textContent = translateEnergy(energy.textContent);
+}
+
+document.querySelectorAll('tbody .sev').forEach(el => {
+    el.textContent = translateSeverity(el.textContent);
+});
+
+window.WELLNESS_TRANSLATIONS = {
+    mood: {1:W.moodVeryLow,2:W.moodLow,3:W.moodOkay,4:W.moodBetter},
+    energy: {1:W.energyVeryLow,2:W.energyLow,3:W.energyMedium,4:W.energyHigh}
+};
+</script>
 
 {% if has_data %}
 <script>
@@ -449,7 +664,7 @@
         data: {
             labels: sleepLabels,
             datasets: [{
-                label: 'Sleep Hours',
+                label: W.sleepHours,
                 data: sleepValues,
                 backgroundColor: '#0F6E56',
                 borderRadius: 8,
@@ -479,7 +694,7 @@
         data: {
             labels: moodLabels,
             datasets: [{
-                label: 'Mood',
+                label: W.moodOverTime,
                 data: moodValues,
                 borderColor: '#d96a35',
                 backgroundColor: 'rgba(217,106,53,0.08)',
@@ -501,7 +716,7 @@
                     ticks: {
                         stepSize: 1,
                         color: tickColor,
-                        callback: v => ({1:'Very Low',2:'Low',3:'Okay',4:'Better'}[v] || v)
+                        callback: v => (window.WELLNESS_TRANSLATIONS.mood[v] || v)
                     },
                     grid: { color: gridColor }
                 }
@@ -514,7 +729,7 @@
         data: {
             labels: energyLabels,
             datasets: [{
-                label: 'Energy',
+                label: W.energyLevel,
                 data: energyValues,
                 borderColor: '#b5886a',
                 backgroundColor: 'rgba(181,136,106,0.08)',
@@ -536,7 +751,7 @@
                     ticks: {
                         stepSize: 1,
                         color: tickColor,
-                        callback: v => ({1:'Very Low',2:'Low',3:'Medium',4:'High'}[v] || v)
+                        callback: v => (window.WELLNESS_TRANSLATIONS.energy[v] || v)
                     },
                     grid: { color: gridColor }
                 }
@@ -550,7 +765,7 @@
             labels: assessmentLabels,
             datasets: [
                 {
-                    label: 'PHQ-9 Depression',
+                    label: W.phqDepression,
                     data: phqValues,
                     borderColor: '#c45a28',
                     backgroundColor: '#c45a28',
@@ -560,7 +775,7 @@
                     tension: 0.3
                 },
                 {
-                    label: 'GAD-7 Anxiety',
+                    label: W.gadAnxiety,
                     data: gadValues,
                     borderColor: '#b5886a',
                     backgroundColor: '#b5886a',
@@ -570,7 +785,7 @@
                     tension: 0.3
                 },
                 {
-                    label: 'WHO-5 Wellbeing',
+                    label: W.whoWellbeing,
                     data: whoValues,
                     borderColor: '#0F6E56',
                     backgroundColor: '#0F6E56',
