@@ -21,6 +21,7 @@ from openai import OpenAI
 from gnuhealth_connector import (
     send_wellness_to_gnuhealth,
     update_mygnuhealth_tracker,
+    create_gnuhealth_account,
     GNUHEALTH_PERSON_ID,
     GNUHEALTH_USERNAME,
     GNUHEALTH_PASSWORD
@@ -182,6 +183,7 @@ def init_db():
     for col_sql in [
         "ALTER TABLE users ADD COLUMN account_id INTEGER UNIQUE",
         "ALTER TABLE users ADD COLUMN living_place TEXT DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN gnuhealth_id TEXT",
         "ALTER TABLE assessments ADD COLUMN advice_given TEXT",
         "ALTER TABLE assessments ADD COLUMN prev_phq9 INTEGER",
         "ALTER TABLE assessments ADD COLUMN prev_gad7 INTEGER",
@@ -317,31 +319,32 @@ def find_existing_user(name):
     """, (norm_name,))
     return cursor.fetchone()
 
+
 def create_user(name, account_id=None):
     db = get_db()
     cursor = db.cursor()
     clean_name = name.strip()
 
-    try:
-        if users_has_account_id():
-            cursor.execute("""
-                INSERT INTO users (name, account_id)
-                VALUES (?, ?)
-            """, (clean_name, account_id))
-        else:
-            cursor.execute("""
-                INSERT INTO users (name)
-                VALUES (?)
-            """, (clean_name,))
-        db.commit()
-        return cursor.lastrowid
-    except Exception:
-        cursor.execute("""
+    if users_has_account_id():
+        cursor.execute(
+            """
+            INSERT INTO users (name, account_id)
+            VALUES (?, ?)
+            """,
+            (clean_name, account_id)
+        )
+    else:
+        cursor.execute(
+            """
             INSERT INTO users (name)
             VALUES (?)
-        """, (clean_name,))
-        db.commit()
-        return cursor.lastrowid
+            """,
+            (clean_name,)
+        )
+
+    db.commit()
+    return cursor.lastrowid
+
 
 def get_user_by_account_id(account_id):
     if not account_id or not users_has_account_id():
@@ -351,6 +354,50 @@ def get_user_by_account_id(account_id):
     cursor = db.cursor()
     cursor.execute("SELECT * FROM users WHERE account_id = ? LIMIT 1", (account_id,))
     return cursor.fetchone()
+
+
+
+def set_gnuhealth_id(user_id, gnuhealth_id):
+    """Safely link a local Empath AI user to their Federation ID."""
+    if not user_id or not gnuhealth_id:
+        return False
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute(
+        "SELECT gnuhealth_id FROM users WHERE id = ?",
+        (user_id,)
+    )
+    row = cursor.fetchone()
+
+    if not row:
+        return False
+
+    current_id = row["gnuhealth_id"]
+
+    # Allow an empty link or the same existing link.
+    if current_id and current_id != gnuhealth_id:
+        app.logger.error(
+            "Refusing to replace existing GNU Health ID for user %s",
+            user_id
+        )
+        return False
+
+    if current_id == gnuhealth_id:
+        return True
+
+    cursor.execute(
+        """
+        UPDATE users
+        SET gnuhealth_id = ?
+        WHERE id = ?
+          AND (gnuhealth_id IS NULL OR gnuhealth_id = '')
+        """,
+        (gnuhealth_id, user_id)
+    )
+    db.commit()
+    return cursor.rowcount == 1
 
 
 def get_or_create_user_for_account(account_id, account_name):
@@ -839,7 +886,172 @@ def generate_assessment_advice(phq_total, gad_total, who_total, phq_q9=0, prev=N
     parts.extend(guidance_parts)
     parts.append(closing)
 
-    return "\n\n".join([p for p in parts if p]), risk_level
+    
+    advice_text = "\n\n".join([p for p in parts if p])
+
+    
+    language = session.get(
+        "sa_language",
+        session.get("language", "en")
+    )
+
+    if language == "ur":
+
+        # Urdu introduction based on risk level
+        if risk_level == "crisis":
+            intro_ur = (
+                "آپ کے جوابات سے لگتا ہے کہ اس وقت آپ کے لیے حالات کافی مشکل ہو سکتے ہیں۔ "
+                "آپ نے ایمانداری سے اپنے احساسات بیان کیے، اور یہ ایک اہم قدم ہے۔"
+            )
+        elif risk_level == "high":
+            intro_ur = (
+                "آپ کے جوابات سے ظاہر ہوتا ہے کہ آپ حالیہ دنوں میں کافی دباؤ کا سامنا کر رہے ہیں۔ "
+                "اپنے ساتھ نرمی سے پیش آئیں اور یاد رکھیں کہ مدد مانگنا بالکل درست ہے۔"
+            )
+        elif risk_level == "moderate":
+            intro_ur = (
+                "آپ کے جوابات سے معلوم ہوتا ہے کہ کچھ باتیں آپ کو پریشان کر رہی ہیں۔ "
+                "اپنے احساسات کو سمجھنے اور اپنی دیکھ بھال کے لیے وقت نکالنا ضروری ہے۔"
+            )
+        else:
+            intro_ur = (
+                "اپنے احساسات کا جائزہ لینے کے لیے وقت نکالنے کا شکریہ۔ "
+                "اپنی ذہنی صحت کا خیال رکھنا اہم ہے، چاہے حالات بظاہر ٹھیک ہی کیوں نہ ہوں۔"
+            )
+
+        # Urdu mood guidance
+        if phq_sev == "Minimal":
+            mood_ur = (
+                "آپ کے ڈپریشن کے اسکور سے اس وقت شدید جذباتی پریشانی ظاہر نہیں ہوتی۔ "
+                "اپنی نیند، روزمرہ معمولات اور اپنے قریبی لوگوں سے رابطے کا خیال رکھیں۔"
+            )
+        elif phq_sev == "Mild":
+            mood_ur = (
+                "آپ کو کچھ اداسی یا جذباتی بوجھ محسوس ہو سکتا ہے۔ "
+                "اس کا مطلب یہ نہیں کہ آپ کمزور ہیں۔ اپنے احساسات کو اہمیت دیں اور اپنا خیال رکھیں۔"
+            )
+        elif phq_sev == "Moderate":
+            mood_ur = (
+                "آپ کے جوابات سے ظاہر ہوتا ہے کہ اداسی آپ کی روزمرہ زندگی کو متاثر کر سکتی ہے۔ "
+                "اپنے آپ پر غیر ضروری دباؤ نہ ڈالیں اور ضرورت پڑنے پر کسی قابلِ اعتماد شخص سے بات کریں۔"
+            )
+        else:
+            mood_ur = (
+                "آپ کے جوابات سے شدید جذباتی پریشانی کا امکان ظاہر ہوتا ہے۔ "
+                "اگر حالات ناقابلِ برداشت محسوس ہوں تو کسی قابلِ اعتماد شخص یا ذہنی صحت کے ماہر سے مدد لیں۔"
+            )
+
+        # Urdu anxiety guidance
+        anxiety_ur = ""
+
+        if gad_sev == "Mild":
+            anxiety_ur = (
+                "آپ کو کچھ پریشانی یا بے چینی بھی محسوس ہو سکتی ہے۔ "
+                "آرام کے لیے وقفہ لیں اور اپنی نیند اور روزمرہ معمولات کا خیال رکھیں۔"
+            )
+        elif gad_sev == "Moderate":
+            anxiety_ur = (
+                "پریشانی اور مسلسل سوچ بچار آپ کے ذہن کو تھکا سکتی ہے۔ "
+                "آہستہ سانس لینے کی مشق کریں اور خود کو پُرسکون ہونے کے لیے وقت دیں۔"
+            )
+        elif gad_sev == "Severe":
+            anxiety_ur = (
+                "آپ کے جوابات سے شدید بے چینی کا امکان ظاہر ہوتا ہے، جو نیند اور توجہ کو متاثر کر سکتی ہے۔ "
+                "کسی ذہنی صحت کے ماہر یا ڈاکٹر سے بات کرنا مفید ہو سکتا ہے۔"
+            )
+
+        # Urdu wellbeing guidance
+        if who_pct < 28:
+            wellbeing_ur = (
+                "آپ کی ذہنی خوشحالی کا اسکور کم ہے۔ اس وجہ سے تھکن، اداسی یا روزمرہ کاموں میں دلچسپی کی کمی محسوس ہو سکتی ہے۔ "
+                "اپنی کیفیت کو نظرانداز نہ کریں اور ضرورت کے مطابق مدد حاصل کریں۔"
+            )
+        elif who_pct < 52:
+            wellbeing_ur = (
+                "آپ کی ذہنی خوشحالی کچھ کم دکھائی دیتی ہے۔ "
+                "مناسب نیند، متوازن غذا، مختصر چہل قدمی اور کسی قریبی شخص سے بات کرنا مددگار ہو سکتا ہے۔"
+            )
+        else:
+            wellbeing_ur = (
+                "آپ کی ذہنی خوشحالی کا اسکور بہت کم نہیں ہے، جو ایک حوصلہ افزا بات ہے۔ "
+                "اپنی مثبت عادات جاری رکھیں اور اپنی ضروریات کا خیال رکھیں۔"
+            )
+
+        # Urdu practical guidance based on risk
+        if risk_level == "crisis":
+            guidance_ur = (
+                "اگر آپ کو خود کو نقصان پہنچانے کے خیالات آ رہے ہیں تو اکیلے نہ رہیں۔ "
+                "کسی قابلِ اعتماد شخص کو فوراً بتائیں۔ فوری خطرے کی صورت میں 1122 پر رابطہ کریں۔ "
+                "آپ اُمنگ سے 0317-4288665 پر بھی رابطہ کر سکتے ہیں۔"
+            )
+        elif risk_level == "high":
+            guidance_ur = (
+                "کسی قابلِ اعتماد شخص سے اپنے احساسات کے بارے میں بات کریں اور جلد کسی ذہنی صحت کے ماہر یا ڈاکٹر سے مشورہ لینے پر غور کریں۔ "
+                "مدد لینے کے لیے حالات کے مزید خراب ہونے کا انتظار ضروری نہیں۔"
+            )
+        elif risk_level == "moderate":
+            guidance_ur = (
+                "اپنی دیکھ بھال کے لیے چھوٹے قدم اٹھائیں، مثلاً مناسب نیند، تازہ ہوا میں کچھ وقت گزارنا اور کسی قابلِ اعتماد شخص سے بات کرنا۔ "
+                "ایک وقت میں سب کچھ کرنے کی کوشش نہ کریں۔"
+            )
+        else:
+            guidance_ur = (
+                "اپنے احساسات کو اہمیت دیتے رہیں۔ "
+                "مستقل نیند، مناسب آرام اور قریبی لوگوں سے رابطہ آپ کی ذہنی صحت کا خیال رکھنے میں مدد دے سکتے ہیں۔"
+            )
+
+        parts_ur = [
+            intro_ur,
+            mood_ur,
+            anxiety_ur,
+            wellbeing_ur,
+            guidance_ur
+        ]
+
+        if gad_total >= 5:
+            parts_ur.append(
+                "بے چینی محسوس ہونے پر آہستہ سانس لینے کی کوشش کریں: "
+                "چار سیکنڈ میں سانس اندر لیں، چار سیکنڈ روکیں اور چھ سیکنڈ میں باہر نکالیں۔ "
+                "اگر اس مشق سے تکلیف بڑھے تو معمول کے مطابق سانس لیں۔"
+            )
+
+        if who_pct < 52:
+            parts_ur.append(
+                "اپنے اوپر زیادہ بوجھ نہ ڈالیں۔ مختصر چہل قدمی، مناسب غذا، آرام یا کسی محفوظ اور قابلِ اعتماد شخص کے ساتھ کچھ وقت گزارنا بھی ایک اچھا قدم ہے۔"
+            )
+
+        # Compare with previous assessment, if available
+        if prev and prev.get("phq9_total") is not None:
+            chg = phq_total - prev["phq9_total"]
+
+            if chg >= 5:
+                parts_ur.append(
+                    f"آپ کے پچھلے جائزے کے مقابلے میں ڈپریشن کا اسکور {chg} پوائنٹس بڑھا ہے۔ "
+                    "اپنی کیفیت پر توجہ دیں اور ضرورت پڑنے پر پیشہ ورانہ مدد حاصل کریں۔"
+                )
+            elif chg <= -5:
+                parts_ur.append(
+                    f"آپ کے پچھلے جائزے کے مقابلے میں ڈپریشن کا اسکور {abs(chg)} پوائنٹس کم ہوا ہے۔ "
+                    "یہ ایک مثبت پیش رفت ہے، اگرچہ اپنی دیکھ بھال جاری رکھنا اہم ہے۔"
+                )
+
+        parts_ur.append(
+            "یاد رکھیں کہ آپ کے موجودہ احساسات اہم ہیں، لیکن یہ آپ کی پوری زندگی کی کہانی نہیں ہیں۔ "
+            "مزید رہنمائی کے لیے Empath AI کی مرکزی چیٹ پر بات کریں۔ فوری خطرے کی صورت میں 1122 پر رابطہ کریں۔"
+        )
+
+        advice_text = "\n\n".join(
+            p for p in parts_ur if p
+        )
+
+    else:
+        advice_text = "\n\n".join(
+            p for p in parts if p
+        )
+
+    return advice_text, risk_level
+
+
 # ─────────────────────────────────────────────
 # IDP CONTEXT
 # ─────────────────────────────────────────────
@@ -1088,37 +1300,44 @@ MOOD_KEYWORDS = {
 
 ENERGY_KEYWORDS = {
     "very_low": [
-        "no energy", "completely tired", "dead tired", "exhausted",
-        "drained", "can't move",
+        "no energy", "completely tired", "dead tired",
+        "exhausted", "drained", "can't move",
         "بالکل توانائی نہیں", "بہت زیادہ تھکا ہوا",
         "بہت زیادہ تھکی ہوئی", "انتہائی تھکا ہوا",
         "انتہائی تھکی ہوئی", "بالکل نڈھال"
     ],
+
     "low": [
         "tired", "weak", "fatigue", "low energy",
         "thaka hua", "thaki hui", "energy is low",
         "my energy is low", "energy is bad", "my energy is bad",
-      
-        "اتنی تھکن ہوتی ہے",
-        "کچھ کرنے کا دل نہیں کرتا",
-        "میں بہت تھکی ہوئی ہوں",
-        "میں بہت تھکا ہوا ہوں",
-        "ذہنی تھکن ہے",
-        "جسم میں کمزوری محسوس ہو رہی ہے",
-        "جسمانی تھکن محسوس ہو رہی ہے",
-        "کسی کام میں دل نہیں لگتا",
+        "اتنی تھکن ہوتی ہے", "کچھ کرنے کا دل نہیں کرتا",
+        "میں بہت تھکی ہوئی ہوں", "میں بہت تھکا ہوا ہوں",
+        "ذہنی تھکن ہے", "جسم میں کمزوری محسوس ہو رہی ہے",
+        "جسمانی تھکن محسوس ہو رہی ہے", "کسی کام میں دل نہیں لگتا",
+        "انرجی کم ہے", "میری انرجی کم ہے",
+        "توانائی کم ہے", "میری توانائی کم ہے"
+    ],
 
-    ],
     "medium": [
-        "okay energy", "some energy", "manageable energy",
-        "توانائی ٹھیک ہے", "تھوڑی توانائی ہے"
+        "normal", "normal energy", "energy is normal",
+        "my energy is normal", "energy level is normal",
+        "energy is okay", "energy is fine",
+        "انرجی ٹھیک ہے", "انرجی بھی ٹھیک ہے",
+        "میری انرجی ٹھیک ہے", "توانائی معمول کے مطابق ہے",
+        "میری توانائی ٹھیک ہے", "انرجی نارمل ہے"
     ],
+
     "high": [
         "energetic", "active", "full energy", "motivated",
-        "پُرجوش ہوں", "توانائی اچھی ہے",
-        "بہت چاق و چوبند ہوں"
+        "energy is good", "my energy is good",
+        "energy level is good", "energy level is high",
+        "انرجی اچھی ہے", "میری انرجی اچھی ہے",
+        "توانائی اچھی ہے", "میری توانائی اچھی ہے",
+        "پُرجوش ہوں", "بہت چاق و چوبند ہوں"
     ]
 }
+
 
 
 SLEEP_KEYWORDS = [
@@ -2668,6 +2887,39 @@ SA_FOLLOWUP_QUESTIONS = {
     ],
 }
 
+SA_FOLLOWUP_QUESTIONS_UR = {
+    "crisis_risk": [
+        "آپ کے حالیہ جائزے سے معلوم ہوا تھا کہ آپ مشکل حالات سے گزر رہی تھیں۔ اس کے بعد سے آپ کیسا محسوس کر رہی ہیں؟ کیا آپ اس وقت محفوظ ہیں؟",
+        "میں آپ کی خیریت معلوم کرنا چاہتی ہوں۔ کیا آپ نے کسی قابلِ اعتماد شخص سے بات کی ہے یا اُمنگ سے رابطہ کیا ہے؟",
+        "جائزہ لینے کے وقت کے مقابلے میں آج آپ کیسا محسوس کر رہی ہیں؟ اگر اب بھی دل پر بوجھ ہے تو آپ مجھ سے بات کر سکتی ہیں۔",
+    ],
+    "depression_high": [
+        "آپ کے حالیہ جائزے میں اداسی اور توانائی کی کمی سے متعلق علامات سامنے آئی تھیں۔ اس کے بعد سے آپ کیسا محسوس کر رہی ہیں؟",
+        "ہم نے روزمرہ معمول میں چھوٹی چھوٹی تبدیلیاں لانے کی بات کی تھی۔ کیا آپ نے کوئی چھوٹا قدم اٹھایا، مثلاً تھوڑی دیر چہل قدمی یا آرام کے لیے وقت نکالنا؟",
+        "اس ہفتے آپ کے مزاج میں پہلے کے مقابلے میں کوئی تبدیلی محسوس ہوئی ہے، چاہے وہ معمولی ہی کیوں نہ ہو؟",
+    ],
+    "anxiety_high": [
+        "آپ کے حالیہ جائزے سے معلوم ہوا تھا کہ آپ کافی پریشانی محسوس کر رہی تھیں۔ آج کل کون سی بات آپ کے ذہن پر سب سے زیادہ بوجھ ڈال رہی ہے؟",
+        "ہم نے پریشانی کے وقت آہستہ سانس لینے کی مشق پر بات کی تھی۔ کیا آپ نے اسے آزمایا؟",
+        "جائزے کے وقت کے مقابلے میں اس ہفتے آپ کی بے چینی کیسی رہی ہے؟ کیا اس میں کوئی فرق محسوس ہوا؟",
+    ],
+    "wellbeing_low": [
+        "آپ کے حالیہ جائزے میں ذہنی خوشحالی کا اسکور کم تھا۔ کیا اس ہفتے کوئی ایسا لمحہ آیا جب آپ کو ذرا سا سکون یا اچھا محسوس ہوا ہو؟",
+        "ہم نے کسی ایسی چھوٹی چیز کو تلاش کرنے کی بات کی تھی جس سے آپ کو سکون ملے، مثلاً آرام، روزمرہ کا معمول یا کسی قابلِ اعتماد شخص سے بات کرنا۔ کیا کسی چیز سے مدد ملی؟",
+        "آج آپ اندر سے کیسا محسوس کر رہی ہیں؟ کیا جائزے کے بعد کوئی چھوٹی سی تبدیلی آئی ہے؟",
+    ],
+    "mild": [
+        "آپ نے حال ہی میں اپنی ذہنی صحت کا جائزہ لیا تھا۔ اس کے بعد سے آپ کیسا محسوس کر رہی ہیں؟",
+        "آپ کے جوابات سے معلوم ہوا تھا کہ حالات کسی حد تک قابلِ برداشت ہیں، لیکن کچھ مشکلات اب بھی موجود ہیں۔ کیا اس ہفتے کوئی تبدیلی آئی ہے؟",
+        "جس دن آپ نے جائزہ لیا تھا، اس دن کے مقابلے میں آج آپ کیسا محسوس کر رہی ہیں؟",
+    ],
+    "minimal": [
+        "آپ نے حال ہی میں اپنی ذہنی صحت کا جائزہ لیا تھا۔ اس کے بعد سے آپ کے دن کیسے گزر رہے ہیں؟",
+        "آپ کے اسکور مناسب حد میں تھے، لیکن اسکور ہمیشہ آپ کے تمام احساسات کی عکاسی نہیں کرتے۔ کیا اس ہفتے کوئی ایسی بات رہی جو آپ کے ذہن میں بار بار آئی ہو؟",
+        "آج آپ کیسا محسوس کر رہی ہیں؟ کیا کوئی ایسی بات ہے جس کے بارے میں آپ بات کرنا چاہیں؟",
+    ],
+}
+
 
 def load_recent_self_assessment(user_id):
     """Load the most recent self-assessment from DB into main chat session for follow-up."""
@@ -2751,46 +3003,167 @@ def auth_page():
         return redirect(url_for("dashboard"))
     return render_template("auth.html")
 
+
 @app.route("/signup", methods=["POST"])
 def signup():
     init_db()
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
+
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     dob = data.get("dob") or ""
 
+    # Validate required fields.
     if not name or not email or not password or not dob:
         return jsonify({"error": "All fields are required."}), 400
 
-    # Age check server-side
+    # Validate date of birth and minimum age.
     try:
         birth = datetime.strptime(dob, "%Y-%m-%d")
         today = datetime.today()
-        age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+        age = today.year - birth.year - (
+            (today.month, today.day) < (birth.month, birth.day)
+        )
+
         if age < 18:
-            return jsonify({"error": f"You must be 18 or older. You are {age} years old."}), 400
+            return jsonify({
+                "error": f"You must be 18 or older. You are {age} years old."
+            }), 400
+
     except ValueError:
         return jsonify({"error": "Invalid date of birth."}), 400
 
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("SELECT id FROM accounts WHERE email = ?", (email,))
-    if cursor.fetchone():
-        return jsonify({"error": "An account with this email already exists. Please login."}), 400
 
-    pw_hash = hash_password(password)
+    # Prevent duplicate local accounts.
     cursor.execute(
-        "INSERT INTO accounts (full_name, email, password_hash, dob) VALUES (?,?,?,?)",
-        (name, email, pw_hash, dob)
+        "SELECT id FROM accounts WHERE email = ?",
+        (email,)
     )
-    db.commit()
-    account_id = cursor.lastrowid
 
+    if cursor.fetchone():
+        return jsonify({
+            "error": "An account with this email already exists. Please login."
+        }), 400
+
+    # Create the local account.
+    try:
+        pw_hash = hash_password(password)
+
+        cursor.execute(
+            """
+            INSERT INTO accounts (full_name, email, password_hash, dob)
+            VALUES (?, ?, ?, ?)
+            """,
+            (name, email, pw_hash, dob)
+        )
+
+        db.commit()
+        account_id = cursor.lastrowid
+
+    except Exception:
+        db.rollback()
+        app.logger.exception("Failed to create local account")
+        return jsonify({
+            "error": "Could not create your account. Please try again."
+        }), 500
+
+    federation_id = f"EMPATH_{account_id}"
+
+    # Register the account with GNU Health Federation.
+    try:
+        federation_result = create_gnuhealth_account(
+            federation_id,
+            password
+        )
+
+    except Exception:
+        app.logger.exception(
+            "Federation registration failed for %s",
+            federation_id
+        )
+        return jsonify({
+            "error": (
+                "Your Empath AI account was created, but Federation "
+                "registration needs recovery. Please contact support."
+            ),
+            "federation_id": federation_id
+        }), 502
+
+    if not federation_result.get("success"):
+        app.logger.error(
+            "Federation registration failed for %s; status=%s",
+            federation_id,
+            federation_result.get("status_code")
+        )
+
+        return jsonify({
+            "error": (
+                "Your Empath AI account was created, but GNU Health "
+                "Federation registration failed. Please contact support "
+                "before retrying signup."
+            ),
+            "federation_status": federation_result.get("status_code"),
+            "federation_id": federation_id
+        }), 502
+
+    # Link the local account to its own local user profile.
+    try:
+        existing_user = get_user_by_account_id(account_id)
+
+        if existing_user:
+            user_id = existing_user["id"]
+        else:
+            user_id = create_user(
+                name,
+                account_id=account_id
+            )
+
+        if not set_gnuhealth_id(user_id, federation_id):
+            app.logger.error(
+                "Could not link Federation ID %s to local user %s",
+                federation_id,
+                user_id
+            )
+
+            return jsonify({
+                "error": (
+                    "Federation registration succeeded, but local "
+                    "account linking needs recovery. Please contact support."
+                ),
+                "federation_id": federation_id
+            }), 500
+
+    except Exception:
+        app.logger.exception(
+            "Local user linking failed for Federation ID %s",
+            federation_id
+        )
+
+        return jsonify({
+            "error": (
+                "Federation registration succeeded, but local account "
+                "linking needs recovery. Please contact support."
+            ),
+            "federation_id": federation_id
+        }), 500
+
+    # Sign the new user in only after both registrations and linking succeed.
     session.permanent = True
     session["account_id"] = account_id
     session["account_name"] = name
-    return jsonify({"message": "Account created.", "name": name}), 200
+    session["user_id"] = user_id
+
+    return jsonify({
+        "message": "Account created and connected to GNU Health Federation.",
+        "name": name,
+        "gnuhealth_id": federation_id
+    }), 201
+
+
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -4136,14 +4509,20 @@ def chat():
     if not user_message:
         return jsonify({"response": "I did not catch that. Could you say that again?"})
 
-    # Detect the language from the user's actual message.
-    # Urdu script = Urdu, otherwise English.
-    if re.search(r"[\u0600-\u06FF]", user_message):
+     # Keep the language selected by the user.
+    language = str(
+        data.get("language")
+        or session.get("language")
+        or "en"
+    ).lower().strip()
+
+    if language in ("urdu", "ur"):
         language = "ur"
     else:
         language = "en"
 
     session["language"] = language
+    session["sa_language"] = language
 
     if not user_message:
         return jsonify({"response": "I did not catch that. Could you say that again?"})
@@ -4390,7 +4769,20 @@ def chat():
             trigger_turns = [1, 4, 8]
             if sa_listen_turns in trigger_turns:
                 concern = session.get("sa_dominant_concern", "mild")
-                followup_list = SA_FOLLOWUP_QUESTIONS.get(concern, SA_FOLLOWUP_QUESTIONS["mild"])
+                
+                chat_language = str(
+                    session.get("language", session.get("sa_language", "en"))
+                ).lower().strip()
+
+                if chat_language in ("ur", "urdu"):
+                    followup_list = SA_FOLLOWUP_QUESTIONS_UR.get(
+                        concern, SA_FOLLOWUP_QUESTIONS_UR["mild"]
+                    )
+                else:
+                    followup_list = SA_FOLLOWUP_QUESTIONS.get(
+                        concern, SA_FOLLOWUP_QUESTIONS["mild"]
+                    )
+
                 idx = session.get("sa_followup_count", 0)
                 if idx < len(followup_list):
                     response += "\n\n" + followup_list[idx]
@@ -4485,7 +4877,9 @@ def chat():
 
                 phq_sev = sa_get_phq9_severity(phq_total)[0]
                 gad_sev = sa_get_gad7_severity(gad_total)[0]
+                
                 session["severity"] = phq_sev
+                
 
                 prev_assess = None
                 if session.get("user_id"):
@@ -5174,6 +5568,7 @@ def sa_get_who5_interpretation(score):
     return "Your wellbeing score is very low. This strongly suggests a need for professional mental health support."
 
 
+
 def sa_build_result(phq_scores, gad_scores, who_scores):
 
     phq_total = sum(phq_scores.values())
@@ -5182,12 +5577,30 @@ def sa_build_result(phq_scores, gad_scores, who_scores):
 
     phq_q9 = phq_scores.get("phq9", 0)
 
+    # Get selected language
+    language = session.get(
+        "sa_language",
+        session.get("language", "en")
+    )
+
+    # Get original severity labels
     phq_sev = sa_get_phq9_severity(phq_total)[0]
     gad_sev = sa_get_gad7_severity(gad_total)[0]
 
     crisis_flag = phq_q9 >= 2
 
-    language = session.get("language", "en")
+    # Translate severity labels only for Urdu
+    if language == "ur":
+        severity_urdu = {
+            "Minimal": "نہ ہونے کے برابر",
+            "Mild": "ہلکی",
+            "Moderate": "درمیانی",
+            "Moderately Severe": "درمیانے سے زیادہ شدید",
+            "Severe": "شدید"
+        }
+
+        phq_sev = severity_urdu.get(phq_sev, phq_sev)
+        gad_sev = severity_urdu.get(gad_sev, gad_sev)
 
     if language == "ur":
 
@@ -5288,6 +5701,7 @@ def sa_build_result(phq_scores, gad_scores, who_scores):
     return "\n".join(lines), crisis_flag
 
 
+
 # ─────────────────────────────────────────────
 # SESSION
 # ─────────────────────────────────────────────
@@ -5311,9 +5725,13 @@ def sa_init_session():
 # ALREADY COMPLETED RESPONSE
 # ─────────────────────────────────────────────
 
+
 def _sa_already_done_response(last_row, name=""):
 
-    language = session.get("language", "en")
+    language = session.get(
+        "sa_language",
+        session.get("language", "en")
+    )
 
     next_date = (
         datetime.fromisoformat(
@@ -5329,22 +5747,58 @@ def _sa_already_done_response(last_row, name=""):
             f"{greeting}"
             f"آپ نے اپنا ہفتہ وار assessment پہلے ہی مکمل کر لیا ہے۔ "
             f"آپ کا اگلا assessment {next_date} کو دستیاب ہوگا۔\n\n"
-
             f"محفوظ شدہ اسکور:\n"
-
             f"PHQ-9 (ڈپریشن): "
             f"{score_to_10(last_row['phq9_total'], 27)}/10\n"
-
             f"GAD-7 (بے چینی): "
             f"{score_to_10(last_row['gad7_total'], 21)}/10\n"
-
             f"WHO-5 (ذہنی خوشحالی): "
             f"{score_to_10(last_row['who5_total'], 25)}/10"
         )
 
-        saved_advice = (last_row["advice_given"] or "").strip()
+        saved_advice = (
+            last_row["advice_given"] or ""
+        ).strip()
 
         if saved_advice:
+            # Translate previously saved English guidance for Urdu display
+            try:
+                translation = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "Translate the complete mental-health "
+                                "assessment guidance into natural Pakistani "
+                                "Urdu written in Urdu script. Translate every "
+                                "English sentence. Do not use Roman Urdu. "
+                                "Preserve meaning, scores, phone numbers, "
+                                "safety advice and numerical values. "
+                                "Return only the Urdu translation."
+                            )
+                        },
+                        {
+                            "role": "user",
+                            "content": saved_advice
+                        }
+                    ],
+                    temperature=0
+                )
+
+                translated_advice = (
+                    translation.choices[0].message.content or ""
+                ).strip()
+
+                if translated_advice:
+                    saved_advice = translated_advice
+
+            except Exception as e:
+                print(
+                    "Saved assessment Urdu translation error:",
+                    repr(e)
+                )
+
             response_text += (
                 f"\n\nمحفوظ شدہ تبصرے اور رہنمائی:\n"
                 f"{saved_advice}"
@@ -5363,20 +5817,18 @@ def _sa_already_done_response(last_row, name=""):
             f"{greeting}"
             f"You have already completed your weekly assessment. "
             f"Your next one will be available on {next_date}.\n\n"
-
             f"Saved scores:\n"
-
             f"PHQ-9 (Depression): "
             f"{score_to_10(last_row['phq9_total'], 27)}/10\n"
-
             f"GAD-7 (Anxiety): "
             f"{score_to_10(last_row['gad7_total'], 21)}/10\n"
-
             f"WHO-5 (Wellbeing): "
             f"{score_to_10(last_row['who5_total'], 25)}/10"
         )
 
-        saved_advice = (last_row["advice_given"] or "").strip()
+        saved_advice = (
+            last_row["advice_given"] or ""
+        ).strip()
 
         if saved_advice:
             response_text += (
@@ -5394,7 +5846,6 @@ def _sa_already_done_response(last_row, name=""):
         "options": [],
         "type": "already_done",
     })
-
 
 # ─────────────────────────────────────────────
 # START QUESTIONS
@@ -5561,6 +6012,7 @@ def assessment_chat():
         language = "en"
 
     session["language"] = language
+    session["sa_language"] = language
 
     # Empty message
     if not user_message:
@@ -6066,10 +6518,14 @@ def wellness():
     """, (user_id,)).fetchall()
 
     # ---- SUMMARY ----
-    avg_sleep = 0
-    sleep_vals = [float(r["sleep_hours"]) for r in wellbeing_rows if r["sleep_hours"] is not None]
-    if sleep_vals:
-        avg_sleep = round(sum(sleep_vals) / len(sleep_vals), 1)
+    latest_sleep = "-"
+
+    if wellbeing_rows:
+      for r in reversed(wellbeing_rows):
+        if r["sleep_hours"] is not None:
+            latest_sleep = float(r["sleep_hours"])
+            break
+   
 
     latest_mood = "-"
     latest_energy = "-"
@@ -6154,7 +6610,7 @@ def wellness():
     return render_template(
         "wellness.html",
         summary={
-            "avg_sleep": avg_sleep,
+            "avg_sleep": latest_sleep,
             "latest_mood": latest_mood,
             "latest_energy": latest_energy,
             "total_assessments": len(assessment_rows_raw)
@@ -6241,16 +6697,25 @@ IMPORTANT LANGUAGE RULES:
     else:
 
         language_instruction = """
-IMPORTANT LANGUAGE RULES:
+IMPORTANT URDU LANGUAGE AND TRANSLATION RULES:
 
-- Generate ALL quotes in English.
-- The quote itself MUST be in English.
-- The person's name MUST be in English.
-- The title MUST be in English.
-- The category MUST be in English.
-- Do NOT return Urdu.
-- Do NOT return Roman Urdu.
-- Quran and Hadith meanings must be written respectfully in English.
+- Write every quote, title, category, and person's name in natural Urdu script.
+- Use fluent, grammatically correct Pakistani Urdu.
+- Preserve the exact meaning, emotion, intention, and tone of each quote.
+- Do not translate English words one by one.
+- Translate the complete idea naturally, using correct Urdu sentence structure.
+- Keep the original message intact. Do not add, remove, or exaggerate meaning.
+- Use natural Urdu word order and correct gender, singular/plural,
+  verb agreement, and respectful forms of address.
+- Avoid awkward, literal, machine-like translations.
+- Use simple, comforting Urdu that ordinary Pakistani readers understand.
+- Keep the wording gentle, warm, and emotionally appropriate.
+- Do not use Roman Urdu or English sentences.
+- Do not change the meaning of Quranic verses or Hadith.
+- For Quran and Hadith, use an accurate, respectful Urdu translation.
+- Never invent a religious quotation or attribute a quotation
+  to a person without reliable confidence.
+- Return only the requested JSON, with no explanation.
 """
 
         language_name = "English"
@@ -6476,7 +6941,7 @@ def urdu_tts():
 if __name__ == "__main__":
     with app.app_context():
         init_db()
-    app.run(debug=True, port=5000, use_reloader=False)
+    app.run(debug=True, port=5000)
     
     test_message = "کبھی کبھی اتنی تھکن ہوتی ہے کہ کچھ کرنے کا دل نہیں کرتا۔"
 

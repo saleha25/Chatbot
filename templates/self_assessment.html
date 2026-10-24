@@ -720,31 +720,107 @@ html[dir="rtl"] .helpline-footer {
         initAssessment();
     }
 
-    async function initAssessment() {
+    
+async function initAssessment() {
+    const wrap = document.getElementById('questionsWrap');
+    const progressWrap = document.getElementById('progressWrap');
+
+    try {
+        console.log("Initializing assessment. Language:", language);
+
+        // Hide progress text (e.g. "Getting started..." / "شروع کرتے ہیں...")
+        // while the loading message is displayed.
+        progressWrap.style.display = 'none';
+
+        wrap.innerHTML = `
+            <div class="q-card" style="text-align:center;">
+                ${isUrdu
+                    ? 'آپ کا جائزہ لوڈ ہو رہا ہے، براہِ کرم انتظار کریں...'
+                    : 'Loading your assessment, please wait...'}
+            </div>
+        `;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        let res;
+
         try {
-            const res = await fetch('/assessment_chat_init?language=' + encodeURIComponent(language));
-            const data = await res.json();
-            const { response, options, type } = data;
-
-            if (type === 'already_done' || type === 'result') {
-                renderResult(response);
-                updateProgress(TOTAL, UI.complete);
-                return;
-            }
-
-            const isNamePrompt = (!options || options.length === 0);
-            isNameStep = isNamePrompt;
-
-            if (isNamePrompt) {
-                renderCurrentCard(0, response, [], true);
-            } else {
-                currentQIndex = 1;
-                renderCurrentCard(currentQIndex, response, options, false);
-            }
-        } catch (err) {
-            console.error('Init error:', err);
+            res = await fetch(
+                '/assessment_chat_init?language=' +
+                encodeURIComponent(language),
+                { signal: controller.signal }
+            );
+        } finally {
+            clearTimeout(timeoutId);
         }
+
+        if (!res.ok) {
+            throw new Error(`Server returned HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        console.log("Assessment initialization response:", data);
+
+        if (!data || typeof data.response !== 'string') {
+            throw new Error("Invalid assessment response from server");
+        }
+
+        const { response, options, type } = data;
+
+        // Clear loading message before displaying the actual content.
+        // Show progress only after the assessment content has loaded.
+        wrap.innerHTML = '';
+        progressWrap.style.display = '';
+
+        if (type === 'already_done' || type === 'result') {
+            renderResult(response);
+            updateProgress(TOTAL, UI.complete);
+            return;
+        }
+
+        if (type === 'crisis') {
+            renderCrisis(response);
+            updateProgress(TOTAL, UI.supportNeeded);
+            return;
+        }
+
+        const isNamePrompt = !Array.isArray(options) || options.length === 0;
+        isNameStep = isNamePrompt;
+
+        if (isNamePrompt) {
+            renderCurrentCard(0, response, [], true);
+        } else {
+            currentQIndex = 1;
+            renderCurrentCard(currentQIndex, response, options, false);
+        }
+
+        updateProgress(0, UI.gettingStarted);
+
+    } catch (err) {
+        console.error('Assessment initialization error:', err);
+
+        const message = err.name === 'AbortError'
+            ? (isUrdu
+                ? 'سرور سے جواب آنے میں زیادہ وقت لگ رہا ہے۔ دوبارہ کوشش کریں۔'
+                : 'The server is taking too long to respond. Please try again.')
+            : (isUrdu
+                ? 'جائزہ لوڈ نہیں ہو سکا۔ براہِ کرم دوبارہ کوشش کریں۔'
+                : 'Could not load the assessment. Please try again.');
+
+        wrap.innerHTML = `
+            <div class="q-card" style="text-align:center; padding:24px;">
+                <p style="margin-bottom:16px;">${message}</p>
+                <button class="nav-btn-green"
+                    onclick="initAssessment()">
+                    ${isUrdu ? 'دوبارہ کوشش کریں' : 'Try Again'}
+                </button>
+            </div>
+        `;
     }
+}
+
     updateProgress(0, UI.gettingStarted);
 
     window.onload = initAssessment;

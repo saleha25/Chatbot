@@ -9,40 +9,121 @@ GNUHEALTH_PERSON_ID = os.getenv("GNUHEALTH_PERSON_ID")
 GNUHEALTH_USERNAME = os.getenv("GNUHEALTH_USERNAME")
 GNUHEALTH_PASSWORD = os.getenv("GNUHEALTH_PASSWORD")
 
+def create_gnuhealth_account(person_id, password):
+    """
+    Register a new Empath AI user with GNU Health Federation.
+    """
+    
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "wsl.exe",
+                "bash",
+                "-lc",
+                "cat ~/.config/empath-ai/onboarding_secret"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True
+        )
+        onboarding_secret = result.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "Could not read the onboarding secret from WSL."
+        }
+
+
+    if not onboarding_secret:
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "Onboarding secret is empty."
+        }
+
+    try:
+        response = requests.post(
+            f"{THALAMUS_URL}/empath/onboard",
+            json={
+                "id": person_id,
+                "password": password
+            },
+            headers={
+                "X-Onboarding-Secret": onboarding_secret
+            },
+            timeout=10
+        )
+
+        return {
+            "success": response.status_code == 201,
+            "status_code": response.status_code,
+            "response": response.text
+        }
+
+    except requests.RequestException as e:
+        return {
+            "success": False,
+            "status_code": None,
+            "response": str(e)
+        }
+
 
 def send_wellness_to_gnuhealth(
     person_id,
-    username,
-    password,
+    username=None,
+    password=None,
     sleep_hours=None,
     mood=None,
     energy=None
 ):
-    """
-    Send sleep, mood, and energy information
-    from Empath AI to GNU Health through Thalamus
-    using the native MyGNUHealth Page of Life format.
-    """
+    """Send native MyGNUHealth wellness data through the protected endpoint."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "wsl.exe",
+                "bash",
+                "-lc",
+                "cat ~/.config/empath-ai/onboarding_secret"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True
+        )
+        onboarding_secret = result.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "Could not read the onboarding secret from WSL."
+        }
+
+    if not onboarding_secret:
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "The onboarding secret is empty."
+        }
 
     page_id = f"wellness_{uuid.uuid4().hex[:12]}"
-
     measurements = []
 
-    # Mood and energy use MyGNUHealth's native mood_energy format
     if mood is not None or energy is not None:
         measurements.append({
-            "mood_energy": {
-                "mood": mood,
-                "energy": energy
-            }
+            "mood_energy": {"mood": mood, "energy": energy}
         })
 
-    # Sleep uses MyGNUHealth's native sleep format
     if sleep_hours is not None:
         measurements.append({
             "sleep": {
                 "sleeptime": sleep_hours,
-                'sleepquality': 'good' if sleep_hours >= 6 else 'low'
+                "sleepquality": "good" if sleep_hours >= 6 else "low"
             }
         })
 
@@ -58,26 +139,22 @@ def send_wellness_to_gnuhealth(
         "info": "Empath AI wellness"
     }
 
-    url = f"{THALAMUS_URL}/pols/{person_id}/{page_id}"
-
-    print("GNU Health URL:", url)
-    print("GNU Health username:", username)
-    print("GNU Health data:", data)
-
     try:
         response = requests.post(
-            url,
-            json=data,
-            auth=(username, password),
+            f"{THALAMUS_URL}/empath/wellness",
+            json={
+                "person_id": person_id,
+                "page": data
+            },
+            headers={"X-Onboarding-Secret": onboarding_secret},
             timeout=10
         )
 
         return {
-            "success": response.ok,
+            "success": response.status_code == 201,
             "status_code": response.status_code,
             "response": response.text
         }
-
     except requests.RequestException as e:
         return {
             "success": False,
