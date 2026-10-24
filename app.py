@@ -2189,8 +2189,10 @@ Include: gentle validation, one hopeful IDP-sensitive line, a short dua/prayer f
 Keep it 4-6 sentences, warm and natural.
 """.strip()
             prompt = f"User name: {display_name or 'User'}\nRole: {role}\nUser message: {user_text}\nWrite the next response."
+            print("Empath AI selected model:", os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"))
             result = client.chat.completions.create(
                 model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
+                
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
@@ -4392,6 +4394,7 @@ Write the next Empath AI reply now.
 """.strip()
             result = client.chat.completions.create(
                 model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
+                
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
