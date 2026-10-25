@@ -19,9 +19,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for, send_file
 from openai import OpenAI
 from gnuhealth_connector import (
+    create_gnuhealth_account,
+    create_mygnuhealth_profile,
     send_wellness_to_gnuhealth,
     update_mygnuhealth_tracker,
-    create_gnuhealth_account,
     GNUHEALTH_PERSON_ID,
     GNUHEALTH_USERNAME,
     GNUHEALTH_PASSWORD
@@ -3139,6 +3140,7 @@ def signup():
                 "federation_id": federation_id
             }), 500
 
+    
     except Exception:
         app.logger.exception(
             "Local user linking failed for Federation ID %s",
@@ -3152,6 +3154,43 @@ def signup():
             ),
             "federation_id": federation_id
         }), 500
+
+    # Automatically initialize this user's separate MyGNUHealth profile.
+    try:
+        profile_result = create_mygnuhealth_profile(federation_id)
+
+    except Exception:
+        app.logger.exception(
+            "MyGNUHealth profile creation failed for %s",
+            federation_id
+        )
+        profile_result = {
+            "success": False,
+            "error": "Unexpected profile initialization error."
+        }
+
+    if not profile_result.get("success"):
+        app.logger.error(
+            "MyGNUHealth profile creation failed for %s: %s",
+            federation_id,
+            profile_result.get("error", "Unknown error")
+        )
+        return jsonify({
+            "error": (
+                "Your account and Federation registration succeeded, "
+                "but your MyGNUHealth profile could not be initialized. "
+                "Please contact support for recovery."
+            ),
+            "federation_id": federation_id
+        }), 500
+
+    app.logger.info(
+        "MyGNUHealth profile initialized for %s",
+        federation_id
+    )
+
+    # Sign the new user in only after all registrations and linking succeed.
+
 
     # Sign the new user in only after both registrations and linking succeed.
     session.permanent = True

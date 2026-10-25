@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import requests
 import subprocess
@@ -223,6 +224,55 @@ def send_wellness_to_gnuhealth(
         }
 
 
+def create_mygnuhealth_profile(federation_id):
+    """Initialize a separate local MyGNUHealth profile for a Federation ID."""
+    import re
+    import subprocess
+
+    if not federation_id:
+        return {"success": False, "error": "Federation ID is required."}
+
+    profile_id = str(federation_id).strip().upper()
+
+    # Restrict directory names to safe ID characters.
+    if not re.fullmatch(r"[A-Z0-9_-]{1,64}", profile_id):
+        return {"success": False, "error": "Invalid Federation ID."}
+
+    profile_path = f"/home/usman/mygnuhealth_profiles/{profile_id}"
+
+    script = (
+        "from mygnuhealth.core import maindb, boldb\n"
+        "print('MyGNUHealth profile initialized successfully.')\n"
+    )
+
+    try:
+        result = subprocess.run(
+            [
+                "wsl.exe", "-d", "Ubuntu-24.04", "--",
+                "env", f"XDG_CONFIG_HOME={profile_path}",
+                "/home/usman/.local/share/pipx/venvs/pip/bin/python",
+                "-c", script,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        if result.returncode != 0:
+            return {
+                "success": False,
+                "error": (result.stderr or "Profile initialization failed.")[-1500:],
+            }
+
+        return {
+            "success": True,
+            "profile_id": profile_id,
+            "profile_path": profile_path,
+        }
+
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"success": False, "error": str(exc)}
+
 
 def update_mygnuhealth_tracker(
     profile,
@@ -304,19 +354,23 @@ print("MyGNUHealth tracker and Book of Life update completed.")
 
     # These are the existing local profiles. New users need a provisioning
     # step before this function can safely target their own local database.
-    profile_paths = {
-        "empath_11": "/home/usman/mygnuhealth_profiles/EMPATH_11",
-        "empath_izak": "/home/usman/mygnuhealth_profiles/izak",
-        "empath_saleha": "/home/usman/mygnuhealth_profiles/saleha",
-
-    }
-
-    if not profile or profile.lower() not in profile_paths:
-        print("Unknown local MyGNUHealth profile:", profile)
+   
+    if not profile:
+        print("Missing MyGNUHealth profile ID.")
         return False
 
-    xdg_config = profile_paths[profile.lower()]
-    federation_id = profile
+    federation_id = str(profile).strip().upper()
+
+    # Accept only safe Federation IDs such as EMPATH_11.
+    if not re.fullmatch(r"[A-Z0-9_-]{1,64}", federation_id):
+        print("Invalid MyGNUHealth profile ID:", federation_id)
+        return False
+
+    # Standard profile path for automatically created Empath AI users.
+    xdg_config = (
+        f"/home/usman/mygnuhealth_profiles/{federation_id}"
+    )
+
 
     try:
         result = subprocess.run(
