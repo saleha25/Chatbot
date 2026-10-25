@@ -1,20 +1,18 @@
-import requests
-import uuid
 import os
+import uuid
+import requests
+import subprocess
+from datetime import datetime
 
 
-THALAMUS_URL = "http://127.0.0.1:5001"
+THALAMUS_URL = os.getenv("THALAMUS_URL", "http://127.0.0.1:5001")
+GNUHEALTH_PERSON_ID = os.getenv("GNUHEALTH_PERSON_ID", "")
+GNUHEALTH_USERNAME = os.getenv("GNUHEALTH_USERNAME", "")
+GNUHEALTH_PASSWORD = os.getenv("GNUHEALTH_PASSWORD", "")
 
-GNUHEALTH_PERSON_ID = os.getenv("GNUHEALTH_PERSON_ID")
-GNUHEALTH_USERNAME = os.getenv("GNUHEALTH_USERNAME")
-GNUHEALTH_PASSWORD = os.getenv("GNUHEALTH_PASSWORD")
 
 def create_gnuhealth_account(person_id, password):
-    """
-    Register a new Empath AI user with GNU Health Federation.
-    """
-    
-    import subprocess
+    """Register a new user with GNU Health Federation."""
 
     try:
         result = subprocess.run(
@@ -22,96 +20,123 @@ def create_gnuhealth_account(person_id, password):
                 "wsl.exe",
                 "bash",
                 "-lc",
-                "cat ~/.config/empath-ai/onboarding_secret"
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True
-        )
-        onboarding_secret = result.stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return {
-            "success": False,
-            "status_code": None,
-            "response": "Could not read the onboarding secret from WSL."
-        }
-
-
-    if not onboarding_secret:
-        return {
-            "success": False,
-            "status_code": None,
-            "response": "Onboarding secret is empty."
-        }
-
-    try:
-        response = requests.post(
-            f"{THALAMUS_URL}/empath/onboard",
-            json={
-                "id": person_id,
-                "password": password
-            },
-            headers={
-                "X-Onboarding-Secret": onboarding_secret
-            },
-            timeout=10
-        )
-
-        return {
-            "success": response.status_code == 201,
-            "status_code": response.status_code,
-            "response": response.text
-        }
-
-    except requests.RequestException as e:
-        return {
-            "success": False,
-            "status_code": None,
-            "response": str(e)
-        }
-
-
-def send_wellness_to_gnuhealth(
-    person_id,
-    username=None,
-    password=None,
-    sleep_hours=None,
-    mood=None,
-    energy=None
-):
-    """Send native MyGNUHealth wellness data through the protected endpoint."""
-    import subprocess
-
-    try:
-        result = subprocess.run(
-            [
-                "wsl.exe",
-                "bash",
-                "-lc",
-                "cat ~/.config/empath-ai/onboarding_secret"
+                "cat ~/.config/empath-ai/onboarding_secret",
             ],
             capture_output=True,
             text=True,
             timeout=5,
-            check=True
+            check=True,
         )
         onboarding_secret = result.stdout.strip()
+
+        if not onboarding_secret:
+            return {
+                "success": False,
+                "status_code": None,
+                "response": "Onboarding secret is empty.",
+            }
+
+        response = requests.post(
+            f"{THALAMUS_URL}/empath/onboard",
+            json={"id": person_id, "password": password},
+            headers={"X-Onboarding-Secret": onboarding_secret},
+            timeout=10,
+        )
+        return {
+            "success": response.status_code == 201,
+            "status_code": response.status_code,
+            "response": response.text,
+        }
+
     except (OSError, subprocess.SubprocessError):
         return {
             "success": False,
             "status_code": None,
-            "response": "Could not read the onboarding secret from WSL."
+            "response": "Could not read the Federation onboarding secret.",
         }
-
-    if not onboarding_secret:
+    except requests.RequestException:
         return {
             "success": False,
             "status_code": None,
-            "response": "The onboarding secret is empty."
+            "response": "Could not connect to GNU Health Federation.",
         }
 
-    page_id = f"wellness_{uuid.uuid4().hex[:12]}"
+
+def get_gnuhealth_wellness(person_id, username, password):
+    """
+    Retrieve Pages of Life from Thalamus for a Federation ID.
+
+    Note: Thalamus must enforce that the authenticated account is authorized
+    to read the requested person_id. This function alone cannot enforce that.
+    """
+
+    if not person_id or not username or not password:
+        return {
+            "success": False,
+            "records": [],
+            "status_code": None,
+            "error": "Federation credentials are required.",
+        }
+
+    try:
+        response = requests.get(
+            f"{THALAMUS_URL}/pols/{person_id}",
+            auth=(username, password),
+            timeout=15,
+        )
+
+        if response.status_code == 401:
+            return {
+                "success": False,
+                "records": [],
+                "status_code": 401,
+                "error": "Federation authentication failed.",
+            }
+
+        response.raise_for_status()
+        records = response.json()
+
+        return {
+            "success": True,
+            "records": records,
+            "status_code": response.status_code,
+            "error": None,
+        }
+
+    except requests.RequestException:
+        return {
+            "success": False,
+            "records": [],
+            "status_code": None,
+            "error": "Could not retrieve Federation wellness records.",
+        }
+    except ValueError:
+        return {
+            "success": False,
+            "records": [],
+            "status_code": None,
+            "error": "Federation returned invalid JSON.",
+        }
+
+
+
+def send_wellness_to_gnuhealth(
+    person_id, username=None, password=None,
+    sleep_hours=None, mood=None, energy=None
+):
+    """Save wellness through the trusted Empath AI Thalamus endpoint."""
+    import uuid
+    import subprocess
+    from datetime import datetime
+    import requests
+
+    if not person_id:
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "Federation ID is required."
+        }
+
     measurements = []
 
     if mood is not None or energy is not None:
@@ -123,58 +148,95 @@ def send_wellness_to_gnuhealth(
         measurements.append({
             "sleep": {
                 "sleeptime": sleep_hours,
-                "sleepquality": "good" if sleep_hours >= 6 else "low"
+                "sleepquality": "good" if sleep_hours >= 6 else "poor"
             }
         })
 
-    data = {
-        "id": page_id,
-        "page": page_id,
-        "page_date": __import__("datetime").datetime.now().isoformat(),
-        "book": person_id,
-        "domain": "medical",
-        "context": "self_monitoring",
-        "measurements": measurements,
-        "summary": "",
-        "info": "Empath AI wellness"
-    }
+    if not measurements:
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "No wellness measurements to save."
+        }
 
     try:
+        result = subprocess.run(
+            [
+                "wsl.exe", "-d", "Ubuntu-24.04", "--",
+                "bash", "-lc",
+                "cat ~/.config/empath-ai/onboarding_secret"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True
+        )
+        secret = result.stdout.strip()
+
+        if not secret:
+            return {
+                "success": False,
+                "status_code": None,
+                "response": "Thalamus backend secret is empty."
+            }
+
+        page_id = f"wellness_{uuid.uuid4().hex[:12]}"
+        page = {
+            "id": page_id,
+            "page": page_id,
+            "page_date": datetime.now().isoformat(),
+            "book": person_id,
+            "domain": "medical",
+            "context": "self_monitoring",
+            "measurements": measurements,
+            "summary": "",
+            "info": "Empath AI wellness"
+        }
+
         response = requests.post(
             f"{THALAMUS_URL}/empath/wellness",
-            json={
-                "person_id": person_id,
-                "page": data
-            },
-            headers={"X-Onboarding-Secret": onboarding_secret},
-            timeout=10
+            json={"person_id": person_id, "page": page},
+            headers={"X-Onboarding-Secret": secret},
+            timeout=15
         )
 
         return {
             "success": response.status_code == 201,
             "status_code": response.status_code,
-            "response": response.text
+            "response": (
+                response.text if not response.ok
+                else "Federation wellness record saved."
+            )
         }
-    except requests.RequestException as e:
+
+    except (OSError, subprocess.SubprocessError):
         return {
             "success": False,
             "status_code": None,
-            "response": str(e)
+            "response": "Could not read the Thalamus backend secret."
         }
+    except requests.RequestException:
+        return {
+            "success": False,
+            "status_code": None,
+            "response": "Could not connect to GNU Health Federation."
+        }
+
+
+
 def update_mygnuhealth_tracker(
     profile,
     sleep_hours=None,
     mood=None,
-    energy=None
+    energy=None,
 ):
     """
-    Update MyGNUHealth heart trackers and Book of Life
-    for a specific user profile.
+    Update an existing local MyGNUHealth profile's heart trackers and Book
+    of Life. This function currently supports only the two profile paths
+    listed below; it is not yet dynamic for newly registered users.
     """
 
-    import subprocess
-
-    script = """
+    script = r"""
 from mygnuhealth.core import maindb, boldb
 from datetime import datetime
 import uuid
@@ -183,91 +245,83 @@ import sys
 sleep_hours = None if sys.argv[1] == "None" else float(sys.argv[1])
 mood = None if sys.argv[2] == "None" else sys.argv[2]
 energy = None if sys.argv[3] == "None" else sys.argv[3]
+federation_id = sys.argv[4]
 
 measurements = []
 
-# Update Mood/Energy heart tracker
 if mood is not None or energy is not None:
-    maindb.table('mood').insert({
-        'timestamp': datetime.now().isoformat(),
-        'event_id': str(uuid.uuid4()),
-        'synced': False,
-        'mood': mood,
-        'energy': energy
+    maindb.table("mood").insert({
+        "timestamp": datetime.now().isoformat(),
+        "event_id": str(uuid.uuid4()),
+        "synced": False,
+        "mood": mood,
+        "energy": energy,
     })
-
     measurements.append({
-        'mood_energy': {
-            'mood': mood,
-            'energy': energy
-        }
+        "mood_energy": {"mood": mood, "energy": energy}
     })
 
-# Update Sleep heart tracker
 if sleep_hours is not None:
-
-    sleep_quality = 'good' if sleep_hours >= 6 else 'poor'
-
-    maindb.table('sleep').insert({
-        'timestamp': datetime.now().isoformat(),
-        'event_id': str(uuid.uuid4()),
-        'synced': False,
-        'sleeptime': sleep_hours,
-        'sleepquality': sleep_quality
+    sleep_quality = "good" if sleep_hours >= 6 else "poor"
+    maindb.table("sleep").insert({
+        "timestamp": datetime.now().isoformat(),
+        "event_id": str(uuid.uuid4()),
+        "synced": False,
+        "sleeptime": sleep_hours,
+        "sleepquality": sleep_quality,
     })
-
     measurements.append({
-        'sleep': {
-            'sleeptime': sleep_hours,
-            'sleepquality': sleep_quality
+        "sleep": {
+            "sleeptime": sleep_hours,
+            "sleepquality": sleep_quality,
         }
     })
 
-# Create Book of Life record
 if measurements:
-
-    page_id = 'wellness_' + uuid.uuid4().hex[:12]
-
-    boldb.table('pol').insert({
-        'book': 'empath_' + sys.argv[4],
-        'page_date': datetime.now().isoformat(),
-        'age': None,
-        'domain': 'medical',
-        'relevance': None,
-        'privacy': None,
-        'context': 'self_monitoring',
-        'measurements': measurements,
-        'genetic_info': '',
-        'summary': '',
-        'info': 'Empath AI wellness',
-        'node': 'mygnuhealth',
-        'author': 'empath_' + sys.argv[4],
-        'author_acct': 'empath_' + sys.argv[4],
-        'fsynced': True,
-        'page': page_id
+    page_id = "wellness_" + uuid.uuid4().hex[:12]
+    boldb.table("pol").insert({
+        "book": federation_id,
+        "page_date": datetime.now().isoformat(),
+        "age": None,
+        "domain": "medical",
+        "relevance": None,
+        "privacy": None,
+        "context": "self_monitoring",
+        "measurements": measurements,
+        "genetic_info": "",
+        "summary": "",
+        "info": "Empath AI wellness",
+        "node": "mygnuhealth",
+        "author": federation_id,
+        "author_acct": federation_id,
+        "fsynced": True,
+        "page": page_id,
     })
+    print("Book of Life record created:", page_id)
 
-    print('Book of Life record created:', page_id)
-
-print('MyGNUHealth tracker and Book of Life updated successfully')
+print("MyGNUHealth tracker and Book of Life update completed.")
 """
 
+    # These are the existing local profiles. New users need a provisioning
+    # step before this function can safely target their own local database.
     profile_paths = {
+        "empath_11": "/home/usman/mygnuhealth_profiles/EMPATH_11",
         "empath_izak": "/home/usman/mygnuhealth_profiles/izak",
-       "empath_saleha": "/home/usman/mygnuhealth_profiles/saleha"
+        "empath_saleha": "/home/usman/mygnuhealth_profiles/saleha",
+
     }
 
-    if profile.lower() not in profile_paths:
-        print("Unknown MyGNUHealth profile:", profile)
+    if not profile or profile.lower() not in profile_paths:
+        print("Unknown local MyGNUHealth profile:", profile)
         return False
 
     xdg_config = profile_paths[profile.lower()]
-    short_profile = profile.lower().replace("empath_", "")
+    federation_id = profile
 
     try:
         result = subprocess.run(
             [
-                "wsl",
+                "wsl.exe",
                 "-d",
                 "Ubuntu-24.04",
                 "--",
@@ -279,22 +333,22 @@ print('MyGNUHealth tracker and Book of Life updated successfully')
                 str(sleep_hours),
                 str(mood),
                 str(energy),
-                short_profile
+                federation_id,
             ],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
 
-        print(result.stdout)
+        if result.stdout:
+            print(result.stdout)
 
         if result.returncode != 0:
-            print("MyGNUHealth update failed:")
-            print(result.stderr)
+            print("MyGNUHealth update failed:", result.stderr)
             return False
 
         return True
 
-    except Exception as e:
-        print("MyGNUHealth update error:", e)
+    except (OSError, subprocess.SubprocessError) as exc:
+        print("MyGNUHealth update error:", exc)
         return False
