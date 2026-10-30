@@ -748,7 +748,9 @@ html[dir="rtl"] body {
         })
             .then(r => r.json())
             .then(data => {
+            
                 if (data && data.name) {
+
                     document.getElementById('greeting-name').textContent =
                         currentLanguage === 'ur' ? (data.name_urdu || data.name) : data.name;
                 }

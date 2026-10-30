@@ -19,13 +19,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for, send_file
 from openai import OpenAI
 from gnuhealth_connector import (
-    create_gnuhealth_account,
-    create_mygnuhealth_profile,
-    send_wellness_to_gnuhealth,
+     create_mygnuhealth_profile,
     update_mygnuhealth_tracker,
-    GNUHEALTH_PERSON_ID,
-    GNUHEALTH_USERNAME,
-    GNUHEALTH_PASSWORD
 )
 
 
@@ -359,7 +354,7 @@ def get_user_by_account_id(account_id):
 
 
 def set_gnuhealth_id(user_id, gnuhealth_id):
-    """Safely link a local Empath AI user to their Federation ID."""
+    """Safely link a local Empath AI user to their MyGNUHealth profile ID."""
     if not user_id or not gnuhealth_id:
         return False
 
@@ -3007,6 +3002,7 @@ def auth_page():
     return render_template("auth.html")
 
 
+
 @app.route("/signup", methods=["POST"])
 def signup():
     init_db()
@@ -3017,11 +3013,13 @@ def signup():
     password = data.get("password") or ""
     dob = data.get("dob") or ""
 
-    # Validate required fields.
+    # 1. Validate required fields.
     if not name or not email or not password or not dob:
-        return jsonify({"error": "All fields are required."}), 400
+        return jsonify({
+            "error": "All fields are required."
+        }), 400
 
-    # Validate date of birth and minimum age.
+    # 2. Validate date of birth and minimum age.
     try:
         birth = datetime.strptime(dob, "%Y-%m-%d")
         today = datetime.today()
@@ -3036,23 +3034,102 @@ def signup():
             }), 400
 
     except ValueError:
-        return jsonify({"error": "Invalid date of birth."}), 400
+        return jsonify({
+            "error": "Invalid date of birth."
+        }), 400
 
     db = get_db()
     cursor = db.cursor()
 
-    # Prevent duplicate local accounts.
+    # 3. Check whether this email already has an account.
     cursor.execute(
-        "SELECT id FROM accounts WHERE email = ?",
+        """
+        SELECT id, full_name, dob, password_hash
+        FROM accounts
+        WHERE email = ?
+        """,
         (email,)
     )
 
-    if cursor.fetchone():
-        return jsonify({
-            "error": "An account with this email already exists. Please login."
-        }), 400
+    existing_account = cursor.fetchone()
 
-    # Create the local account.
+    # 4. Recover an existing account if signup previously failed.
+    if existing_account:
+
+        if existing_account["password_hash"] != hash_password(password):
+            return jsonify({
+                "error": "An account with this email already exists. Please login."
+            }), 400
+
+        if (
+            existing_account["full_name"] != name
+            or existing_account["dob"] != dob
+        ):
+            return jsonify({
+                "error": "Your account details do not match the existing account."
+            }), 400
+
+        account_id = existing_account["id"]
+        profile_id = f"EMPATH_{account_id}"
+
+        try:
+            profile_result = create_mygnuhealth_profile(
+                profile_id,
+                name,
+                dob,
+                password
+            )
+
+            if not profile_result or not profile_result.get("success"):
+                app.logger.error(
+                    "MyGNUHealth recovery failed for %s: %s",
+                    profile_id,
+                    profile_result
+                )
+
+                return jsonify({
+                    "error": "Local MyGNUHealth setup could not be completed. Please try again later."
+                }), 500
+
+            existing_user = get_user_by_account_id(account_id)
+
+            if existing_user:
+                user_id = existing_user["id"]
+            else:
+                user_id = create_user(
+                    name,
+                    account_id=account_id
+                )
+
+            if not user_id or not set_gnuhealth_id(user_id, profile_id):
+                raise RuntimeError(
+                    "Unable to link local MyGNUHealth profile."
+                )
+
+        except Exception:
+            app.logger.exception(
+                "Signup recovery failed for account %s",
+                account_id
+            )
+
+            return jsonify({
+                "error": "Account recovery could not be completed. Please contact support."
+            }), 500
+
+        # Sign in after successful recovery.
+        session.permanent = True
+        session["account_id"] = account_id
+        session["account_name"] = name
+        session["user_id"] = user_id
+
+        return jsonify({
+            "message": "Your existing account and MyGNUHealth profile are ready.",
+            "name": name,
+            "mygnuhealth_profile_id": profile_id,
+            "gnuhealth_id": profile_id
+        }), 200
+
+    # 5. Create a new Empath AI account.
     try:
         pw_hash = hash_password(password)
 
@@ -3070,50 +3147,60 @@ def signup():
     except Exception:
         db.rollback()
         app.logger.exception("Failed to create local account")
+
         return jsonify({
             "error": "Could not create your account. Please try again."
         }), 500
 
-    federation_id = f"EMPATH_{account_id}"
+    # 6. Generate a unique local MyGNUHealth profile ID.
+    profile_id = f"EMPATH_{account_id}"
 
-    # Register the account with GNU Health Federation.
+    # 7. Initialize the separate local MyGNUHealth profile.
     try:
-        federation_result = create_gnuhealth_account(
-            federation_id,
+        profile_result = create_mygnuhealth_profile(
+            profile_id,
+            name,
+            dob,
             password
         )
 
+        if not profile_result or not profile_result.get("success"):
+            app.logger.error(
+                "MyGNUHealth initialization failed for %s: %s",
+                profile_id,
+                profile_result
+            )
+
+            return jsonify({
+                "error": (
+                    "Your Empath AI account was created, but your local "
+                    "MyGNUHealth profile could not be initialized. "
+                    "Please retry signup using the same details."
+                ),
+                "mygnuhealth_profile_id": profile_id
+            }), 500
+
     except Exception:
         app.logger.exception(
-            "Federation registration failed for %s",
-            federation_id
-        )
-        return jsonify({
-            "error": (
-                "Your Empath AI account was created, but Federation "
-                "registration needs recovery. Please contact support."
-            ),
-            "federation_id": federation_id
-        }), 502
-
-    if not federation_result.get("success"):
-        app.logger.error(
-            "Federation registration failed for %s; status=%s",
-            federation_id,
-            federation_result.get("status_code")
+            "MyGNUHealth profile creation failed for %s",
+            profile_id
         )
 
         return jsonify({
             "error": (
-                "Your Empath AI account was created, but GNU Health "
-                "Federation registration failed. Please contact support "
-                "before retrying signup."
+                "Your Empath AI account was created, but your local "
+                "MyGNUHealth profile could not be initialized. "
+                "Please retry signup using the same details."
             ),
-            "federation_status": federation_result.get("status_code"),
-            "federation_id": federation_id
-        }), 502
+            "mygnuhealth_profile_id": profile_id
+        }), 500
 
-    # Link the local account to its own local user profile.
+    app.logger.info(
+        "Local MyGNUHealth profile initialized for %s",
+        profile_id
+    )
+
+    # 8. Create or retrieve the local Empath AI user.
     try:
         existing_user = get_user_by_account_id(account_id)
 
@@ -3125,84 +3212,52 @@ def signup():
                 account_id=account_id
             )
 
-        if not set_gnuhealth_id(user_id, federation_id):
-            app.logger.error(
-                "Could not link Federation ID %s to local user %s",
-                federation_id,
-                user_id
+        if not user_id:
+            raise RuntimeError("Could not create or retrieve local user.")
+
+        # 9. Link the MyGNUHealth profile to the correct user.
+        if not set_gnuhealth_id(user_id, profile_id):
+            raise RuntimeError(
+                "Could not link local MyGNUHealth profile to user."
             )
 
-            return jsonify({
-                "error": (
-                    "Federation registration succeeded, but local "
-                    "account linking needs recovery. Please contact support."
-                ),
-                "federation_id": federation_id
-            }), 500
-
-    
     except Exception:
         app.logger.exception(
-            "Local user linking failed for Federation ID %s",
-            federation_id
+            "Local account linking failed for profile %s",
+            profile_id
         )
 
         return jsonify({
             "error": (
-                "Federation registration succeeded, but local account "
-                "linking needs recovery. Please contact support."
+                "Your MyGNUHealth profile was initialized, but "
+                "linking it to your Empath AI account failed. "
+                "Please retry signup using the same details."
             ),
-            "federation_id": federation_id
-        }), 500
-
-    # Automatically initialize this user's separate MyGNUHealth profile.
-    try:
-        profile_result = create_mygnuhealth_profile(federation_id)
-
-    except Exception:
-        app.logger.exception(
-            "MyGNUHealth profile creation failed for %s",
-            federation_id
-        )
-        profile_result = {
-            "success": False,
-            "error": "Unexpected profile initialization error."
-        }
-
-    if not profile_result.get("success"):
-        app.logger.error(
-            "MyGNUHealth profile creation failed for %s: %s",
-            federation_id,
-            profile_result.get("error", "Unknown error")
-        )
-        return jsonify({
-            "error": (
-                "Your account and Federation registration succeeded, "
-                "but your MyGNUHealth profile could not be initialized. "
-                "Please contact support for recovery."
-            ),
-            "federation_id": federation_id
+            "mygnuhealth_profile_id": profile_id
         }), 500
 
     app.logger.info(
-        "MyGNUHealth profile initialized for %s",
-        federation_id
+        "MyGNUHealth profile %s linked to Empath AI user %s",
+        profile_id,
+        user_id
     )
 
-    # Sign the new user in only after all registrations and linking succeed.
-
-
-    # Sign the new user in only after both registrations and linking succeed.
+    # 10. Sign in after successful account creation and linking.
     session.permanent = True
     session["account_id"] = account_id
     session["account_name"] = name
     session["user_id"] = user_id
 
     return jsonify({
-        "message": "Account created and connected to GNU Health Federation.",
+        "message": (
+            "Account created and connected to your local "
+            "MyGNUHealth profile."
+        ),
         "name": name,
-        "gnuhealth_id": federation_id
+        "mygnuhealth_profile_id": profile_id,
+        "gnuhealth_id": profile_id
     }), 201
+
 
 
 
@@ -3538,6 +3593,7 @@ def init():
 
     account_id = session.get("account_id")
     account_name = (session.get("account_name") or "").strip()
+    
 
     init_db()
 
@@ -4621,18 +4677,9 @@ def chat():
         user = get_user_by_id(session["user_id"])
         gnuhealth_id = user["gnuhealth_id"] if user else None
 
+        
         if gnuhealth_id:
-            result = send_wellness_to_gnuhealth(
-                gnuhealth_id,
-                gnuhealth_id,
-                GNUHEALTH_PASSWORD,
-                wellbeing_info.get("sleep_hours"),
-                wellbeing_info.get("mood"),
-                wellbeing_info.get("energy")
-            )
-
-            print("GNU Health result:", result)
-
+            # Save wellness directly to this user's local MyGNUHealth profile.
             tracker_result = update_mygnuhealth_tracker(
                 gnuhealth_id,
                 wellbeing_info.get("sleep_hours"),
@@ -4643,7 +4690,8 @@ def chat():
             print("MyGNUHealth tracker result:", tracker_result)
 
         else:
-            print("No GNU Health ID linked to this user.")
+            print("No MyGNUHealth profile ID linked to this user.")
+
             
     # Learn compact user profile from this message, not the full chat.
     if session.get("user_id"):
