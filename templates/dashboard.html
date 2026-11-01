@@ -186,99 +186,234 @@ body {
 
 /* ── CARDS GRID ── */
 .cards-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 22px;
-  width: 100%;
-  max-width: 860px;
-  animation: fadeUp 0.6s 0.1s ease both;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    width: 100%;
+    max-width: 1100px;
+    animation: fadeUp 0.6s 0.1s ease both;
 }
 
 /* ── CARD BASE ── */
 .card {
-  border-radius: 24px;
-  padding: 26px 28px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
-              box-shadow 0.3s ease,
-              outline-color 0.2s ease;
-  text-decoration: none;
-  display: block;
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-.card:hover {
-  transform: translateY(-8px) scale(1.025);
-  box-shadow: 0 28px 64px rgba(0,0,0,0.18);
-  outline-color: rgba(255,255,255,0.4);
-}
-.card::before {
-  content: '';
-  position: absolute;
-  top: -50px; right: -50px;
-  width: 170px; height: 170px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.card::after {
-  content: '';
-  position: absolute;
-  bottom: -40px; left: -30px;
-  width: 130px; height: 130px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 50%;
-  pointer-events: none;
+    border-radius: 24px;
+    padding: 26px 28px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.3s ease,
+                outline-color 0.2s ease;
+    text-decoration: none;
+    display: block;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
+.card:hover {
+    transform: translateY(-8px) scale(1.025);
+    box-shadow: 0 28px 64px rgba(0,0,0,0.18);
+    outline-color: rgba(255,255,255,0.4);
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 170px;
+    height: 170px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.card::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    left: -30px;
+    width: 130px;
+    height: 130px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ── CARD ICON ── */
 .card-icon-wrap {
-  width: 46px; height: 46px;
-  border-radius: 13px;
-  background: rgba(255,255,255,0.14);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  margin-bottom: 14px;
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    background: rgba(255,255,255,0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 14px;
 }
+
+/* ── CARD HEADING ── */
 .card h2 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 22px;
-  line-height: 1.15;
-  margin-bottom: 8px;
-  color: white;
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    line-height: 1.15;
+    margin-bottom: 8px;
+    color: white;
 }
+
+/* ── CARD DESCRIPTION ── */
 .card p {
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 14px;
-  color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    color: rgba(255,255,255,0.75);
 }
+
+/* ── CARD TAGS ── */
 .card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-bottom: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 28px;
 }
+
 .tag {
-  padding: 5px 11px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  background: rgba(255,255,255,0.14);
-  color: rgba(255,255,255,0.9);
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    background: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.9);
 }
+
+/* ── CARD BUTTON ── */
 .card-cta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 11px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: white;
-  transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    transition: background 0.2s;
+}
+
+/* ── CARD COLORS ── */
+.card-chat {
+    background: var(--green-dark);
+}
+
+.card-chat .card-cta {
+    background: rgba(255,255,255,0.15);
+}
+
+.card-chat:hover .card-cta {
+    background: rgba(255,255,255,0.26);
+}
+
+.card-assessment {
+    background: var(--brown);
+}
+
+.card-assessment .card-cta {
+    background: var(--orange);
+}
+
+.card-assessment:hover .card-cta {
+    background: #d96a38;
+}
+
+.card-wellness {
+    background: var(--olive);
+}
+
+.card-wellness .card-cta {
+    background: rgba(255,255,255,0.18);
+}
+
+.card-wellness:hover .card-cta {
+    background: rgba(255,255,255,0.28);
+}
+
+.card-quotes {
+    background: var(--tan);
+}
+
+.card-quotes .card-cta {
+    background: rgba(255,255,255,0.2);
+}
+
+.card-quotes:hover .card-cta {
+    background: rgba(255,255,255,0.32);
+}
+
+.card-quran {
+    background: #78613b;
+}
+
+.card-quran .card-cta {
+    background: rgba(255,255,255,0.18);
+}
+
+.card-quran:hover .card-cta {
+    background: rgba(255,255,255,0.29);
+}
+
+/* ── DESKTOP ALIGNMENT ── */
+@media (min-width: 901px) {
+
+    .cards-grid > .card:nth-child(1) {
+        grid-column: 1;
+    }
+
+    .cards-grid > .card:nth-child(2) {
+        grid-column: 2;
+    }
+
+    .cards-grid > .card:nth-child(3) {
+        grid-column: 3;
+    }
+
+    /* Words of Hope below Let's Chat */
+    .cards-grid > .card:nth-child(4) {
+        grid-column: 1;
+        width: 100%;
+    }
+
+    /* Quranic Corner below Weekly Assessment */
+    .cards-grid > .card:nth-child(5) {
+        grid-column: 2;
+        width: 100%;
+    }
+}
+
+/* ── TABLET RESPONSIVE ── */
+@media (max-width: 900px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: 700px;
+    }
+
+    .cards-grid > .card {
+        grid-column: auto;
+        width: 100%;
+    }
+}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 680px) {
+    .cards-grid {
+        grid-template-columns: 1fr;
+        max-width: 420px;
+    }
+
+    .cards-grid > .card {
+        grid-column: 1;
+        width: 100%;
+    }
 }
 
 /* ── CARD COLORS ── */
@@ -298,14 +433,47 @@ body {
 .card-quotes .card-cta { background: rgba(255,255,255,0.2); }
 .card-quotes:hover .card-cta { background: rgba(255,255,255,0.32); }
 
+/* ── QURANIC COMFORT CORNER ── */
+.card-quran { background: #78613b; }
+.card-quran .card-cta { background: rgba(255,255,255,0.18); }
+.card-quran:hover .card-cta { background: rgba(255,255,255,0.29); }
+/* ── PRECISE DESKTOP CARD ALIGNMENT ── */
+@media (min-width: 901px) {
+  .cards-grid > .card:nth-child(1) { grid-column: 1; }
+  .cards-grid > .card:nth-child(2) { grid-column: 2; }
+  .cards-grid > .card:nth-child(3) { grid-column: 3; }
+
+  /* Words of Hope sits directly below Let's Chat. */
+  .cards-grid > .card:nth-child(4) {
+    grid-column: 1;
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  /* Quranic Comfort Corner sits directly below Weekly Assessment. */
+  .cards-grid > .card:nth-child(5) {
+    grid-column: 2;
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
 /* ── BOTTOM NOTE ── */
 .bottom-note {
-  margin-top: 28px;
+  margin-top: 50px;
   text-align: center;
   animation: fadeUp 0.6s 0.3s ease both;
 }
-.bottom-note p { font-size: 13px; color: #aaa; }
-.bottom-note span { color: var(--green-dark); font-weight: 600; }
+
+.bottom-note p {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.bottom-note span {
+  color: var(--green-dark);
+  font-weight: 600;
+}
 
 /* ── DELETE MODAL ── */
 .modal-overlay {
@@ -446,6 +614,23 @@ html[lang="ur"] .bottom-note {
 
 
 /* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 700px;
+  }
+
+  .cards-grid > .card:nth-child(1),
+  .cards-grid > .card:nth-child(2),
+  .cards-grid > .card:nth-child(3),
+  .cards-grid > .card:nth-child(4),
+  .cards-grid > .card:nth-child(5) {
+    grid-column: auto;
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
 @media (max-width: 680px) {
   .navbar { padding: 12px 16px; }
   .navbar-actions { gap: 6px; }
@@ -537,82 +722,183 @@ html[lang="ur"] .bottom-note {
 
     <!-- 1. Let's Chat -->
     <a class="card card-chat" href="/app">
-      <div class="card-icon-wrap">🤝</div>
-      <h2 data-i18n="letsChat">Let's Chat</h2>
-      <p data-i18n="chatDescription">Talk openly with Empath AI — a compassionate listener trained specifically for internally displaced people in Pakistan. No judgment, always safe.</p>
-      <div class="card-tags">
-        <span class="tag" data-i18n="culturallyAware">Culturally Aware</span>
-        <span class="tag" data-i18n="crisisSupport">Crisis Support</span>
-        <span class="tag" data-i18n="private">Private</span>
-      </div>
-      <div class="card-cta">
-        <span data-i18n="startChatting">Start Chatting</span>
-        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-          <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+        <div class="card-icon-wrap">🤝</div>
+
+        <h2 data-i18n="letsChat">Let's Chat</h2>
+
+        <p data-i18n="chatDescription">
+            Talk openly with Empath AI — a compassionate listener
+            trained specifically for internally displaced people
+            in Pakistan. No judgment, always safe.
+        </p>
+
+        <div class="card-tags">
+            <span class="tag" data-i18n="culturallyAware">Culturally Aware</span>
+            <span class="tag" data-i18n="crisisSupport">Crisis Support</span>
+            <span class="tag" data-i18n="private">Private</span>
+        </div>
+
+        <div class="card-cta">
+            <span data-i18n="startChatting">Start Chatting</span>
+
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+                <path d="M4 9h10M10 5l4 4-4 4"
+                      stroke="white"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+            </svg>
+        </div>
     </a>
+
 
     <!-- 2. Weekly Assessment -->
     <a class="card card-assessment" href="/self_assessment">
-      <div class="card-icon-wrap">📋</div>
-      <h2 data-i18n="weeklyAssessment">Weekly Self Assessment</h2>
-      <p data-i18n="assessmentDescription">Answer 21 short questions covering depression, anxiety, and wellbeing. Get your personal PHQ-9, GAD-7, and WHO-5 scores with tailored guidance.</p>
-      <div class="card-tags">
-        <span class="tag">PHQ-9</span>
-        <span class="tag">GAD-7</span>
-        <span class="tag">WHO-5</span>
-        <span class="tag" data-i18n="fiveMins">~5 mins</span>
-      </div>
-      <div class="card-cta">
-        <span data-i18n="startAssessment">Start Assessment</span>
-        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-          <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+        <div class="card-icon-wrap">📋</div>
+
+        <h2 data-i18n="weeklyAssessment">
+            Weekly Self Assessment
+        </h2>
+
+        <p data-i18n="assessmentDescription">
+            Answer 21 short questions covering depression,
+            anxiety, and wellbeing. Get your personal PHQ-9,
+            GAD-7, and WHO-5 scores with tailored guidance.
+        </p>
+
+        <div class="card-tags">
+            <span class="tag">PHQ-9</span>
+            <span class="tag">GAD-7</span>
+            <span class="tag">WHO-5</span>
+            <span class="tag" data-i18n="fiveMins">~5 mins</span>
+        </div>
+
+        <div class="card-cta">
+            <span data-i18n="startAssessment">Start Assessment</span>
+
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+                <path d="M4 9h10M10 5l4 4-4 4"
+                      stroke="white"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+            </svg>
+        </div>
     </a>
+
 
     <!-- 3. Wellness Progress -->
     <a class="card card-wellness" href="/wellness">
-      <div class="card-icon-wrap">📈</div>
-      <h2 data-i18n="wellnessProgress">Wellness Progress</h2>
-      <p data-i18n="wellnessDescription">Track your mental health journey over time. View trends in your assessment scores and monitor improvements in your overall wellbeing.</p>
-      <div class="card-tags">
-        <span class="tag" data-i18n="scoreTrends">Score Trends</span>
-        <span class="tag" data-i18n="weeklyReports">Weekly Reports</span>
-        <span class="tag" data-i18n="insights">Insights</span>
-      </div>
-      <div class="card-cta">
-        <span data-i18n="viewProgress">View Progress</span>
-        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-          <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+        <div class="card-icon-wrap">📈</div>
+
+        <h2 data-i18n="wellnessProgress">
+            Wellness Progress
+        </h2>
+
+        <p data-i18n="wellnessDescription">
+            Track your mental health journey over time.
+            View trends in your assessment scores and monitor
+            improvements in your overall wellbeing.
+        </p>
+
+        <div class="card-tags">
+            <span class="tag" data-i18n="scoreTrends">Score Trends</span>
+            <span class="tag" data-i18n="weeklyReports">Weekly Reports</span>
+            <span class="tag" data-i18n="insights">Insights</span>
+        </div>
+
+        <div class="card-cta">
+            <span data-i18n="viewProgress">View Progress</span>
+
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+                <path d="M4 9h10M10 5l4 4-4 4"
+                      stroke="white"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+            </svg>
+        </div>
     </a>
+
 
     <!-- 4. Words of Hope -->
     <a class="card card-quotes" href="/quotes">
-      <div class="card-icon-wrap">🕊️</div>
-      <h2 data-i18n="wordsOfHope">Words of Hope</h2>
-      <p data-i18n="hopeDescription">Gentle quotes from the Quran, Hadith, Quaid-e-Azam, Allama Iqbal, and voices from around the world — fresh every time you visit.</p>
-      <div class="card-tags">
-        <span class="tag" data-i18n="quranHadith">Quran &amp; Hadith</span>
-        <span class="tag" data-i18n="pakistaniLeaders">Pakistani Leaders</span>
-        <span class="tag" data-i18n="aiPowered">AI Powered</span>
-      </div>
-      <div class="card-cta">
-        <span data-i18n="readTodaysWords">Read Today's Words</span>
-        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-          <path d="M4 9h10M10 5l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+        <div class="card-icon-wrap">🕊️</div>
+
+        <h2 data-i18n="wordsOfHope">Words of Hope</h2>
+
+        <p data-i18n="hopeDescription">
+            Gentle quotes from the Quran, Hadith, Quaid-e-Azam,
+            Allama Iqbal, and voices from around the world —
+            fresh every time you visit.
+        </p>
+
+        <div class="card-tags">
+            <span class="tag" data-i18n="quranHadith">Quran &amp; Hadith</span>
+            <span class="tag" data-i18n="pakistaniLeaders">Pakistani Leaders</span>
+            <span class="tag" data-i18n="aiPowered">AI Powered</span>
+        </div>
+
+        <div class="card-cta">
+            <span data-i18n="readTodaysWords">Read Today's Words</span>
+
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+                <path d="M4 9h10M10 5l4 4-4 4"
+                      stroke="white"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+            </svg>
+        </div>
     </a>
 
-  </div>
 
-  <div class="bottom-note">
-    <p>🔒 <span data-i18n="conversationsAre">Your conversations are</span> <span data-i18n="privateAnonymous">private and anonymous</span>.</p>
-  </div>
+    <!-- 5. Quranic Comfort Corner -->
+    <a class="card card-quran" href="/quranic_corner">
+        <div class="card-icon-wrap">☾</div>
+
+        <h2 data-i18n="quranicCorner">
+            Quranic Comfort Corner
+        </h2>
+
+        <p data-i18n="quranicCornerDescription">
+            A peaceful space for spiritual reflection.
+            Choose how you feel and explore carefully verified
+            Quranic verses, translations, context, and
+            gentle reflection prompts.
+        </p>
+
+        <div class="card-tags">
+            <span class="tag" data-i18n="verifiedAyat">Verified Ayat</span>
+            <span class="tag" data-i18n="urduEnglish">Urdu &amp; English</span>
+            <span class="tag" data-i18n="privateReflection">Private Reflection</span>
+        </div>
+
+        <div class="card-cta">
+            <span data-i18n="visitQuranicCorner">Find Comfort</span>
+
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+                <path d="M4 9h10M10 5l4 4-4 4"
+                      stroke="white"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </a>
+
+</div>
+
+<div class="bottom-note">
+    <p>
+        🔒
+        <span data-i18n="conversationsAre">Your conversations are</span>
+        <span data-i18n="privateAnonymous">private and anonymous</span>.
+    </p>
+</div>
+    </a>
+
+ 
 
 </div>
 
@@ -648,7 +934,12 @@ const translations = {
     viewProgress: "View Progress", wordsOfHope: "Words of Hope",
     hopeDescription: "Gentle quotes from the Quran, Hadith, Quaid-e-Azam, Allama Iqbal, and voices from around the world — fresh every time you visit.",
     quranHadith: "Quran & Hadith", pakistaniLeaders: "Pakistani Leaders", aiPowered: "AI Powered",
-    readTodaysWords: "Read Today's Words", conversationsAre: "Your conversations are",
+     readTodaysWords: "Read Today's Words",
+     quranicCorner: "Quranic Comfort Corner",
+     quranicCornerDescription: "A peaceful space for spiritual reflection. Choose how you feel and explore carefully verified Quranic verses, translations, context, and gentle reflection prompts.",
+     verifiedAyat: "Verified Ayat", urduEnglish: "Urdu & English",
+     privateReflection: "Private Reflection", visitQuranicCorner: "Find Comfort",
+     conversationsAre: "Your conversations are",
     privateAnonymous: "private and anonymous", deleteAccountQuestion: "Delete Account?",
     deleteWarning: "This action will permanently remove your account and all related data. This cannot be undone.",
     cancel: "Cancel", yesDelete: "Yes, Delete",
@@ -673,7 +964,12 @@ const translations = {
     viewProgress: "پیش رفت دیکھیں", wordsOfHope: "امید کے الفاظ",
     hopeDescription: "قرآن، حدیث، قائداعظم، علامہ اقبال اور دنیا بھر کی آوازوں سے امید بھری باتیں — ہر بار آپ کے آنے پر تازہ۔",
     quranHadith: "قرآن اور حدیث", pakistaniLeaders: "پاکستانی رہنما", aiPowered: "اے آئی سے تقویت یافتہ",
-    readTodaysWords: "آج کے الفاظ پڑھیں", conversationsAre: "آپ کی گفتگو",
+     readTodaysWords: "آج کے الفاظ پڑھیں",
+     quranicCorner: "قرآنی سکون کا گوشہ",
+     quranicCornerDescription: "روحانی غور و فکر کے لیے ایک پُرسکون جگہ۔ اپنے احساسات منتخب کریں اور مستند قرآنی آیات، ترجمہ، پس منظر اور نرم reflection سوالات سے رہنمائی حاصل کریں۔",
+     verifiedAyat: "مستند آیات", urduEnglish: "اردو اور انگریزی",
+     privateReflection: "ذاتی غور و فکر", visitQuranicCorner: "سکون حاصل کریں",
+     conversationsAre: "آپ کی گفتگو",
     privateAnonymous: "نجی اور گمنام ہے", deleteAccountQuestion: "اکاؤنٹ حذف کریں؟",
     deleteWarning: "یہ کارروائی آپ کے اکاؤنٹ اور اس سے متعلق تمام ڈیٹا کو مستقل طور پر حذف کر دے گی۔ اسے واپس نہیں کیا جا سکتا۔",
     cancel: "منسوخ کریں", yesDelete: "ہاں، حذف کریں",

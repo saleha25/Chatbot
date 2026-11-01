@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quranic Comfort Corner | Empath AI</title>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --cream: #f4efe6;
+    --cream-light: #faf6ee;
+    --beige: #eee4d3;
+    --brown: #4b2e23;
+    --brown-dark: #352116;
+    --green: #0F6E56;
+    --green-dark: #07543f;
+    --green-soft: #e4eee2;
+    --gold: #b5886a;
+    --gold-light: #e8d1b4;
+    --text-muted: #817164;
+    --white: #fffdf9;
+    --border: #e3d1bc;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--cream);
+    color: var(--brown);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+}
+
+button, textarea {
+    font: inherit;
+}
+
+/* =========================
+   HEADER — WELLNESS PROGRESS STYLE
+========================= */
+
+.navbar {
+    min-height: 72px;
+    width: 100%;
+    padding: 12px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--cream);
+    border-bottom: 1px solid rgba(75,46,35,.13);
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 14px;
+    min-width: 0;
+}
+
+.brand-area {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 11px;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.brand-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--brown-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--brown-dark);
+    white-space: nowrap;
+}
+
+.brand-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: .4px;
+    white-space: nowrap;
+}
+
+.nav-divider {
+    height: 34px;
+    width: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+.page-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.dashboard-btn {
+    background: var(--green);
+    color: white;
+    text-decoration: none;
+    padding: 10px 23px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: .2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dashboard-btn:hover {
+    background: var(--green-dark);
+}
+
+/* Header layout remains consistent in both languages */
+
+html[dir="rtl"] .navbar {
+    direction: rtl;
+}
+
+html[dir="rtl"] .nav-left {
+    direction: ltr;
+    flex-direction: row;
+}
+
+html[dir="rtl"] .brand-area {
+    direction: ltr;
+}
+
+html[dir="rtl"] .brand-name {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="rtl"] .brand-sub {
+    direction: rtl;
+    text-align: left;
+    letter-spacing: 0;
+}
+
+html[dir="rtl"] .page-label {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .dashboard-btn {
+    direction: rtl;
+}
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+
+.main {
+    max-width: 1250px;
+    padding: 0 30px 45px;
+    margin: auto;
+}
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+    text-align: center;
+    padding: 43px 15px 24px;
+    position: relative;
+}
+
+.hero-moon {
+    color: var(--gold);
+    font-size: 37px;
+    margin-bottom: 7px;
+}
+
+.hero h1 {
+    font-family: 'Playfair Display', serif;
+    color: var(--brown-dark);
+    font-size: 43px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.hero p {
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.9;
+    max-width: 700px;
+    margin: auto;
+}
+
+/* =========================
+   FEELINGS SECTION
+========================= */
+
+.feelings-section {
+    margin-top: 15px;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 20px auto 27px;
+    text-align: center;
+}
+
+.section-heading::before,
+.section-heading::after {
+    content: "";
+    height: 1px;
+    width: 90px;
+    background: var(--gold-light);
+}
+
+.section-heading h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 25px;
+    font-weight: 600;
+    color: var(--brown);
+}
+
+.feelings-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.feeling-card {
+    min-height: 137px;
+    padding: 17px 12px;
+    border: 1px solid var(--border);
+    border-radius: 23px;
+    background: rgba(255,253,249,.48);
+    color: var(--brown-dark);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+    transition: .22s ease;
+}
+
+.feeling-card:hover {
+    background: var(--cream-light);
+    border-color: var(--gold);
+    transform: translateY(-3px);
+}
+
+.feeling-card.active {
+    background: var(--green-soft);
+    border: 2px solid var(--green);
+    color: var(--green-dark);
+}
+
+/* =========================
+   PROFESSIONAL SVG ICONS
+========================= */
+
+.feeling-icon {
+    width: 63px;
+    height: 63px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feeling-icon svg {
+    width: 47px;
+    height: 47px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.feeling-card[data-feeling="anxiety"] .feeling-icon {
+    color: var(--green);
+}
+
+.feeling-card[data-feeling="sadness"] .feeling-icon {
+    color: #b5886a;
+}
+
+.feeling-card[data-feeling="hopelessness"] .feeling-icon {
+    color: #9b7448;
+}
+
+.feeling-card[data-feeling="fear"] .feeling-icon {
+    color: #98744a;
+}
+
+.feeling-card[data-feeling="loneliness"] .feeling-icon {
+    color: #b5883e;
+}
+
+.feeling-card[data-feeling="gratitude"] .feeling-icon {
+    color: #567342;
+}
+
+.feeling-card.active .feeling-icon {
+    color: var(--green-dark);
+}
+
+.feeling-card span:last-child {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+/* =========================
+   QURANIC REFLECTION CARD
+========================= */
+
+.ayah-card {
+    margin-top: 34px;
+    min-height: 260px;
+    border-radius: 22px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    display: grid;
+    grid-template-columns: 31% 69%;
+    overflow: hidden;
+    box-shadow: 0 7px 24px rgba(75,46,35,.045);
+}
+
+.ayah-art {
+    min-height: 250px;
+    background: linear-gradient(145deg, #f8f0e4, #eee1ce);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.ayah-art svg {
+    width: 100%;
+    max-width: 250px;
+    height: 190px;
+}
+
+.ayah-content {
+    padding: 28px 35px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: right;
+}
+
+.ayah-heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    align-self: flex-start;
+    background: #f5ead8;
+    padding: 11px 20px;
+    border-radius: 30px;
+    margin-bottom: 24px;
+    font-size: 19px;
+    font-weight: 600;
+}
+
+.ayah-heading svg {
+    width: 27px;
+    height: 27px;
+    color: var(--green);
+}
+
+.ayah-placeholder {
+    color: var(--text-muted);
+    line-height: 1.9;
+    font-size: 15px;
+}
+
+.ayah-reference {
+    margin-top: 17px;
+    align-self: flex-start;
+    border: 1px solid var(--gold-light);
+    background: #fbf2e3;
+    border-radius: 25px;
+    padding: 8px 17px;
+    font-size: 13px;
+    color: var(--brown);
+    display: none;
+}
+
+/* =========================
+   PERSONAL JOURNAL
+========================= */
+
+.journal-card {
+    margin-top: 28px;
+    padding: 27px;
+    border-radius: 21px;
+    background: var(--beige);
+    border: 1px solid #dfcfb9;
+}
+
+.journal-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 9px;
+}
+
+.journal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.journal-title svg {
+    width: 29px;
+    height: 29px;
+    color: var(--gold);
+}
+
+.journal-title h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 23px;
+    font-weight: 600;
+}
+
+.journal-description {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 17px;
+    line-height: 1.8;
+}
+
+.journal-input {
+    display: block;
+    width: 100%;
+    min-height: 115px;
+    padding: 17px;
+    border: 1px solid #d8c2a9;
+    border-radius: 14px;
+    background: var(--white);
+    resize: vertical;
+    outline: none;
+    color: var(--brown);
+    font-size: 15px;
+}
+
+.journal-input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(15,110,86,.08);
+}
+
+.journal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.save-btn {
+    border: none;
+    background: var(--green);
+    color: white;
+    border-radius: 13px;
+    padding: 12px 22px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: not-allowed;
+    opacity: .75;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.save-btn svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* =========================
+   PRIVACY FOOTER
+========================= */
+
+.privacy-note {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 13px;
+    margin: 28px auto 5px;
+}
+
+.privacy-note svg {
+    width: 17px;
+    height: 17px;
+    color: var(--gold);
+    flex-shrink: 0;
+}
+
+/* =========================
+   URDU SUPPORT
+========================= */
+
+html[dir="rtl"] body {
+    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
+}
+
+html[dir="rtl"] .navbar {
+    direction: rtl;
+}
+
+html[dir="rtl"] .nav-left {
+    direction: ltr;
+    flex-direction: row;
+}
+
+html[dir="rtl"] .brand-area {
+    direction: ltr;
+}
+
+html[dir="rtl"] .brand-name {
+    direction: ltr;
+    text-align: left;
+}
+
+html[dir="rtl"] .brand-sub {
+    direction: rtl;
+    letter-spacing: 0;
+    text-align: left;
+}
+
+html[dir="rtl"] .page-label {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .hero h1,
+html[dir="rtl"] .section-heading h2,
+html[dir="rtl"] .journal-title h3,
+html[dir="rtl"] .ayah-heading {
+    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
+    line-height: 1.8;
+}
+
+html[dir="rtl"] .hero p,
+html[dir="rtl"] .feeling-card,
+html[dir="rtl"] .journal-description,
+html[dir="rtl"] .journal-input,
+html[dir="rtl"] .ayah-content,
+html[dir="rtl"] .privacy-note {
+    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
+}
+
+html[dir="rtl"] .ayah-content,
+html[dir="rtl"] .journal-card {
+    direction: rtl;
+    text-align: right;
+}
+
+html[dir="rtl"] .journal-footer {
+    justify-content: flex-start;
+}
+
+html[dir="rtl"] .ayah-heading {
+    align-self: flex-start;
+}
+
+html[dir="rtl"] .ayah-reference {
+    align-self: flex-start;
+}
+
+
+/* Dynamic Quranic Ayat results */
+.ayah-count-control {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 0 auto 22px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+.ayah-count-control select {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: var(--white);
+    color: var(--brown);
+}
+.ayah-result {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+}
+.ayah-result:last-child { border-bottom: 0; }
+.ayah-result-reference {
+    display: inline-block;
+    margin-bottom: 12px;
+    border: 1px solid var(--gold-light);
+    background: #fbf2e3;
+    border-radius: 25px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: var(--brown);
+}
+.ayah-result-arabic {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Noto Naskh Arabic', serif;
+    font-size: 27px;
+    line-height: 2.1;
+    color: var(--brown-dark);
+    margin: 8px 0 14px;
+}
+.ayah-result-translation {
+    direction: ltr;
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.9;
+}
+html[dir="rtl"] .ayah-result-translation {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
+    font-size: 17px;
+}
+.ayah-loading, .ayah-error {
+    padding: 12px 0;
+    line-height: 1.8;
+}
+.ayah-error { color: #a33b32; }
+
+/* =========================
+   RESPONSIVE DESIGN
+========================= */
+
+@media(max-width: 850px) {
+    .main {
+        padding: 0 20px 35px;
+    }
+
+    .ayah-card {
+        grid-template-columns: 1fr;
+    }
+
+    .ayah-art {
+        min-height: 150px;
+    }
+
+    .ayah-art svg {
+        height: 130px;
+    }
+
+    .ayah-content {
+        padding: 24px;
+    }
+}
+
+@media(max-width: 650px) {
+    .navbar {
+        padding: 11px 14px;
+    }
+
+    .brand-name {
+        font-size: 16px;
+    }
+
+    .brand-sub {
+        font-size: 8px;
+    }
+
+    .page-label {
+        font-size: 11px;
+    }
+
+    .brand-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .dashboard-btn {
+        padding: 8px 13px;
+        font-size: 12px;
+    }
+
+    .hero {
+        padding-top: 34px;
+    }
+
+    .hero h1 {
+        font-size: 32px;
+    }
+
+    .hero p {
+        font-size: 13px;
+    }
+
+    .feelings-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 11px;
+    }
+
+    .feeling-card {
+        min-height: 120px;
+    }
+
+    .section-heading h2 {
+        font-size: 20px;
+    }
+
+    .section-heading::before,
+    .section-heading::after {
+        width: 25px;
+    }
+
+    .journal-card {
+        padding: 20px 15px;
+    }
+
+    .journal-title h3 {
+        font-size: 19px;
+    }
+
+    .privacy-note {
+        font-size: 11px;
+    }
+}
+
+@media(max-width: 400px) {
+    .nav-divider,
+    .page-label {
+        display: none;
+    }
+
+    .brand-name {
+        font-size: 14px;
+    }
+
+    .feelings-grid {
+        gap: 9px;
+    }
+
+    .feeling-card span:last-child {
+        font-size: 15px;
+    }
+}
+/* AYAH DETAIL MODAL */
+.ayah-detail-modal{position:fixed;inset:0;background:rgba(38,27,18,.58);display:none;align-items:center;justify-content:center;z-index:3000;padding:18px}
+.ayah-detail-modal.show{display:flex}
+.ayah-detail-box{width:min(760px,100%);max-height:88vh;overflow:auto;background:var(--white);border:1px solid var(--border);border-radius:22px;padding:28px;box-shadow:0 22px 70px rgba(0,0,0,.25);position:relative}
+.ayah-detail-close{position:sticky;top:0;float:right;border:0;border-radius:50%;width:38px;height:38px;background:var(--beige);color:var(--brown);font-size:23px;cursor:pointer;z-index:1}
+.ayah-detail-box h2{font-family:'Playfair Display',serif;font-size:25px;margin:5px 45px 18px 0;color:var(--brown)}
+.ayah-detail-reference{color:var(--text-muted);font-size:13px;margin-bottom:18px}
+.ayah-detail-section{padding:16px 0;border-top:1px solid var(--border)}
+.ayah-detail-section h3{font-size:17px;color:var(--green-dark);margin-bottom:8px}
+.ayah-detail-section p{font-size:15px;line-height:1.9;color:var(--brown);white-space:pre-wrap}
+.ayah-result{cursor:pointer;border-radius:14px;padding:12px;transition:background .2s,border .2s;border:1px solid transparent}
+.ayah-result:hover{background:var(--cream-light);border-color:var(--gold-light)}
+.ayah-result:focus{outline:2px solid var(--green);outline-offset:2px}
+html[dir="rtl"] .ayah-detail-box{direction:rtl;text-align:right;font-family:'Noto Naskh Arabic',Tahoma,sans-serif}
+html[dir="rtl"] .ayah-detail-box h2{font-family:'Noto Naskh Arabic',Tahoma,sans-serif;margin:5px 0 18px 45px}
+html[dir="rtl"] .ayah-detail-close{float:left}
+
+
+.ayah-click-hint{margin-top:12px;font-size:13px;color:var(--green-dark);font-weight:600;text-align:center;}
+.ayah-result{cursor:pointer;border-radius:14px;padding:12px;transition:background .2s,border .2s;border:1px solid transparent;}
+.ayah-result:hover{background:var(--cream-light);border-color:var(--gold-light);}
+.ayah-result:focus{outline:2px solid var(--green);outline-offset:2px;}
+html[dir="rtl"] .ayah-detail-box{direction:rtl;text-align:right;font-family:"Noto Naskh Arabic",Tahoma,sans-serif;}
+html[dir="rtl"] .ayah-detail-box h2{font-family:"Noto Naskh Arabic",Tahoma,sans-serif;}
+html[dir="rtl"] .ayah-detail-close{float:left;}
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     HEADER — WELLNESS STYLE
+========================= -->
+
+<header class="navbar">
+
+    <div class="nav-left">
+
+        <a href="/dashboard" class="brand-area">
+
+            <div class="brand-icon">
+                <svg viewBox="0 0 24 24" width="23" height="23"
+                     fill="none" stroke="white" stroke-width="1.8"
+                     stroke-linecap="round">
+                    <circle cx="12" cy="8" r="4" fill="white"/>
+                    <path d="M7 21v-3a5 5 0 0 1 10 0v3"/>
+                </svg>
+            </div>
+
+            <div class="brand-text">
+                <div class="brand-name">Empath AI</div>
+                <div class="brand-sub" id="brandSub">
+                    IDP MENTAL HEALTH
+                </div>
+            </div>
+
+        </a>
+
+        <div class="nav-divider"></div>
+
+        <span class="page-label" id="navPageLabel">
+            Quranic Comfort Corner
+        </span>
+
+    </div>
+
+    <a href="/dashboard" class="dashboard-btn" id="dashboardBtn">
+        Dashboard
+    </a>
+
+</header>
+
+
+<main class="main">
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <div class="hero-moon">☾</div>
+
+        <h1 id="pageTitle">Quranic Comfort Corner</h1>
+
+        <p id="introText">
+            A peaceful space for spiritual reflection. Take a moment,
+            acknowledge your feelings, and explore the comfort and
+            guidance of the Quran.
+        </p>
+
+    </section>
+
+
+    <!-- FEELINGS SECTION -->
+
+    <section class="feelings-section">
+
+        <div class="section-heading">
+            <h2 id="feelingTitle">How are you feeling today?</h2>
+        </div>
+
+        <div class="feelings-grid">
+
+            <!-- ANXIETY -->
+
+            <button class="feeling-card" data-feeling="anxiety">
+
+                <span class="feeling-icon">
+                    <svg viewBox="0 0 48 48">
+                        <path d="M24 7
+                            C17 7 12 12 12 19
+                            C8 20 7 25 10 29
+                            C9 34 13 37 18 36
+                            C20 40 25 40 27 36
+                            C33 38 38 34 37 29
+                            C41 25 39 20 35 19
+                            C35 12 30 7 24 7Z"/>
+                        <path d="M24 8V37"/>
+                        <path d="M17 17C13 20 15 24 19 25"/>
+                        <path d="M30 16C34 19 32 23 29 25"/>
+                        <path d="M17 30C19 27 22 29 22 32"/>
+                        <path d="M31 30C29 27 26 29 26 32"/>
+                    </svg>
+                </span>
+
+                <span id="anxietyLabel">Anxiety</span>
+
+            </button>
+
+
+            <!-- SADNESS -->
+
+            <button class="feeling-card" data-feeling="sadness">
+
+                <span class="feeling-icon">
+                    <svg viewBox="0 0 48 48">
+                        <path d="M24 6C18 15 10 23 10 31a14 14 0 0 0 28 0C38 23 30 15 24 6Z"/>
+                        <path d="M18 32c1 4 4 6 8 6"/>
+                    </svg>
+                </span>
+
+                <span id="sadnessLabel">Sadness</span>
+
+            </button>
+
+
+            <!-- HOPELESSNESS -->
+
+            <button class="feeling-card" data-feeling="hopelessness">
+
+                <span class="feeling-icon">
+                    <svg viewBox="0 0 48 48">
+                        <path d="M12 29a10 10 0 0 1 1-19 12 12 0 0 1 22 4 9 9 0 0 1 1 18H13"/>
+                        <path d="M17 36l-3 6"/>
+                        <path d="M25 36l-3 6"/>
+                        <path d="M33 36l-3 6"/>
+                    </svg>
+                </span>
+
+                <span id="hopelessnessLabel">Hopelessness</span>
+
+            </button>
+
+
+            <!-- FEAR -->
+
+            <button class="feeling-card" data-feeling="fear">
+
+                <span class="feeling-icon">
+                    <svg viewBox="0 0 48 48">
+                        <path d="M24 5 39 11v11c0 10-6 16-15 21C15 38 9 32 9 22V11L24 5Z"/>
+                        <path d="M24 15v11"/>
+                        <circle cx="24" cy="32" r="1"/>
+                    </svg>
+                </span>
+
+                <span id="fearLabel">Fear</span>
+
+            </button>
+
+
+            <!-- LONELINESS -->
+
+            <button class="feeling-card" data-feeling="loneliness">
+
+                <span class="feeling-icon">
+                    <svg viewBox="0 0 48 48">
+                        <circle cx="24" cy="13" r="7"/>
+                        <path d="M10 40v-4a14 14 0 0 1 28 0v4"/>
+                        <path d="M17 39v-4"/>
+                        <path d="M31 39v-4"/>
+                    </svg>
+                </span>
+
+                <span id="lonelinessLabel">Loneliness</span>
+
+            </button>
+
+
+            <!-- GRATITUDE -->
+
+            <button class="feeling-card" data-feeling="gratitude">
+
+                <span class="feeling-icon">
+                    <svg viewBox="0 0 48 48">
+                        <path d="M24 39S7 28 7 17a9 9 0 0 1 17-4 9 9 0 0 1 17 4c0 11-17 22-17 22Z"/>
+                        <path d="M5 37c3-2 5-5 8-5"/>
+                        <path d="M43 37c-3-2-5-5-8-5"/>
+                        <path d="M17 28l7 7 7-7"/>
+                    </svg>
+                </span>
+
+                <span id="gratitudeLabel">Gratitude</span>
+
+            </button>
+
+        </div>
+
+        <div class="ayah-count-control">
+            <label for="ayahCount" id="ayahCountLabel">Show Ayat:</label>
+            <select id="ayahCount" aria-label="Number of Ayat">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+            </select>
+        </div>
+
+    </section>
+
+
+    <!-- QURANIC REFLECTION -->
+
+    <section class="ayah-card">
+
+        <div class="ayah-art">
+
+            <svg viewBox="0 0 260 190" fill="none">
+
+                <path d="M45 165V80Q45 35 130 15Q215 35 215 80V165"
+                      stroke="#d8b98e" stroke-width="2" opacity=".5"/>
+
+                <path d="M47 143L130 168L213 143"
+                      stroke="#9b7048" stroke-width="5"
+                      stroke-linecap="round"/>
+
+                <path d="M130 168V183M103 155L130 183L157 155"
+                      stroke="#9b7048" stroke-width="4"
+                      stroke-linecap="round"/>
+
+                <path d="M57 113Q93 104 130 130Q167 104 203 113V151Q165 142 130 160Q95 142 57 151Z"
+                      fill="#fffaf0" stroke="#b5886a" stroke-width="2"/>
+
+                <path d="M130 130V160M67 121Q96 118 119 136M141 136Q165 118 193 121"
+                      stroke="#b5886a" stroke-width="1.5"/>
+
+                <path d="M225 93V78M215 78H235L231 69H219Z"
+                      stroke="#b5886a" stroke-width="2"/>
+
+                <path d="M216 80L212 103L216 133H234L238 103L234 80Z"
+                      fill="#f6e5c5" stroke="#b5886a" stroke-width="2"/>
+
+                <path d="M225 87V124M218 103H232"
+                      stroke="#c99a58" stroke-width="1.5"/>
+
+                <path d="M221 69H229"
+                      stroke="#b5886a" stroke-width="2"/>
+
+                <path d="M28 157V120M28 139Q9 134 12 119Q29 121 28 139ZM28 129Q43 112 48 121Q45 136 28 129Z"
+                      stroke="#607b4d" stroke-width="2"/>
+
+            </svg>
+
+        </div>
+
+        <div class="ayah-content">
+
+            <div class="ayah-heading">
+
+                <svg viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7">
+
+                    <path d="M3 5c4-2 7-1 9 1v15c-2-2-5-3-9-1z"/>
+                    <path d="M21 5c-4-2-7-1-9 1v15c2-2 5-3 9-1z"/>
+
+                </svg>
+
+                <span id="ayahTitle">A Moment of Reflection</span>
+
+            </div>
+
+            <div class="ayah-placeholder" id="ayahMessage">
+                Choose a feeling above to explore a relevant,
+                verified Quranic verse, its translation and context.
+            </div>
+
+            <div class="ayah-reference" id="ayahReference"></div>
+
+        </div>
+
+    </section>
+
+
+    <!-- PERSONAL JOURNAL -->
+
+    <section class="journal-card">
+
+        <div class="journal-heading">
+
+            <div class="journal-title">
+
+                <svg viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7"
+                     stroke-linecap="round" stroke-linejoin="round">
+
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4z"/>
+                    <path d="M14 5l5 5"/>
+
+                </svg>
+
+                <h3 id="journalTitle">Your Personal Reflection</h3>
+
+            </div>
+
+        </div>
+
+        <p class="journal-description" id="journalDescription">
+            Take a moment to write down your thoughts.
+            This is your private space.
+        </p>
+
+        <textarea
+            class="journal-input"
+            id="journalInput"
+            placeholder="Write your thoughts here..."
+            disabled></textarea>
+
+        <div class="journal-footer">
+
+            <button class="save-btn" disabled>
+
+                <svg viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2">
+
+                    <rect x="4" y="10" width="16" height="11" rx="2"/>
+                    <path d="M8 10V7a4 4 0 1 1 8 0v3"/>
+                    <path d="M12 14v3"/>
+
+                </svg>
+
+                <span id="saveLabel">Save Reflection</span>
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- PRIVACY NOTE -->
+
+    <div class="privacy-note">
+
+        <svg viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.7">
+
+            <rect x="5" y="10" width="14" height="11" rx="2"/>
+            <path d="M8 10V7a4 4 0 1 1 8 0v3"/>
+
+        </svg>
+
+        <span id="privacyNote">
+            Your spiritual journey is personal.
+            Your reflections should remain private.
+        </span>
+
+    </div>
+
+</main>
+
+
+<!-- Ayah reflection popup -->
+<div class="ayah-detail-modal" id="ayahDetailModal" role="dialog" aria-modal="true" aria-labelledby="ayahDetailTitle">
+  <div class="ayah-detail-box">
+    <button type="button" class="ayah-detail-close" id="closeAyahDetail" aria-label="Close">&times;</button>
+    <h2 id="ayahDetailTitle">A moment with the Ayah</h2>
+    <div class="ayah-detail-reference" id="ayahDetailReference"></div>
+    <div id="ayahDetailSections"></div>
+  </div>
+</div>
+
+
+
+
+<script>
+/* =========================
+   LANGUAGE DETECTION
+========================= */
+const storedLanguage = (localStorage.getItem("empathLanguage") || "en").toLowerCase().trim();
+const language = storedLanguage === "ur" || storedLanguage === "urdu" || storedLanguage.startsWith("ur-") ? "ur" : "en";
+const isUrdu = language === "ur";
+let selectedFeeling = null;
+const usedVerseIds = {};
+
+const translations = {
+    en: {
+        dashboard: "Dashboard", brandSub: "IDP MENTAL HEALTH", navTitle: "Quranic Comfort Corner",
+        title: "Quranic Comfort Corner",
+        intro: "A peaceful space for spiritual reflection. Take a moment, acknowledge your feelings, and explore the comfort and guidance of the Quran.",
+        feeling: "How are you feeling today?", anxiety: "Anxiety", sadness: "Sadness",
+        hopelessness: "Hopelessness", fear: "Fear", loneliness: "Loneliness", gratitude: "Gratitude",
+        ayahTitle: "A Moment of Reflection",
+        ayahMessage: "Choose a feeling above to explore Quranic guidance related to how you feel.",
+        journalTitle: "Your Personal Reflection",
+        journalDescription: "Take a moment to write down your thoughts. This is your private space.",
+        placeholder: "Write your thoughts here...", save: "Save Reflection",
+        privacy: "Your spiritual journey is personal. Your reflections should remain private.",
+        selected: "You selected ", count: "Show Ayat:", loading: "Loading Quranic guidance...",
+        translation: "Translation", clickHint: "Click an Ayah to read its explanation and reflection.", tafseer: "Tafseer", story: "Quranic context / story", lesson: "A lesson from the Quran", heartMessage: "A message for your heart", reflectionQuestion: "A moment to reflect", unavailable: "This information is not available yet.", noVerses: "No Ayat are available in this category yet.",
+        error: "Unable to load Quranic guidance. Please try again.", retry: "Please try again."
+    },
+    ur: {
+        dashboard: "ڈیش بورڈ", brandSub: "آئی ڈی پی ذہنی صحت", navTitle: "قرآنی سکون کا گوشہ",
+        title: "قرآنی سکون کا گوشہ",
+        intro: "روحانی غور و فکر کے لیے ایک پُرسکون جگہ۔ چند لمحے رکیں، اپنے احساسات کو سمجھیں اور قرآن کی رہنمائی سے سکون حاصل کریں۔",
+        feeling: "آج آپ کیسا محسوس کر رہے ہیں؟", anxiety: "بے چینی", sadness: "اداسی",
+        hopelessness: "مایوسی", fear: "خوف", loneliness: "تنہائی", gratitude: "شکر گزاری",
+        ayahTitle: "غور و فکر کا ایک لمحہ",
+        ayahMessage: "اوپر اپنے احساس کا انتخاب کریں تاکہ اس سے متعلق قرآنی رہنمائی یہاں دیکھی جا سکے۔",
+        journalTitle: "آپ کے ذاتی خیالات",
+        journalDescription: "چند لمحے نکال کر اپنے خیالات لکھیں۔ یہ آپ کی ذاتی جگہ ہے۔",
+        placeholder: "اپنے خیالات یہاں لکھیں...", save: "محفوظ کریں",
+        privacy: "آپ کا روحانی سفر ذاتی ہے۔ آپ کے خیالات نجی رہنے چاہئیں۔",
+        selected: "آپ نے منتخب کیا: ", count: "آیات کی تعداد:", loading: "قرآنی رہنمائی لوڈ ہو رہی ہے...",
+        translation: "ترجمہ", clickHint: "تفسیر اور غور و فکر پڑھنے کے لیے آیت پر کلک کریں۔", tafseer: "تفسیر", story: "قرآنی پس منظر / واقعہ", lesson: "قرآن سے ایک سبق", heartMessage: "آپ کے دل کے لیے ایک پیغام", reflectionQuestion: "غور و فکر کا ایک لمحہ", unavailable: "یہ معلومات فی الحال دستیاب نہیں ہیں۔", noVerses: "اس کیٹیگری میں ابھی آیات دستیاب نہیں ہیں۔",
+        error: "قرآنی رہنمائی حاصل نہیں ہو سکی۔ دوبارہ کوشش کریں۔", retry: "براہ کرم دوبارہ کوشش کریں۔"
+    }
+};
+const t = translations[language];
+document.documentElement.lang = language;
+document.documentElement.dir = isUrdu ? "rtl" : "ltr";
+
+const textMap = {
+    dashboardBtn: t.dashboard, brandSub: t.brandSub, navPageLabel: t.navTitle,
+    pageTitle: t.title, introText: t.intro, feelingTitle: t.feeling,
+    anxietyLabel: t.anxiety, sadnessLabel: t.sadness, hopelessnessLabel: t.hopelessness,
+    fearLabel: t.fear, lonelinessLabel: t.loneliness, gratitudeLabel: t.gratitude,
+    ayahTitle: t.ayahTitle, ayahMessage: t.ayahMessage,
+    journalTitle: t.journalTitle, journalDescription: t.journalDescription,
+    saveLabel: t.save, privacyNote: t.privacy, ayahCountLabel: t.count
+};
+Object.entries(textMap).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+});
+const journalInput = document.getElementById("journalInput");
+if (journalInput) journalInput.placeholder = t.placeholder;
+
+function setMessage(message, className = "ayah-placeholder") {
+    const target = document.getElementById("ayahMessage");
+    target.className = className;
+    target.textContent = message;
+}
+
+
+function addDetailSection(container, heading, value) {
+    const section = document.createElement("section");
+    section.className = "ayah-detail-section";
+    const title = document.createElement("h3");
+    title.textContent = heading;
+    const paragraph = document.createElement("p");
+    paragraph.textContent = value;
+    section.append(title, paragraph);
+    container.appendChild(section);
+}
+
+function openAyahDetails(verse) {
+    const modal = document.getElementById("ayahDetailModal");
+    const sections = document.getElementById("ayahDetailSections");
+    document.getElementById("ayahDetailTitle").textContent =
+        isUrdu ? "آیت کی وضاحت اور غور و فکر" : "Understanding and reflecting on this Ayah";
+    document.getElementById("ayahDetailReference").textContent =
+        `${verse.surah_name} (${verse.surah_number}:${verse.ayah_number})`;
+    sections.replaceChildren();
+console.log("QURANIC VERSE DATA:", verse);
+   const details = isUrdu ? [
+    [t.tafseer || "تفسیر", verse.tafseer_ur],
+    [t.lesson || "قرآن سے ایک خوبصورت سبق", verse.beautiful_lesson_ur],
+    [t.heartMessage || "آج کا پیغام", verse.heart_message_ur],
+    [t.reflectionQuestion || "آج کا مختصر سا غور و فکر", verse.reflection_question_ur]
+] : [
+    [t.tafseer || "Tafseer", verse.tafseer_en],
+    [t.lesson || "A Beautiful Lesson from the Quran", verse.beautiful_lesson_en],
+    [t.heartMessage || "Today's Message", verse.heart_message_en],
+    [t.reflectionQuestion || "A Moment to Reflect", verse.reflection_question_en]
+];
+    let hasContent = false;
+    details.forEach(([heading, value]) => {
+        if (typeof value === "string" && value.trim()) {
+            addDetailSection(sections, heading, value);
+            hasContent = true;
+        }
+    });
+
+    if (!hasContent) {
+        addDetailSection(sections, isUrdu ? "وضاحت" : "Further explanation",
+            t.unavailable);
+    }
+
+    modal.classList.add("show");
+    document.body.style.overflow = "hidden";
+}
+
+function closeAyahDetails() {
+    document.getElementById("ayahDetailModal").classList.remove("show");
+    document.body.style.overflow = "";
+}
+
+document.getElementById("closeAyahDetail").addEventListener("click", closeAyahDetails);
+document.getElementById("ayahDetailModal").addEventListener("click", (event) => {
+    if (event.target.id === "ayahDetailModal") closeAyahDetails();
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAyahDetails();
+});
+
+function renderVerses(verses) {
+    const target = document.getElementById("ayahMessage");
+    target.className = "ayah-placeholder";
+    target.replaceChildren();
+
+    verses.forEach((verse) => {
+        const article = document.createElement("article");
+        article.className = "ayah-result";
+        article.tabIndex = 0;
+        article.setAttribute("role", "button");
+        article.setAttribute("aria-label", t.clickHint);
+
+        const reference = document.createElement("div");
+        reference.className = "ayah-result-reference";
+        reference.textContent = `${verse.surah_name} (${verse.surah_number}:${verse.ayah_number})`;
+
+        const arabic = document.createElement("div");
+        arabic.className = "ayah-result-arabic";
+        arabic.dir = "rtl";
+        arabic.lang = "ar";
+        arabic.textContent = verse.arabic || "";
+
+        const translationHeading = document.createElement("h4");
+        translationHeading.className = "section-heading";
+        translationHeading.style.justifyContent = isUrdu ? "flex-end" : "flex-start";
+        translationHeading.style.margin = "12px 0 5px";
+        translationHeading.style.fontSize = "16px";
+        translationHeading.textContent = t.translation;
+
+        const translation = document.createElement("p");
+        translation.className = "ayah-result-translation";
+        translation.dir = isUrdu ? "rtl" : "ltr";
+        translation.textContent = isUrdu
+            ? (verse.translation_ur || "")
+            : (verse.translation_en || "");
+
+        const hint = document.createElement("p");
+        hint.className = "ayah-click-hint";
+        hint.textContent = t.clickHint;
+
+        const openDetails = () => openAyahDetails(verse);
+        article.addEventListener("click", openDetails);
+        article.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openDetails();
+            }
+        });
+
+        article.append(reference, arabic, translationHeading, translation, hint);
+        target.appendChild(article);
+    });
+}
+
+async function loadQuranicGuidance(category) {
+    const target = document.getElementById("ayahMessage");
+    const count = Number(document.getElementById("ayahCount").value || 3);
+    setMessage(t.loading, "ayah-placeholder ayah-loading");
+
+    try {
+        const response = await fetch("/api/quranic_corner/verses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+                category: category,
+                language: language,
+                count: count,
+                used_ids: usedVerseIds[category] || []
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || t.error);
+        }
+        if (!Array.isArray(data.verses) || data.verses.length === 0) {
+            throw new Error(t.noVerses);
+        }
+
+        if (!usedVerseIds[category]) usedVerseIds[category] = [];
+        data.verses.forEach(verse => {
+            if (verse.id && !usedVerseIds[category].includes(verse.id)) {
+                usedVerseIds[category].push(verse.id);
+            }
+        });
+        renderVerses(data.verses);
+    } catch (error) {
+        console.error("Quranic Comfort Corner:", error);
+        setMessage(error.message || t.error, "ayah-placeholder ayah-error");
+    }
+}
+
+/* Feeling selection: call the Flask API as soon as a feeling is selected. */
+document.querySelectorAll(".feeling-card").forEach(card => {
+    card.addEventListener("click", () => {
+        document.querySelectorAll(".feeling-card").forEach(item => item.classList.remove("active"));
+        card.classList.add("active");
+        selectedFeeling = card.dataset.feeling;
+        setMessage(t.selected + t[selectedFeeling], "ayah-placeholder");
+        loadQuranicGuidance(selectedFeeling);
+    });
+});
+
+/* Changing the requested number reloads Ayat for the selected feeling. */
+document.getElementById("ayahCount").addEventListener("change", () => {
+    if (selectedFeeling) loadQuranicGuidance(selectedFeeling);
+});
+</script>
+
+</body>
+</html>

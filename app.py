@@ -22,7 +22,7 @@ from gnuhealth_connector import (
      create_mygnuhealth_profile,
     update_mygnuhealth_tracker,
 )
-
+from quranic_corner_service import get_category_verses
 
 app = Flask(__name__)
 app.secret_key = "mental_health_fyp_2026"
@@ -6739,6 +6739,138 @@ def wellness():
         has_data=bool(wellbeing_rows or assessment_rows_raw),
         user_name_urdu=get_urdu_name_for_account(session.get("account_id"))
     )
+    
+@app.route("/quranic_corner")
+@login_required
+def quranic_corner():
+    return render_template("quranic_corner.html")
+    
+
+
+@app.route("/api/quranic_corner/verses", methods=["POST"])
+@login_required
+def api_quranic_corner_verses():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        category = str(data.get("category", "")).strip().lower()
+        language = str(data.get("language", "en")).strip().lower()
+        count = data.get("count", 3)
+        used_ids = data.get("used_ids", [])
+
+        allowed_categories = {
+            "anxiety",
+            "sadness",
+            "hopelessness",
+            "fear",
+            "loneliness",
+            "gratitude"
+        }
+
+        if category not in allowed_categories:
+            return jsonify({
+                "success": False,
+                "message": "Invalid category."
+            }), 400
+
+        if language not in ("en", "ur"):
+            return jsonify({
+                "success": False,
+                "message": "Invalid language."
+            }), 400
+
+        if (
+            not isinstance(count, int)
+            or isinstance(count, bool)
+            or count < 1
+            or count > 3
+        ):
+            return jsonify({
+                "success": False,
+                "message": "Invalid Ayat count."
+            }), 400
+
+        if not isinstance(used_ids, list):
+            used_ids = []
+
+        # JSON file path
+        json_path = os.path.join(
+            BASE_PATH,
+            "data",
+            "quranic_comfort_content.json"
+        )
+
+        # Load JSON content
+        with open(json_path, "r", encoding="utf-8") as f:
+            content_data = json.load(f)
+
+        # Debug information
+        print("\n========== QURANIC JSON DEBUG ==========")
+        print("JSON FILE:", os.path.abspath(json_path))
+        print("AVAILABLE JSON KEYS:", list(content_data.keys()))
+
+        print("\n========== CATEGORY DEBUG ==========")
+        print("SELECTED CATEGORY:", category)
+        print("TOTAL VERSES:", len(content_data.get("verses", [])))
+        print("CATEGORY DATA:", content_data.get("categories", {}).keys())
+        print("====================================\n")
+
+        # Get selected Ayat
+        verses = get_category_verses(
+            json_path,
+            category,
+            count=count,
+            used_ids=used_ids
+        )
+
+        print("RETURNED VERSES:", len(verses))
+        print("RETURNED VERSE DATA:", verses)
+
+        if not verses:
+            return jsonify({
+                "success": False,
+                "message": "No Ayat available in this category yet."
+            }), 404
+
+        # Attach additional content for ALL categories
+        category_content = content_data.get(
+            f"{category}_content", {}
+        )
+
+        print("SELECTED CATEGORY:", category)
+        print("CATEGORY CONTENT ENTRIES:", len(category_content))
+
+        for verse in verses:
+            verse_id = verse.get("id")
+            extra_content = category_content.get(verse_id, {})
+
+            print("SELECTED VERSE:", verse_id)
+            print("MATCHED CONTENT:", bool(extra_content))
+            print("CONTENT FIELDS:", list(extra_content.keys()))
+
+            if extra_content:
+                verse.update(extra_content)
+
+        print("========================================\n")
+
+        return jsonify({
+            "success": True,
+            "category": category,
+            "language": language,
+            "verses": verses
+        })
+
+    except Exception:
+        app.logger.exception(
+            "Quranic Comfort Corner API error"
+        )
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to load Quranic guidance."
+        }), 500
+
+
 
 # ─────────────────────────────────────────────
 # QUOTES ROUTE — AI generated, IDP specific
@@ -6994,6 +7126,8 @@ Return ONLY the JSON array.
             "status": "fallback"
         })
         
+    
+        
 @app.route("/tts/urdu", methods=["POST"])
 def urdu_tts():
     data = request.get_json(silent=True) or {}
@@ -7036,5 +7170,6 @@ if __name__ == "__main__":
     test_message = "کبھی کبھی اتنی تھکن ہوتی ہے کہ کچھ کرنے کا دل نہیں کرتا۔"
 
     print("ENERGY:", extract_energy(test_message))
-    print("WELLBEING:", extract_wellbeing_info(test_message))    
+    print("WELLBEING:", extract_wellbeing_info(test_message)) 
+     
     
