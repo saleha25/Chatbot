@@ -10,7 +10,13 @@ import numpy as np
 import asyncio
 import io
 import edge_tts
+import hmac
 
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+from datetime import datetime, timezone, timedelta
 
 from datetime import datetime, timedelta
 from functools import wraps
@@ -46,6 +52,7 @@ with open(os.path.join(DATA_PATH, "emotion_detector_model.pkl"), "rb") as f:
 
 with open(os.path.join(DATA_PATH, "tfidf_vectorizer.pkl"), "rb") as f:
     tfidf = pickle.load(f)
+    
 
 with open(os.path.join(DATA_PATH, "guardrail.pkl"), "rb") as f:
     guardrail_data = pickle.load(f)
@@ -285,7 +292,25 @@ Name to transliterate:
     return urdu_name
 
 def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Secure password hashing for new accounts."""
+    return generate_password_hash(password)
+
+
+def verify_password(password, stored_hash):
+    """
+    Verify new Werkzeug hashes and old SHA-256 hashes.
+    This keeps existing users able to log in.
+    """
+    if not stored_hash:
+        return False
+
+    # New secure password hashes
+    if stored_hash.startswith(("scrypt:", "pbkdf2:")):
+        return check_password_hash(stored_hash, password)
+
+    # Legacy SHA-256 password verification
+    old_hash = hashlib.sha256(password.encode()).hexdigest()
+    return hmac.compare_digest(old_hash, stored_hash)
 
 
 def get_table_columns(table_name):
@@ -1855,9 +1880,30 @@ def is_metaphor_kill(text):
 
 def clean_text(text):
     text = str(text).lower()
+
     text = re.sub(r"http\S+", "", text)
-    text = re.sub(r"[^a-zA-Z\s]", "", text)
+
+    # Preserve English and Urdu characters
+    text = re.sub(
+        r"[^a-zA-Z\u0600-\u06FF\s]",
+        "",
+        text
+    )
+
     return re.sub(r"\s+", " ", text).strip()
+
+print("\n========== EMOTION MODEL TEST ==========")
+
+print("Emotion classes:", emotion_model.classes_)
+
+print("TF-IDF vocabulary size:", len(tfidf.vocabulary_))
+
+print("English test:", clean_text("I am feeling very sad"))
+
+print("Urdu test:", clean_text("میں بہت اداس ہوں"))
+
+print("========================================\n")
+
 
 def normalize_text(text):
     text = text.lower()
@@ -2006,6 +2052,8 @@ def detect_emotion(text):
     except Exception as e:
         print("Emotion error:", e)
         return "emotional_support", 50.0
+    
+    
 
 def detect_psychosis(text):
     """Detect psychosis-like experiences without diagnosing the user.
@@ -3003,6 +3051,7 @@ def auth_page():
 
 
 
+
 @app.route("/signup", methods=["POST"])
 def signup():
     init_db()
@@ -3019,7 +3068,29 @@ def signup():
             "error": "All fields are required."
         }), 400
 
-    # 2. Validate date of birth and minimum age.
+    # 2. Validate email format.
+    email = email.strip().lower()
+
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return jsonify({
+            "error": "Please enter a valid email address."
+        }), 400
+
+    # 3. Strong password validation.
+    strong_password = re.compile(
+        r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$"
+    )
+
+    if not strong_password.match(password):
+        return jsonify({
+            "error": (
+                "Password must contain at least 8 characters, "
+                "one uppercase letter, one lowercase letter, "
+                "one number and one special character."
+            )
+        }), 400
+
+    # 4. Validate date of birth and minimum age.
     try:
         birth = datetime.strptime(dob, "%Y-%m-%d")
         today = datetime.today()
@@ -3041,25 +3112,29 @@ def signup():
     db = get_db()
     cursor = db.cursor()
 
-    # 3. Check whether this email already has an account.
+    # 5. Check whether this email already has an account.
     cursor.execute(
         """
         SELECT id, full_name, dob, password_hash
         FROM accounts
-        WHERE email = ?
+        WHERE LOWER(email) = ?
         """,
         (email,)
     )
 
     existing_account = cursor.fetchone()
 
-    # 4. Recover an existing account if signup previously failed.
+    # 6. Handle an existing account.
     if existing_account:
 
-        if existing_account["password_hash"] != hash_password(password):
+        # Reject if password does not match existing account.
+        if not verify_password(
+            password,
+            existing_account["password_hash"]
+        ):
             return jsonify({
-                "error": "An account with this email already exists. Please login."
-            }), 400
+                "error": "Email already exists. Please login."
+            }), 409
 
         if (
             existing_account["full_name"] != name
@@ -3129,7 +3204,7 @@ def signup():
             "gnuhealth_id": profile_id
         }), 200
 
-    # 5. Create a new Empath AI account.
+    # 7. Create a new Empath AI account.
     try:
         pw_hash = hash_password(password)
 
@@ -3148,14 +3223,25 @@ def signup():
         db.rollback()
         app.logger.exception("Failed to create local account")
 
+        # Handle duplicate email safely.
+        cursor.execute(
+            "SELECT id FROM accounts WHERE LOWER(email) = ?",
+            (email,)
+        )
+
+        if cursor.fetchone():
+            return jsonify({
+                "error": "Email already exists. Please login."
+            }), 409
+
         return jsonify({
             "error": "Could not create your account. Please try again."
         }), 500
 
-    # 6. Generate a unique local MyGNUHealth profile ID.
+    # 8. Generate a unique local MyGNUHealth profile ID.
     profile_id = f"EMPATH_{account_id}"
 
-    # 7. Initialize the separate local MyGNUHealth profile.
+    # 9. Initialize the separate local MyGNUHealth profile.
     try:
         profile_result = create_mygnuhealth_profile(
             profile_id,
@@ -3200,7 +3286,7 @@ def signup():
         profile_id
     )
 
-    # 8. Create or retrieve the local Empath AI user.
+    # 10. Create or retrieve the local Empath AI user.
     try:
         existing_user = get_user_by_account_id(account_id)
 
@@ -3215,7 +3301,7 @@ def signup():
         if not user_id:
             raise RuntimeError("Could not create or retrieve local user.")
 
-        # 9. Link the MyGNUHealth profile to the correct user.
+        # 11. Link the MyGNUHealth profile to the correct user.
         if not set_gnuhealth_id(user_id, profile_id):
             raise RuntimeError(
                 "Could not link local MyGNUHealth profile to user."
@@ -3242,7 +3328,7 @@ def signup():
         user_id
     )
 
-    # 10. Sign in after successful account creation and linking.
+    # 12. Sign in after successful account creation and linking.
     session.permanent = True
     session["account_id"] = account_id
     session["account_name"] = name
@@ -3260,32 +3346,59 @@ def signup():
 
 
 
-
 @app.route("/login", methods=["POST"])
 def login():
     init_db()
-    data = request.get_json()
+
+    data = request.get_json(silent=True) or {}
+
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
     if not email or not password:
-        return jsonify({"error": "Email and password are required."}), 400
+        return jsonify({
+            "error": "Email and password are required."
+        }), 400
 
     db = get_db()
     cursor = db.cursor()
-    pw_hash = hash_password(password)
+
+    # Find account using email
     cursor.execute(
-        "SELECT id, full_name FROM accounts WHERE email = ? AND password_hash = ?",
-        (email, pw_hash)
+        """
+        SELECT id, full_name, password_hash
+        FROM accounts
+        WHERE LOWER(email) = ?
+        """,
+        (email,)
     )
+
     row = cursor.fetchone()
-    if not row:
-        return jsonify({"error": "No account found with these credentials. Please sign up first."}), 401
+
+    # Verify existing and new password hashes
+    if not row or not verify_password(
+        password,
+        row["password_hash"]
+    ):
+        return jsonify({
+            "error": "Invalid email or password. Please check your credentials."
+        }), 401
 
     session.permanent = True
     session["account_id"] = row["id"]
     session["account_name"] = row["full_name"]
-    return jsonify({"message": "Logged in.", "name": row["full_name"]}), 200
+
+    # Restore existing Empath AI user
+    existing_user = get_user_by_account_id(row["id"])
+
+    if existing_user:
+        session["user_id"] = existing_user["id"]
+
+    return jsonify({
+        "message": "Logged in.",
+        "name": row["full_name"]
+    }), 200
+
 
 @app.route("/logout")
 def logout():
@@ -4763,13 +4876,28 @@ def chat():
         if session.get("user_id"):
             save_chat_message(session["user_id"], "assistant", response)
         return jsonify({"response": response, "type": "crisis"})
-
+    
     crisis_level = session.get("crisis_level", safety.get("level", "safe"))
+
     emotion, conf = detect_emotion(user_message)
+
+    # Separate mood tracking for Words of Hope only
+    
+    session["words_of_hope_mood"] = _detect_words_of_hope_mood(
+    user_message,
+    wellbeing_info,
+    emotion
+)
+
+    print("WOH DETECTED MOOD:", session.get("words_of_hope_mood"))
+
+    # Keep original chatbot emotion unchanged
     session["emotion"] = emotion
     session["confidence"] = conf
     session["is_positive"] = is_positive_message(user_message)
     session["idp_hardships"] = detect_idp_hardships(session.get("history", []))
+
+    session["last_user_message"] = user_message
 
     if session.get("crisis_active", False):
         response = get_crisis_followup_response(session.get("name", ""), user_message)
@@ -6872,263 +7000,6 @@ def api_quranic_corner_verses():
 
 
 
-# ─────────────────────────────────────────────
-# QUOTES ROUTE — AI generated, IDP specific
-# ─────────────────────────────────────────────
-@app.route("/quotes")
-@login_required
-def quotes_page():
-    return render_template("quotes.html")
-
-@app.route("/api/quotes", methods=["GET"])
-@login_required
-def get_quotes():
-
-    # Get language selected on the intro page
-    language = request.args.get("language", "en").strip().lower()
-
-    if language not in ["en", "ur"]:
-        language = "en"
-
-    categories = ["Hope", "Resilience", "Family", "Patience", "Strength", "Home"]
-
-    chosen = random.sample(categories, 3)
-
-    # -----------------------------------------
-    # LANGUAGE-SPECIFIC AI INSTRUCTIONS
-    # -----------------------------------------
-
-    if language == "ur":
-
-        language_instruction = """
-IMPORTANT LANGUAGE RULES:
-
-- Generate ALL quotes in Urdu script.
-- The quote itself MUST be in Urdu.
-- The person's name MUST be in Urdu where possible.
-- The title MUST be in Urdu.
-- The category MUST be in Urdu.
-- Do NOT return English quotes.
-- Do NOT return Roman Urdu.
-- Quran and Hadith meanings must be written respectfully in Urdu.
-- Preserve the original meaning of the quote.
-"""
-
-        language_name = "Urdu"
-
-    else:
-
-        language_instruction = """
-IMPORTANT URDU LANGUAGE AND TRANSLATION RULES:
-
-- Write every quote, title, category, and person's name in natural Urdu script.
-- Use fluent, grammatically correct Pakistani Urdu.
-- Preserve the exact meaning, emotion, intention, and tone of each quote.
-- Do not translate English words one by one.
-- Translate the complete idea naturally, using correct Urdu sentence structure.
-- Keep the original message intact. Do not add, remove, or exaggerate meaning.
-- Use natural Urdu word order and correct gender, singular/plural,
-  verb agreement, and respectful forms of address.
-- Avoid awkward, literal, machine-like translations.
-- Use simple, comforting Urdu that ordinary Pakistani readers understand.
-- Keep the wording gentle, warm, and emotionally appropriate.
-- Do not use Roman Urdu or English sentences.
-- Do not change the meaning of Quranic verses or Hadith.
-- For Quran and Hadith, use an accurate, respectful Urdu translation.
-- Never invent a religious quotation or attribute a quotation
-  to a person without reliable confidence.
-- Return only the requested JSON, with no explanation.
-"""
-
-        language_name = "English"
-
-    # -----------------------------------------
-    # SYSTEM PROMPT
-    # -----------------------------------------
-
-    system_prompt = f"""
-You generate short, soft, comforting quotes for internally displaced
-people (IDPs) in Pakistan who have lost their homes due to floods,
-conflict, or earthquakes.
-
-These people may be experiencing grief, trauma, displacement and loss.
-
-The required output language is: {language_name}
-
-RULES:
-
-- Each quote must feel warm, gentle, and human.
-- Do NOT use clinical or motivational-speaker style.
-- Mix sources such as:
-  Quran,
-  Hadith of Prophet Muhammad (PBUH),
-  Quaid-e-Azam Muhammad Ali Jinnah,
-  Allama Iqbal,
-  Maya Angelou,
-  Nelson Mandela,
-  Victor Hugo,
-  and other famous personalities.
-- Do NOT use hard or dramatic language such as:
-  "conquer", "warrior", "battle", "fight".
-- Keep each quote under 30 words.
-- Return ONLY valid JSON.
-- Do NOT return markdown.
-- Do NOT return explanations.
-
-{language_instruction}
-
-Return exactly this JSON structure:
-
-[
-  {{
-    "quote": "...",
-    "person": "...",
-    "title": "...",
-    "category": "Hope",
-    "type": "international"
-  }}
-]
-
-type must be one of:
-
-"quran"
-"hadith"
-"quaid"
-"iqbal"
-"international"
-"""
-
-    # -----------------------------------------
-    # USER PROMPT
-    # -----------------------------------------
-
-    user_prompt = f"""
-Generate exactly 3 quotes.
-
-Generate one quote for each of these categories:
-
-{', '.join(chosen)}
-
-The entire response must be in {language_name}.
-
-Return ONLY the JSON array.
-"""
-
-    # -----------------------------------------
-    # CALL OPENAI
-    # -----------------------------------------
-
-    try:
-
-        response = client.responses.create(
-            model="gpt-4.1-mini",
-            instructions=system_prompt,
-            input=[
-                {
-                    "role": "user",
-                    "content": user_prompt
-                }
-            ],
-            max_output_tokens=800,
-        )
-
-        raw = response.output_text.strip()
-
-        # Remove markdown code fences if AI adds them
-        raw = raw.replace("```json", "")
-        raw = raw.replace("```", "")
-        raw = raw.strip()
-
-        quotes = json.loads(raw)
-
-        # Return the language together with the quotes
-        return jsonify({
-            "quotes": quotes,
-            "language": language,
-            "status": "ok"
-        })
-
-    except Exception as e:
-
-        print(f"Quotes API error: {e}")
-
-        # -----------------------------------------
-        # URDU FALLBACK
-        # -----------------------------------------
-
-        if language == "ur":
-
-            fallback = [
-
-                {
-                    "quote": "بے شک ہر مشکل کے ساتھ آسانی ہے۔",
-                    "person": "قرآن مجید",
-                    "title": "سورۃ الانشراح 94:6",
-                    "category": "امید",
-                    "type": "quran"
-                },
-
-                {
-                    "quote": "تم میں بہترین وہ ہیں جو اپنے اہلِ خانہ کے لیے بہترین ہیں۔",
-                    "person": "حضرت محمد ﷺ",
-                    "title": "حدیث",
-                    "category": "خاندان",
-                    "type": "hadith"
-                },
-
-                {
-                    "quote": "کوئی بھی چیز اس روشنی کو مدھم نہیں کر سکتی جو اندر سے چمکتی ہے۔",
-                    "person": "مایا اینجلو",
-                    "title": "شاعرہ اور مصنفہ",
-                    "category": "طاقت",
-                    "type": "international"
-                }
-
-            ]
-
-        # -----------------------------------------
-        # ENGLISH FALLBACK
-        # -----------------------------------------
-
-        else:
-
-            fallback = [
-
-                {
-                    "quote": "Verily, with every hardship comes ease.",
-                    "person": "The Holy Quran",
-                    "title": "Surah Al-Inshirah 94:6",
-                    "category": "Hope",
-                    "type": "quran"
-                },
-
-                {
-                    "quote": "The best of you are those who are best to their families.",
-                    "person": "Prophet Muhammad (PBUH)",
-                    "title": "Hadith",
-                    "category": "Family",
-                    "type": "hadith"
-                },
-
-                {
-                    "quote": "Nothing can dim the light which shines from within.",
-                    "person": "Maya Angelou",
-                    "title": "Poet and Author",
-                    "category": "Strength",
-                    "type": "international"
-                }
-
-            ]
-
-        return jsonify({
-            "quotes": fallback,
-            "language": language,
-            "status": "fallback"
-        })
-        
-    
-        
-@app.route("/tts/urdu", methods=["POST"])
 def urdu_tts():
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
@@ -7158,7 +7029,229 @@ def urdu_tts():
         return send_file(audio, mimetype="audio/mpeg")
     except Exception as e:
         print("Urdu TTS error:", e)
-        return jsonify({"error": "Urdu voice could not be generated"}), 500      
+        return jsonify({"error": "Urdu voice could not be generated"}), 500  
+    
+    # ============================================================
+# WORDS OF HOPE — FIXED MOOD CATEGORY + BILINGUAL QUOTES
+# Uses the emotion already detected by the chat route. No AI quote generation.
+# ============================================================
+
+@app.route("/quotes")
+@login_required
+def quotes_page():
+    return render_template("quotes.html")
+
+
+def _words_of_hope_mood(emotion):
+    label = str(emotion or "").strip().lower().replace("-", "_").replace(" ", "_")
+
+    aliases = {
+        "sad": "sad",
+        "sadness": "sad",
+        "depressed": "sad",
+        "depression": "sad",
+        "very_low": "sad",
+        "low": "sad",
+        "grief": "sad",
+
+        "anxious": "anxious",
+        "anxiety": "anxious",
+        "fear": "anxious",
+        "stress": "anxious",
+        "panic": "anxious",
+        "worry": "anxious",
+
+        "hope": "hope",
+        "hopeful": "hope",
+        "inspiration": "hope",
+        "neutral": "hope",
+        "unknown": "hope",
+        "okay": "hope",
+        "emotional_support": "hope",
+
+        "positive": "positive",
+        "good": "positive",
+        "happy": "positive",
+        "happiness": "positive",
+        "joy": "positive",
+        "gratitude": "positive",
+    }
+
+    if label in aliases:
+        return aliases[label]
+
+    if any(x in label for x in ("sad", "depress", "grief")):
+        return "sad"
+    if any(x in label for x in ("anx", "fear", "stress", "panic", "worr")):
+        return "anxious"
+    if any(x in label for x in ("posit", "happy", "joy", "grat")):
+        return "positive"
+    if any(x in label for x in ("hope", "inspir")):
+        return "hope"
+
+    return "hope"
+
+
+
+def _detect_words_of_hope_mood(user_message, wellbeing_info=None, emotion=None):
+    message = str(user_message or "").lower().strip()
+
+    # Check clear emotional expressions in English and Urdu
+    mood_patterns = {
+        "anxious": [
+            "worried", "overwhelmed", "scared", "nervous",
+            "panic", "under pressure", "anxious", "anxiety",
+            "پریشان", "گھبراہٹ", "بے چین",
+            "فکر مند", "دباؤ میں"
+        ],
+
+        "sad": [
+            "lost", "empty", "heartbroken", "lonely",
+            "helpless", "broken", "confused",
+            "don't know what to do", "do not know what to do",
+            "feel like crying", "very sad", "depressed",
+            "اداس", "تنہا", "اکیلا", "اکیلی",
+            "دل ٹوٹ گیا", "خالی پن", "بے بس",
+            "سمجھ نہیں آ رہا", "کیا کروں",
+            "دل نہیں لگ رہا", "مایوس", "غمگین"
+        ],
+
+        "positive": [
+            "grateful", "thankful", "blessed",
+            "happy", "joyful", "feeling good",
+            "شکر گزار", "خوش", "خوش نصیب",
+            "اللہ کا شکر", "خوشی محسوس"
+        ],
+
+        "hope": [
+            "hopeful", "optimistic", "motivated",
+            "inspired", "things will get better",
+            "پرامید", "امید ہے", "حوصلہ",
+            "بہتر ہونے کی امید", "ہمت ہے"
+        ]
+    }
+
+    # Detect clear mood from the current message
+    for mood in ["anxious", "sad", "positive", "hope"]:
+        if any(phrase in message for phrase in mood_patterns[mood]):
+            return mood
+
+    # Use existing wellbeing mood if no clear phrase was found
+    if isinstance(wellbeing_info, dict):
+        wellbeing_mood = wellbeing_info.get("mood")
+        if wellbeing_mood:
+            return _words_of_hope_mood(wellbeing_mood)
+
+    # Use existing ML emotion as fallback
+    return _words_of_hope_mood(emotion)
+
+@app.route("/api/quotes", methods=["GET"])
+@login_required
+def get_quotes():
+    language = str(request.args.get("language") or session.get("language") or "en").strip().lower()
+    language = "ur" if language in ("ur", "urdu") else "en"
+
+    # Keep the existing safety flow authoritative.
+    if session.get("crisis_active") or session.get("crisis_level") in ("crisis", "emergency"):
+        return jsonify({"quotes": [], "language": language, "mood": "support", "status": "safety_hold"})
+
+    mood = session.get("words_of_hope_mood") or _words_of_hope_mood(
+    session.get("emotion", "unknown")
+)
+    print("WORDS OF HOPE DEBUG:")
+    print("SESSION EMOTION:", session.get("emotion"))
+    print("MAPPED MOOD:", mood)
+    fixed_categories = {
+        "sad": {"en": "Comfort", "ur": "تسلی"},
+        "anxious": {"en": "Peace", "ur": "سکون"},
+        "hope": {"en": "Inspiration", "ur": "حوصلہ افزائی"},
+        "positive": {"en": "Gratitude", "ur": "شکرگزاری"},
+    }
+    try:
+        quotes_path = os.path.join(DATA_PATH, "quotes.json")
+        with open(quotes_path, "r", encoding="utf-8") as f:
+            all_quotes = json.load(f)
+        if not isinstance(all_quotes, list):
+            raise ValueError("data/quotes.json must contain a JSON list")
+
+        candidates = [q for q in all_quotes if isinstance(q, dict)
+                      and mood in q.get("moods", [])
+                      and q.get("translations", {}).get("en", {}).get("quote")]
+        seen_by_mood = session.get("words_of_hope_seen", {})
+        seen = set(seen_by_mood.get(mood, []))
+        unseen = [q for q in candidates if q.get("id") not in seen]
+        if not unseen and candidates:
+            seen = set()
+            unseen = candidates[:]
+
+        # Separate Hadith and normal quotations
+        hadiths = [
+            q for q in unseen
+            if str(q.get("type", "")).strip().lower() == "hadith"
+        ]
+
+        normal_quotes = [
+            q for q in unseen
+            if str(q.get("type", "")).strip().lower() != "hadith"
+        ]
+
+        selected = []
+
+        # Include one Hadith if available
+        if hadiths:
+            selected.append(random.choice(hadiths))
+
+        # Fill remaining slots with normal quotations
+        remaining_slots = 3 - len(selected)
+
+        if remaining_slots > 0 and normal_quotes:
+            selected.extend(
+                random.sample(
+                    normal_quotes,
+                    min(remaining_slots, len(normal_quotes))
+                )
+            )
+
+        # Fill remaining slots with Hadith if needed
+        if len(selected) < 3:
+            remaining_hadiths = [
+                q for q in hadiths if q not in selected
+            ]
+
+            selected.extend(
+                random.sample(
+                    remaining_hadiths,
+                    min(3 - len(selected), len(remaining_hadiths))
+                )
+            )
+
+        seen.update(q["id"] for q in selected if q.get("id"))
+        seen_by_mood[mood] = list(seen)
+        session["words_of_hope_seen"] = seen_by_mood
+        session.modified = True
+
+        output = []
+        for item in selected:
+            tr = item.get("translations", {}).get(language) or item.get("translations", {}).get("en", {})
+            kind = str(item.get("type", "international")).lower()
+            output.append({
+                "id": item.get("id", ""),
+                "quote": tr.get("quote", ""),
+                "person": tr.get("person", ""),
+                "title": tr.get("title") or tr.get("source", ""),
+                "category": fixed_categories[mood][language],
+                "type": kind,
+                "source_url": item.get("source_url", ""),
+                "translation_note": tr.get("translation_note", ""),
+            })
+        return jsonify({"quotes": output, "language": language, "mood": mood,
+                        "category": fixed_categories[mood][language], "status": "ok"})
+    except Exception:
+        app.logger.exception("Words of Hope API error")
+        return jsonify({"quotes": [], "language": language, "mood": mood,
+                        "status": "error"}), 500
+
+    
 # ==============================
 # RUN APP
 # ==============================

@@ -395,7 +395,13 @@ const BADGE_CLASS = {
   family:     'badge-family',
   patience:   'badge-patience',
   strength:   'badge-strength',
-  home:       'badge-home'
+  home:       'badge-home',
+  sad:        'badge-hope',
+  anxious:    'badge-patience',
+  lonely:     'badge-family',
+  angry:      'badge-strength',
+  tired:      'badge-resilience',
+  positive:   'badge-resilience'
 };
 
 /*
@@ -418,7 +424,7 @@ const translations = {
     dashboard: "Dashboard",
     newWords: "New Words",
     pageTitle: "Words of Hope",
-    quranHadith: "Quran & Hadith",
+    quranHadith: "Hadith",
     pakistaniLeaders: "Pakistani Leaders",
     worldVoices: "World Voices",
     loading: "Finding words for you...",
@@ -436,7 +442,7 @@ rozan: "Rozan",
     dashboard: "ڈیش بورڈ",
     newWords: "نئے الفاظ",
     pageTitle: "امید کے الفاظ",
-    quranHadith: "قرآن اور حدیث",
+    quranHadith: "حدیث",
     pakistaniLeaders: "پاکستانی رہنما",
     worldVoices: "دنیا بھر کی آوازیں",
     loading: "آپ کے لیے الفاظ تلاش کیے جا رہے ہیں...",
@@ -477,48 +483,83 @@ function applyLanguage(language) {
 
 async function loadQuotes() {
   const grid = document.getElementById('quotesGrid');
-  const language = getCurrentLanguage();
+  const language = getCurrentLanguage() === 'ur' ? 'ur' : 'en';
   applyLanguage(language);
 
   grid.innerHTML = `<div class="loading-wrap">
     <div class="loading-dots"><span></span><span></span><span></span></div>
-    <span data-i18n="loading">${translations[language].loading}</span>
+    <span>${translations[language].loading}</span>
   </div>`;
 
   try {
-    /*
-     * The selected language is sent to the quotes API.
-     * This is separate from the UI translation dictionary so quote meaning
-     * is never altered by a generic translation key.
-     */
-    const res = await fetch('/api/quotes?language=' + encodeURIComponent(language));
+    const res = await fetch('/api/quotes?language=' + encodeURIComponent(language), {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!res.ok) {
+      throw new Error('Quotes API returned HTTP ' + res.status);
+    }
+
     const data = await res.json();
+
+    // The API may return either a direct array or { quotes: [...] }.
+    // Your current API response is a direct array of quote objects.
+    if (!Array.isArray(data) && data && (data.status === 'crisis_hold' || data.status === 'safety_hold')) {
+      grid.innerHTML = '';
+      const hold = document.createElement('div');
+      hold.className = 'loading-wrap';
+      hold.textContent = language === 'ur'
+        ? 'اس وقت آپ کی حفاظت اور مدد سب سے اہم ہے۔ براہِ کرم چیٹ میں موجود حفاظتی رہنمائی پر عمل کریں۔'
+        : 'Your safety and support come first right now. Please follow the safety guidance in your chat.';
+      grid.appendChild(hold);
+      return;
+    }
+
+    const quotes = Array.isArray(data)
+      ? data
+      : (data && Array.isArray(data.quotes) ? data.quotes : []);
+
+    console.log('WORDS OF HOPE RESPONSE:', data);
+    console.log('TOTAL QUOTES:', quotes.length);
 
     grid.innerHTML = '';
 
-    (data.quotes || []).forEach(q => {
-     const cat      = (q.category_key || q.category || 'hope').toLowerCase();
-const type     = (q.type || 'international').toLowerCase();
+    if (quotes.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'loading-wrap';
+      empty.textContent = language === 'ur'
+        ? 'اس وقت کوئی قول دستیاب نہیں ہے۔'
+        : 'No quotes available.';
+      grid.appendChild(empty);
+      return;
+    }
 
-const badgeCls = BADGE_CLASS[cat] || 'badge-hope';
 
-const cardCls  = ['quran', 'hadith'].includes(type)
-               ? `card-${type}`
-               : type === 'quaid'
-               ? 'card-quaid'
-               : type === 'iqbal'
-               ? 'card-iqbal'
-               : 'card-international';
+const selectedQuotes = quotes.slice(0, 3);
 
-/*
- * IMPORTANT:
- * The API already returns the quote in the selected language.
- * Do NOT translate the quote here.
- */
-const quoteText = q.quote || "";
-const personText = q.person || "";
-const titleText = q.title || "";
-const categoryText = q.category || "";
+selectedQuotes.forEach(q => {
+
+    // API already returns language-specific quote fields
+    const quoteText = q.quote || '';
+    const personText = q.person || 'Empath AI';
+    const titleText = q.title || 'Words of Hope';
+
+    // Use actual category returned by Flask
+    const categoryText = q.category || data.category || 'Words of Hope';
+
+    const mood = String(data.mood || 'hope').toLowerCase();
+
+    const badgeCls = BADGE_CLASS[mood] || 'badge-hope';
+
+    const type = String(q.type || 'original').toLowerCase();
+
+    const cardCls = ['quran', 'hadith'].includes(type)
+        ? `card-${type}`
+        : type === 'quaid'
+            ? 'card-quaid'
+            : type === 'iqbal'
+                ? 'card-iqbal'
+                : 'card-international';
 
       const card = document.createElement('div');
       card.className = `quote-card ${cardCls}`;
@@ -529,7 +570,9 @@ const categoryText = q.category || "";
 
       const quote = document.createElement('p');
       quote.className = 'quote-text';
-      quote.textContent = quoteText || "";
+      quote.dir = language === 'ur' ? 'rtl' : 'ltr';
+      quote.lang = language;
+      quote.textContent = quoteText;
 
       const footer = document.createElement('div');
       footer.className = 'quote-footer';
@@ -539,21 +582,29 @@ const categoryText = q.category || "";
 
       const personName = document.createElement('span');
       personName.className = 'person-name';
-      personName.textContent = personText || "";
+      personName.textContent = personText;
 
       const personTitle = document.createElement('span');
       personTitle.className = 'person-title';
-      personTitle.textContent = titleText || "";
+      personTitle.textContent = titleText;
 
       const badge = document.createElement('span');
       badge.className = `badge ${badgeCls}`;
-      badge.textContent = categoryText || "";
+      badge.textContent = categoryText;
 
       person.appendChild(personName);
       person.appendChild(personTitle);
+      if (q.source_url) {
+         const sourceLink = document.createElement('a');
+         sourceLink.href = q.source_url;
+         sourceLink.target = '_blank';
+         sourceLink.rel = 'noopener noreferrer';
+         sourceLink.textContent = language === 'ur' ? 'ماخذ' : 'Source';
+         sourceLink.style.cssText = 'font-size:11px;color:var(--green-3);text-decoration:underline;margin-top:5px;';
+         person.appendChild(sourceLink);
+       }
       footer.appendChild(person);
       footer.appendChild(badge);
-
       card.appendChild(mark);
       card.appendChild(quote);
       card.appendChild(footer);
@@ -561,8 +612,9 @@ const categoryText = q.category || "";
     });
 
   } catch (err) {
+    console.error('WORDS OF HOPE ERROR:', err);
     grid.innerHTML = `<div class="loading-wrap" style="color:#9a7060;">
-      <span data-i18n="loadError">${translations[language].loadError}</span>
+      <span>${translations[language].loadError}</span>
     </div>`;
   }
 }

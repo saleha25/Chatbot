@@ -494,7 +494,144 @@ html[lang="ur"] .back-home {
     display: none;
   }
 }
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
 
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px;
+}
+
+.password-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+}
+/* Correct eye icon position for Urdu / RTL password fields */
+[dir="rtl"] .password-wrapper {
+    direction: rtl;
+}
+
+[dir="rtl"] .password-wrapper input {
+    padding-left: 45px;
+    padding-right: 16px;
+    text-align: right;
+}
+
+[dir="rtl"] .password-eye {
+    left: 12px;
+    right: auto;
+}
+
+
+/* =====================================================
+   FINAL URDU AUTH LAYOUT FIX
+   Preserve the original browser scrollbar position.
+   Do not force overflow:hidden on html/body.
+   ===================================================== */
+
+@media (min-width: 861px) {
+  /* Keep the page naturally scrollable when the signup card
+     is taller than the available viewport. The existing RTL
+     document direction keeps the scrollbar where it was. */
+  html[lang="ur"],
+  html[lang="ur"] body {
+    height: auto !important;
+    min-height: 100vh !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  html[lang="ur"] body {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  html[lang="ur"] .page {
+    flex: 1 0 auto !important;
+    height: auto !important;
+    min-height: calc(100vh - 69px) !important;
+    overflow: visible !important;
+    direction: ltr !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    align-items: stretch;
+  }
+
+  /* Auth panel remains on the left in Urdu. */
+  html[lang="ur"] .right-panel {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    direction: rtl !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 0;
+    min-height: 0;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 28px 30px !important;
+  }
+
+  html[lang="ur"] .auth-card {
+    width: 100%;
+    max-width: 460px !important;
+    margin: auto !important;
+    padding: 35px 36px !important;
+    direction: rtl !important;
+  }
+
+  /* Welcome panel remains on the right in Urdu. */
+  html[lang="ur"] .left-panel {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    direction: rtl !important;
+    min-width: 0;
+    min-height: 0;
+    height: auto !important;
+    overflow: hidden;
+    padding: 38px 45px !important;
+  }
+}
+
+/* Mobile scrolling and existing responsive layout stay intact. */
+@media (max-width: 860px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100vh !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .page {
+    height: auto !important;
+    min-height: calc(100vh - 69px) !important;
+    overflow: visible !important;
+  }
+}
+/* Fix Empath AI highlighted Urdu brand text */
+
+html[lang="ur"] .left-panel h1 em {
+    font-family: 'Noto Naskh Arabic', serif !important;
+    font-size: 1em !important;
+    font-weight: 700 !important;
+    font-style: normal !important;
+    color: var(--green) !important;
+    letter-spacing: 0 !important;
+    line-height: 2 !important;
+    display: inline;
+    vertical-align: baseline;
+}
 </style>
 
 </head>
@@ -535,77 +672,221 @@ html[lang="ur"] .back-home {
   </div>
 
   <!-- RIGHT PANEL -->
-  <div class="right-panel">
-    <div class="auth-card">
+ 
 
-      <div class="auth-header">
-        <h2><span data-i18n="welcomeBack">Hello, welcome back</span></h2>
-        <p><span data-i18n="authSubtitle">Sign in or create your account below</span></p>
-      </div>
+<div class="right-panel">
+  <div class="auth-card">
 
-      <!-- TABS -->
-      <div class="tabs">
-        <button class="tab-btn active" id="loginTab" onclick="switchTab('login')" data-i18n="login">Login</button>
-        <button class="tab-btn" id="signupTab" onclick="switchTab('signup')" data-i18n="signUp">Sign Up</button>
-      </div>
-
-      <!-- ALERTS -->
-      <div class="alert alert-error" id="alertBox"></div>
-      <div class="alert alert-success" id="successBox"></div>
-
-      <!-- LOGIN FORM -->
-      <form id="loginForm" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label for="loginEmail" data-i18n="emailLabel">Email Address</label>
-          <input type="email" id="loginEmail" data-i18n-placeholder="emailPlaceholder" placeholder="you@example.com" required />
-        </div>
-        <div class="form-group">
-          <label for="loginPassword" data-i18n="passwordLabel">Password</label>
-          <input type="password" id="loginPassword" data-i18n-placeholder="passwordPlaceholder" placeholder="Enter your password" required />
-        </div>
-        <button type="submit" class="submit-btn" id="loginBtn" data-i18n="loginButton">Login →</button>
-        <div class="or-divider" data-i18n="or">or</div>
-        <div class="switch-text">
-          <span data-i18n="noAccount">Don't have an account?</span>
-          <button type="button" onclick="switchTab('signup')" data-i18n="signUp">Sign Up</button>
-        </div>
-      </form>
-
-      <!-- SIGNUP FORM -->
-      <form id="signupForm" onsubmit="handleSignup(event)">
-        <div class="form-group">
-          <label for="signupName" data-i18n="nameLabel">Full Name</label>
-          <input type="text" id="signupName" data-i18n-placeholder="namePlaceholder" placeholder="Your full name" required />
-        </div>
-        <div class="form-group">
-          <label for="signupEmail" data-i18n="emailLabel">Email Address</label>
-          <input type="email" id="signupEmail" data-i18n-placeholder="emailPlaceholder" placeholder="you@example.com" required />
-        </div>
-        <div class="form-group">
-          <label for="signupDob" data-i18n="dobLabel">Date of Birth</label>
-          <input type="date" id="signupDob" required />
-          <p class="age-notice">⚠ You must be 18 or older to use <span data-i18n="brand">Empath AI</span>.</p>
-        </div>
-        <div class="form-group">
-          <label for="signupPassword" data-i18n="passwordLabel">Password</label>
-          <input type="password" id="signupPassword" data-i18n-placeholder="passwordPlaceholderSignup" placeholder="At least 6 characters" required minlength="6" />
-        </div>
-        <div class="form-group">
-          <label for="signupConfirm" data-i18n="confirmPasswordLabel">Confirm Password</label>
-          <input type="password" id="signupConfirm" data-i18n-placeholder="confirmPlaceholder" placeholder="Repeat your password" required />
-        </div>
-        <button type="submit" class="submit-btn" id="signupBtn" data-i18n="createAccount">Create Account →</button>
-        <div class="or-divider" data-i18n="or">or</div>
-        <div class="switch-text">
-          <span data-i18n="alreadyAccount">Already have an account?</span>
-          <button type="button" onclick="switchTab('login')" data-i18n="login">Login</button>
-        </div>
-      </form>
-
+    <div class="auth-header">
+      <h2 id="authTitle">
+        <span data-i18n="welcomeBack">Hello, welcome back</span>
+      </h2>
+      <p id="authSubtitle">
+        <span data-i18n="authSubtitle">Sign in to your account</span>
+      </p>
     </div>
+
+    <!-- ALERTS -->
+    <div class="alert alert-error" id="alertBox"></div>
+    <div class="alert alert-success" id="successBox"></div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+
+      <!-- LOGIN EMAIL -->
+      <div class="form-group">
+        <label for="loginEmail" data-i18n="emailLabel">
+          Email Address
+        </label>
+
+        <input
+          type="email"
+          id="loginEmail"
+          data-i18n-placeholder="emailPlaceholder"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+        />
+      </div>
+
+      <!-- LOGIN PASSWORD -->
+      <div class="form-group">
+        <label for="loginPassword" data-i18n="passwordLabel">
+          Password
+        </label>
+
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="loginPassword"
+            data-i18n-placeholder="passwordPlaceholder"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          />
+
+          <button
+            type="button"
+            class="password-eye"
+            onclick="togglePassword('loginPassword')"
+            aria-label="Show or hide password"
+          >👁</button>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="submit-btn"
+        id="loginBtn"
+        data-i18n="loginButton"
+      >Login →</button>
+
+      <div class="or-divider" data-i18n="or">or</div>
+
+      <div class="switch-text">
+        <span data-i18n="noAccount">
+          Don't have an account?
+        </span>
+
+        <button
+          type="button"
+          onclick="switchTab('signup')"
+          data-i18n="signUp"
+        >Sign Up</button>
+      </div>
+
+    </form>
+
+    <!-- SIGNUP FORM -->
+    <form id="signupForm" onsubmit="handleSignup(event)">
+
+      <!-- FULL NAME -->
+      <div class="form-group">
+        <label for="signupName" data-i18n="nameLabel">
+          Full Name
+        </label>
+
+        <input
+          type="text"
+          id="signupName"
+          data-i18n-placeholder="namePlaceholder"
+          placeholder="Your full name"
+          required
+        />
+      </div>
+
+      <!-- SIGNUP EMAIL -->
+      <div class="form-group">
+        <label for="signupEmail" data-i18n="emailLabel">
+          Email Address
+        </label>
+
+        <input
+          type="email"
+          id="signupEmail"
+          data-i18n-placeholder="emailPlaceholder"
+          placeholder="you@example.com"
+          required
+        />
+      </div>
+
+      <!-- DATE OF BIRTH -->
+      <div class="form-group">
+        <label for="signupDob" data-i18n="dobLabel">
+          Date of Birth
+        </label>
+
+        <input
+          type="date"
+          id="signupDob"
+          required
+        />
+
+        <p class="age-notice">
+          ⚠ You must be 18 or older to use
+          <span data-i18n="brand">Empath AI</span>.
+        </p>
+      </div>
+
+      <!-- SIGNUP PASSWORD -->
+      <div class="form-group">
+        <label for="signupPassword" data-i18n="passwordLabel">
+          Password
+        </label>
+
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="signupPassword"
+            data-i18n-placeholder="passwordPlaceholderSignup"
+            placeholder="At least 8 characters"
+            required
+            minlength="8"
+            autocomplete="new-password"
+          />
+
+          <button
+            type="button"
+            class="password-eye"
+            onclick="togglePassword('signupPassword')"
+            aria-label="Show or hide password"
+          >👁</button>
+        </div>
+      </div>
+
+      <!-- CONFIRM PASSWORD -->
+      <div class="form-group">
+        <label for="signupConfirm" data-i18n="confirmPasswordLabel">
+          Confirm Password
+        </label>
+
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="signupConfirm"
+            data-i18n-placeholder="confirmPlaceholder"
+            placeholder="Repeat your password"
+            required
+            autocomplete="new-password"
+          />
+
+          <button
+            type="button"
+            class="password-eye"
+            onclick="togglePassword('signupConfirm')"
+            aria-label="Show or hide password"
+          >👁</button>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="submit-btn"
+        id="signupBtn"
+        data-i18n="createAccount"
+      >Create Account →</button>
+
+      <div class="or-divider" data-i18n="or">or</div>
+
+      <div class="switch-text">
+        <span data-i18n="alreadyAccount">
+          Already have an account?
+        </span>
+
+        <button
+          type="button"
+          onclick="switchTab('login')"
+          data-i18n="login"
+        >Login</button>
+      </div>
+
+    </form>
+
   </div>
+</div>
 
 </div>
+
 
 <script>
 
@@ -654,7 +935,7 @@ const AUTH_TRANSLATIONS = {
     emailPlaceholder: "you@example.com",
     passwordPlaceholder: "Enter your password",
     namePlaceholder: "Your full name",
-    passwordPlaceholderSignup: "At least 6 characters",
+    passwordPlaceholderSignup: "At least 8 characters",
     confirmPlaceholder: "Repeat your password"
   },
 
@@ -687,7 +968,7 @@ const AUTH_TRANSLATIONS = {
     emailPlaceholder: "you@example.com",
     passwordPlaceholder: "اپنا پاس ورڈ درج کریں",
     namePlaceholder: "اپنا پورا نام",
-    passwordPlaceholderSignup: "کم از کم 6 حروف",
+    passwordPlaceholderSignup: "کم از کم 8 حروف",
     confirmPlaceholder: "اپنا پاس ورڈ دوبارہ درج کریں"
   }
 };
@@ -722,22 +1003,39 @@ function applyAuthLanguage() {
 document.addEventListener("DOMContentLoaded", applyAuthLanguage);
 
 function switchTab(tab) {
-  const loginForm  = document.getElementById('loginForm');
+  const loginForm = document.getElementById('loginForm');
   const signupForm = document.getElementById('signupForm');
-  const loginTab   = document.getElementById('loginTab');
-  const signupTab  = document.getElementById('signupTab');
+  const title = document.getElementById('authTitle');
+  const subtitle = document.getElementById('authSubtitle');
   clearAlerts();
 
+  const lang = localStorage.getItem(EMPATH_LANGUAGE_KEY) || "en";
+  const content = {
+    en: {
+      loginTitle: "Hello, welcome back",
+      loginSubtitle: "Sign in to your account",
+      signupTitle: "Create your account",
+      signupSubtitle: "Join Empath AI today"
+    },
+    ur: {
+      loginTitle: "خوش آمدید، دوبارہ",
+      loginSubtitle: "اپنے اکاؤنٹ میں لاگ اِن کریں",
+      signupTitle: "اپنا اکاؤنٹ بنائیں",
+      signupSubtitle: "آج ہی Empath AI کا حصہ بنیں"
+    }
+  };
+
+  const t = content[lang] || content.en;
   if (tab === 'login') {
-    loginForm.style.display  = 'block';
+    loginForm.style.display = 'block';
     signupForm.style.display = 'none';
-    loginTab.classList.add('active');
-    signupTab.classList.remove('active');
+    title.textContent = t.loginTitle;
+    subtitle.textContent = t.loginSubtitle;
   } else {
-    loginForm.style.display  = 'none';
+    loginForm.style.display = 'none';
     signupForm.style.display = 'block';
-    signupTab.classList.add('active');
-    loginTab.classList.remove('active');
+    title.textContent = t.signupTitle;
+    subtitle.textContent = t.signupSubtitle;
   }
 }
 
@@ -758,7 +1056,8 @@ function authText(key) {
       dobRequired: "Please enter your date of birth.",
       age: "You must be 18 or older. You are {age} years old.",
       mismatch: "Passwords do not match.",
-      shortPassword: "Password must be at least 6 characters."
+      shortPassword: "Password must be at least 8 characters.",
+      weakPassword: "Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character."
     },
     ur: {
       creating: "اکاؤنٹ بنایا جا رہا ہے…",
@@ -771,7 +1070,8 @@ function authText(key) {
       dobRequired: "براہِ کرم اپنی تاریخِ پیدائش درج کریں۔",
       age: "آپ کی عمر 18 سال یا اس سے زیادہ ہونی چاہیے۔ آپ کی عمر {age} سال ہے۔",
       mismatch: "پاس ورڈ ایک جیسے نہیں ہیں۔",
-      shortPassword: "پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔"
+      shortPassword: "پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے۔",
+      weakPassword: "پاس ورڈ میں کم از کم 8 حروف، ایک بڑا حرف، ایک چھوٹا حرف، ایک عدد اور ایک خاص علامت شامل کریں۔"
     }
   };
 
@@ -813,7 +1113,13 @@ async function handleSignup(e) {
   const age = calcAge(dob);
   if (age < 18) { showError(authText('age').replace('{age}', age)); return; }
   if (password !== confirm) { showError(authText('mismatch')); return; }
-  if (password.length < 6) { showError(authText('shortPassword')); return; }
+  if (password.length < 8) { showError(authText('shortPassword')); return; }
+
+  const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  if (!strongPassword.test(password)) {
+    showError(authText('weakPassword'));
+    return;
+  }
 
   const btn = document.getElementById('signupBtn');
   btn.disabled = true; btn.textContent = authText('creating');
@@ -862,6 +1168,16 @@ async function handleLogin(e) {
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('tab') === 'signup') switchTab('signup');
+
+function togglePassword(id) {
+    const input = document.getElementById(id);
+
+    if (!input) return;
+
+    input.type = input.type === "password"
+        ? "text"
+        : "password";
+}
 </script>
 </body>
 </html>
