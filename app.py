@@ -3711,18 +3711,20 @@ def init():
     init_db()
 
     if not account_id or not account_name:
-     init_session()
+        init_session()
 
-    if language == "ur":
-        welcome = "السلام علیکم۔ میں آپ کی بات سننے اور آپ کا ساتھ دینے کے لیے یہاں ہوں۔ آپ کو میں کس نام سے پکاروں؟"
-    else:
-        welcome = "Hello. I am here to listen and support you. What should I call you?"
+        if language == "ur":
+            welcome = "السلام علیکم۔ میں آپ کی بات سننے اور مدد کرنے کے لیے یہاں ہوں۔ آپ کو کس نام سے پکاروں؟"
+        else:
+            welcome = "Hello. I am here to listen and support you. What should I call you?"
+
         add_to_history("assistant", welcome)
+
         return jsonify({
             "response": welcome,
             "stage": session.get("stage"),
             "name": session.get("name", ""),
-            "name_urdu": get_urdu_name_for_account(account_id) if account_id else "",
+            "name_urdu": "",
             "is_returning_user": False,
             "type": "normal"
         })
