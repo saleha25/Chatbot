@@ -41,6 +41,15 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_PATH, "data")
 DB_PATH = os.path.join(BASE_PATH, "empath_ai.db")
+# def enable_sqlite_wal():
+#     conn = sqlite3.connect(DB_PATH, timeout=30)
+#     try:
+#         conn.execute("PRAGMA journal_mode=WAL")
+#         conn.execute("PRAGMA busy_timeout=30000")
+#     finally:
+#         conn.close()
+
+# enable_sqlite_wal()
 
 print("Loading models...")
 
@@ -83,11 +92,19 @@ print("All models loaded!")
 # ─────────────────────────────────────────────
 # DATABASE
 # ─────────────────────────────────────────────
+
+
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
+        g.db = sqlite3.connect(
+            DB_PATH,
+            timeout=30
+        )
         g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA busy_timeout = 30000")
+
     return g.db
+
 
 @app.teardown_appcontext
 def close_db(error=None):
@@ -430,14 +447,23 @@ def get_or_create_user_for_account(account_id, account_name):
     new_user_id = create_user(first_name, account_id=account_id)
     return get_user_by_id(new_user_id)
 
+
 def update_user_last_seen(user_id):
     db = get_db()
-    db.execute("""
-        UPDATE users
-        SET last_seen = CURRENT_TIMESTAMP
-        WHERE id = ?
-    """, (user_id,))
-    db.commit()
+
+    try:
+        db.execute("""
+            UPDATE users
+            SET last_seen = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (user_id,))
+
+        db.commit()
+
+    except sqlite3.OperationalError:
+        db.rollback()
+        raise
+
 
 def update_user_role(user_id, role):
     db = get_db()
@@ -4141,7 +4167,7 @@ def _ensure_one_followup(text, user_message, sess=None):
     if language == "ur":
 
         if "؟" in text:
-            return _add_hopeful_idp_line(text, user_message, sess)
+            return text
 
         t = normalize_for_safety(user_message or "")
 
@@ -4168,13 +4194,13 @@ def _ensure_one_followup(text, user_message, sess=None):
 
         text = text.rstrip(".۔") + "\n\n" + q
 
-        return _add_hopeful_idp_line(text, user_message, sess)
+        return text
 
     # ============================================================
     # ENGLISH MODE — ORIGINAL LOGIC
     # ============================================================
     if "?" in text:
-        return _add_hopeful_idp_line(text, user_message, sess)
+        return text
 
     t = normalize_for_safety(user_message or "")
 
@@ -4201,7 +4227,8 @@ def _ensure_one_followup(text, user_message, sess=None):
 
     text = text.rstrip(".") + "\n\n" + q
 
-    return _add_hopeful_idp_line(text, user_message, sess)
+    return text 
+
 
 
 # ─────────────────────────────────────────────
@@ -4510,24 +4537,36 @@ def build_dataset_guidance_context(user_message, role="default", emotion="unknow
         parts.append(f"ML emotion signal: {emotion}. Treat this as a hint, not a label to repeat to the user.")
 
     return "\n".join(parts) if parts else "No strong dataset signal; rely on the user's exact words and saved memory."
-
 def generate_natural_chat_response(user_message, sess, emotion="unknown", wellbeing_info=None):
     """Generate a warm, contextual reply for normal chat.
 
-    Safety/guardrail checks happen before this function in /chat. Self-assessment remains separate.
-    If OPENAI_API_KEY is set, this uses an LLM-style response. If not, it falls back gracefully.
+    Safety/guardrail checks happen before this function in /chat.
+    Self-assessment remains separate.
     """
     api_key_available = bool(os.environ.get("OPENAI_API_KEY"))
+
     recent = _recent_dialogue_for_prompt(limit=10)
-    user_context = _compact_user_context(sess, emotion=emotion, wellbeing_info=wellbeing_info)
-    adaptive_context = build_adaptive_memory_context(sess.get("user_id"), current_message=user_message)
-    dataset_context = build_dataset_guidance_context(user_message, role=sess.get("role", "default"), emotion=emotion)
+    user_context = _compact_user_context(
+        sess, emotion=emotion, wellbeing_info=wellbeing_info
+    )
+    adaptive_context = build_adaptive_memory_context(
+        sess.get("user_id"), current_message=user_message
+    )
+    dataset_context = build_dataset_guidance_context(
+        user_message,
+        role=sess.get("role", "default"),
+        emotion=emotion
+    )
+
     metaphor_context = ""
     if is_metaphor_kill(user_message):
         metaphor_context = (
-            "Language note: the user is using 'kill' as a harmless metaphor for doing well or tackling an exam/project/task. "
-            "Do not treat it as self-harm, violence, danger, or 'extreme thoughts'. Respond to the underlying stress or determination naturally."
+            "Language note: the user is using 'kill' as a harmless metaphor "
+            "for doing well or tackling an exam/project/task. "
+            "Do not treat it as self-harm, violence, danger, or extreme thoughts. "
+            "Respond to the underlying stress or determination naturally."
         )
+
     last_assistant = ""
     for item in reversed(list(sess.get("history", []))):
         if item.get("role") == "assistant":
@@ -4539,6 +4578,7 @@ def generate_natural_chat_response(user_message, sess, emotion="unknown", wellbe
             system_prompt = """
 You are Empath AI, a warm mental-health support chatbot for internally displaced people in Pakistan.
 Your job is to respond like a thoughtful supportive friend: gentle, emotionally intelligent, natural, respectful, and specific to the user's exact message.
+
 LANGUAGE REQUIREMENT — VERY IMPORTANT:
 - The selected application language is provided separately.
 - If the selected language is "ur", respond ONLY in natural Urdu script.
@@ -4560,10 +4600,16 @@ If the selected language is "ur", NEVER produce output like:
 "After everything you have been managing..."
 or
 "What would you like to share next?"
+
 Core behaviour:
 - Use the user's role, recent conversation, saved memory, wellbeing trends, assessments, ML emotion signal, and dataset guidance to understand the situation; generate fresh wording rather than fixed templates.
-- Keep IDP context as quiet background. Assume life may be unsettled, but do NOT repeatedly say "as an IDP", "because you are displaced", or ask whether they are displaced.
-- Include exactly one hopeful, soft IDP-sensitive sentence in every normal reply. It should validate the user's real-life situation without making them lose hope. Use natural wording like "after everything you have been managing", "when life has been unsettled", or "even with so much change around you".
+- Treat the user's IDP background as important contextual knowledge, not as the subject of every conversation.
+- Use specific IDP-related information only when it is supported by the user's messages, saved profile, or known living circumstances. Never invent displacement experiences or assume all IDPs face the same difficulties.
+- When displacement-related challenges are relevant, acknowledge the actual difficulty the user describes, such as disrupted routines, housing, financial pressure, family separation, education, or uncertainty. Do not insert a generic IDP sentence merely to demonstrate awareness.
+- For positive, neutral, everyday, and ordinary family conversations, focus on what the user actually shared. Celebrate positive experiences without adding unnecessary hardship, sympathy, or reassurance.
+- For emotional conversations, identify the specific feeling and its cause before offering support. Validate feelings without automatically describing the user as strong, brave, or resilient.
+- Avoid generic filler such as "your feelings deserve care", "after everything you have managed", or "even with so much change around you" when these phrases do not add meaningful context.
+- Do not repeat the same reassurance, emotional validation, or advice in multiple sentences. Every sentence should contribute something useful.
 - Do NOT sound clinical, robotic, scripted, or like a survey.
 - Do NOT reuse the same opening, structure, or emotional phrase. Avoid the recent assistant patterns provided below.
 - Slightly reflect the user's exact words in the first sentence so they feel understood.
@@ -4576,6 +4622,42 @@ Core behaviour:
 - Do not start PHQ-9/GAD-7/WHO-5 unless the user clearly asks for assessment.
 - Crisis and psychosis handling are checked before you. If the current message still sounds unsafe or detached from reality, stay calm, do not validate unusual beliefs as real, and gently encourage trusted/professional human support.
 """.strip()
+
+            # Read the language selected when the chatbot was opened.
+            selected_language = str(
+                sess.get("language", "en")
+            ).lower().strip()
+
+            selected_language = (
+                "ur" if selected_language in ("ur", "urdu") else "en"
+            )
+
+            # Enforce the selected chatbot language.
+            if selected_language == "en":
+                system_prompt += """
+
+ABSOLUTE LANGUAGE LOCK:
+The selected chatbot language is ENGLISH.
+Write the entire response in English only.
+Never write Urdu script or Roman Urdu.
+This applies to every sentence, greeting, name introduction,
+suggestion, and follow-up question.
+Even if the user's message, profile, conversation history,
+or memory contains Urdu, your response must remain entirely in English.
+"""
+            else:
+                system_prompt += """
+
+ABSOLUTE LANGUAGE LOCK:
+The selected chatbot language is URDU.
+Write the entire response in natural Urdu script only.
+Never write English sentences or Roman Urdu.
+This applies to every sentence, greeting, name introduction,
+suggestion, and follow-up question.
+Even if the user's message, profile, conversation history,
+or memory contains English, your response must remain entirely in Urdu.
+"""
+
             user_prompt = f"""
 User/session context:
 {user_context}
@@ -4598,13 +4680,13 @@ Last assistant response to avoid repeating:
 Current user message:
 {user_message}
 
-Selected application language: {sess.get("language", "en")}
+Selected application language: {selected_language}
 
 Write the next Empath AI reply now.
 """.strip()
+
             result = client.chat.completions.create(
                 model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
-                
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -4612,12 +4694,71 @@ Write the next Empath AI reply now.
                 temperature=0.85,
                 max_tokens=220,
             )
+
             response = result.choices[0].message.content.strip()
-            return _ensure_one_followup(response, user_message, sess)
+
+            # -------------------------------------------------
+            # ENGLISH LANGUAGE VALIDATION
+            # -------------------------------------------------
+            urdu_script_pattern = r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]"
+
+            if selected_language == "en" and re.search(
+                urdu_script_pattern, response
+            ):
+                print(
+                    "LANGUAGE VALIDATION: Urdu script detected "
+                    "in English response. Retrying."
+                )
+
+                retry_result = client.chat.completions.create(
+                    model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": system_prompt + """
+
+IMPORTANT CORRECTION:
+Your previous response violated the English-only requirement.
+Rewrite the complete response in English only.
+Do not use Urdu script or Roman Urdu.
+Include exactly one natural follow-up question in English.
+"""
+                        },
+                        {
+                            "role": "user",
+                            "content": user_prompt
+                        }
+                    ],
+                    temperature=0.5,
+                    max_tokens=220,
+                )
+
+                response = retry_result.choices[0].message.content.strip()
+
+                # Final protection: do not display mixed-language output.
+                if re.search(urdu_script_pattern, response):
+                    print(
+                        "LANGUAGE VALIDATION: Retry also failed. "
+                        "Using English fallback."
+                    )
+
+                    response = (
+                        "I'm here with you, and I'd like to understand "
+                        "what you're experiencing. You can share as much "
+                        "or as little as you feel comfortable sharing. "
+                        "What has been weighing on you most right now?"
+                    )
+
+            return _ensure_one_followup(
+                response, user_message, sess
+            )
+
         except Exception as e:
             print("Natural OpenAI response error:", e)
 
-    return _fallback_natural_response(user_message, sess, emotion=emotion)
+    return _fallback_natural_response(
+        user_message, sess, emotion=emotion
+    )
 
 
 # CHAT SAFETY FAIL-SAFE HELPERS
@@ -4722,10 +4863,10 @@ def chat():
     if not user_message:
         return jsonify({"response": "I did not catch that. Could you say that again?"})
 
-     # Keep the language selected by the user.
+      # Keep the language selected when the user opened the chatbot.
     language = str(
-        data.get("language")
-        or session.get("language")
+        session.get("language")
+        or data.get("language")
         or "en"
     ).lower().strip()
 
@@ -4736,6 +4877,8 @@ def chat():
 
     session["language"] = language
     session["sa_language"] = language
+
+    # CRITICAL: urgent safety messages must never depend on DB writes or OpenAI/API calls.
 
     if not user_message:
         return jsonify({"response": "I did not catch that. Could you say that again?"})
@@ -4974,6 +5117,9 @@ def chat():
 
         # Natural response engine: uses LLM-style contextual generation when API key is available,
         # with a warm local fallback if not. This prevents rigid rule-based replies.
+        print("LANGUAGE DEBUG BEFORE GENERATION:", session.get("language"))
+        print("SA LANGUAGE DEBUG:", session.get("sa_language"))
+       
         response = generate_natural_chat_response(
             user_message=user_message,
             sess=session,
@@ -7260,7 +7406,11 @@ def get_quotes():
 if __name__ == "__main__":
     with app.app_context():
         init_db()
-    app.run(debug=True, port=5000)
+    app.run(
+    debug=True,
+    port=5000,
+    use_reloader=False
+)
     
     test_message = "کبھی کبھی اتنی تھکن ہوتی ہے کہ کچھ کرنے کا دل نہیں کرتا۔"
 

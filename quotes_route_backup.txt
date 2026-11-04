@@ -1,0 +1,270 @@
+        }), 500
+
+
+
+# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# QUOTES ROUTE GÇö AI generated, IDP specific
+# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+@app.route("/quotes")
+@login_required
+def quotes_page():
+    return render_template("quotes.html")
+
+@app.route("/api/quotes", methods=["GET"])
+@login_required
+def get_quotes():
+
+    # Get language selected on the intro page
+    language = request.args.get("language", "en").strip().lower()
+
+    if language not in ["en", "ur"]:
+        language = "en"
+
+    categories = ["Hope", "Resilience", "Family", "Patience", "Strength", "Home"]
+
+    chosen = random.sample(categories, 3)
+
+    # -----------------------------------------
+    # LANGUAGE-SPECIFIC AI INSTRUCTIONS
+    # -----------------------------------------
+
+    if language == "ur":
+
+        language_instruction = """
+IMPORTANT LANGUAGE RULES:
+
+- Generate ALL quotes in Urdu script.
+- The quote itself MUST be in Urdu.
+- The person's name MUST be in Urdu where possible.
+- The title MUST be in Urdu.
+- The category MUST be in Urdu.
+- Do NOT return English quotes.
+- Do NOT return Roman Urdu.
+- Quran and Hadith meanings must be written respectfully in Urdu.
+- Preserve the original meaning of the quote.
+"""
+
+        language_name = "Urdu"
+
+    else:
+
+        language_instruction = """
+IMPORTANT URDU LANGUAGE AND TRANSLATION RULES:
+
+- Write every quote, title, category, and person's name in natural Urdu script.
+- Use fluent, grammatically correct Pakistani Urdu.
+- Preserve the exact meaning, emotion, intention, and tone of each quote.
+- Do not translate English words one by one.
+- Translate the complete idea naturally, using correct Urdu sentence structure.
+- Keep the original message intact. Do not add, remove, or exaggerate meaning.
+- Use natural Urdu word order and correct gender, singular/plural,
+  verb agreement, and respectful forms of address.
+- Avoid awkward, literal, machine-like translations.
+- Use simple, comforting Urdu that ordinary Pakistani readers understand.
+- Keep the wording gentle, warm, and emotionally appropriate.
+- Do not use Roman Urdu or English sentences.
+- Do not change the meaning of Quranic verses or Hadith.
+- For Quran and Hadith, use an accurate, respectful Urdu translation.
+- Never invent a religious quotation or attribute a quotation
+  to a person without reliable confidence.
+- Return only the requested JSON, with no explanation.
+"""
+
+        language_name = "English"
+
+    # -----------------------------------------
+    # SYSTEM PROMPT
+    # -----------------------------------------
+
+    system_prompt = f"""
+You generate short, soft, comforting quotes for internally displaced
+people (IDPs) in Pakistan who have lost their homes due to floods,
+conflict, or earthquakes.
+
+These people may be experiencing grief, trauma, displacement and loss.
+
+The required output language is: {language_name}
+
+RULES:
+
+- Each quote must feel warm, gentle, and human.
+- Do NOT use clinical or motivational-speaker style.
+- Mix sources such as:
+  Quran,
+  Hadith of Prophet Muhammad (PBUH),
+  Quaid-e-Azam Muhammad Ali Jinnah,
+  Allama Iqbal,
+  Maya Angelou,
+  Nelson Mandela,
+  Victor Hugo,
+  and other famous personalities.
+- Do NOT use hard or dramatic language such as:
+  "conquer", "warrior", "battle", "fight".
+- Keep each quote under 30 words.
+- Return ONLY valid JSON.
+- Do NOT return markdown.
+- Do NOT return explanations.
+
+{language_instruction}
+
+Return exactly this JSON structure:
+
+[
+  {{
+    "quote": "...",
+    "person": "...",
+    "title": "...",
+    "category": "Hope",
+    "type": "international"
+  }}
+]
+
+type must be one of:
+
+"quran"
+"hadith"
+"quaid"
+"iqbal"
+"international"
+"""
+
+    # -----------------------------------------
+    # USER PROMPT
+    # -----------------------------------------
+
+    user_prompt = f"""
+Generate exactly 3 quotes.
+
+Generate one quote for each of these categories:
+
+{', '.join(chosen)}
+
+The entire response must be in {language_name}.
+
+Return ONLY the JSON array.
+"""
+
+    # -----------------------------------------
+    # CALL OPENAI
+    # -----------------------------------------
+
+    try:
+
+        response = client.responses.create(
+            model="gpt-4.1-mini",
+            instructions=system_prompt,
+            input=[
+                {
+                    "role": "user",
+                    "content": user_prompt
+                }
+            ],
+            max_output_tokens=800,
+        )
+
+        raw = response.output_text.strip()
+
+        # Remove markdown code fences if AI adds them
+        raw = raw.replace("```json", "")
+        raw = raw.replace("```", "")
+        raw = raw.strip()
+
+        quotes = json.loads(raw)
+
+        # Return the language together with the quotes
+        return jsonify({
+            "quotes": quotes,
+            "language": language,
+            "status": "ok"
+        })
+
+    except Exception as e:
+
+        print(f"Quotes API error: {e}")
+
+        # -----------------------------------------
+        # URDU FALLBACK
+        # -----------------------------------------
+
+        if language == "ur":
+
+            fallback = [
+
+                {
+                    "quote": "+¿¦Æ +¦+¬ ¦ü+¦ +à+¦+¬+ä +¬¦Æ +¦+º+¬++ +ó+¦+º+å¦î ¦ü¦Æ¦ö",
+                    "person": "+é+¦+ó+å +à+¼¦î+»",
+                    "title": "+¦+ê+¦¦â +º+ä+º+å+¦+¦+º+¡ 94:6",
+                    "category": "+º+à¦î+»",
+                    "type": "quran"
+                },
+
+                {
+                    "quote": "+¬+à +à¦î+¦ +¿¦ü+¬+¦¦î+å +ê¦ü ¦ü¦î+¦ +¼+ê +º+++å¦Æ +º¦ü+ä+É +«+º+å¦ü +¬¦Æ +ä¦î¦Æ +¿¦ü+¬+¦¦î+å ¦ü¦î+¦¦ö",
+                    "person": "+¡+¦+¦+¬ +à+¡+à+» n+¦",
+                    "title": "+¡+»¦î+½",
+                    "category": "+«+º+å+»+º+å",
+                    "type": "hadith"
+                },
+
+                {
+                    "quote": "+¬+ê+ª¦î +¿++¦î +å¦î+¦ +º+¦ +¦+ê+¦+å¦î +¬+ê +à+»+++à +å¦ü¦î+¦ +¬+¦ +¦+¬+¬¦î +¼+ê +º+å+»+¦ +¦¦Æ +å+à+¬+¬¦î ¦ü¦Æ¦ö",
+                    "person": "+à+º¦î+º +º¦î+å+¼+ä+ê",
+                    "title": "+¦+º+¦+¦¦ü +º+ê+¦ +à+¦+å+ü¦ü",
+                    "category": "+++º+é+¬",
+                    "type": "international"
+                }
+
+            ]
+
+        # -----------------------------------------
+        # ENGLISH FALLBACK
+        # -----------------------------------------
+
+        else:
+
+            fallback = [
+
+                {
+                    "quote": "Verily, with every hardship comes ease.",
+                    "person": "The Holy Quran",
+                    "title": "Surah Al-Inshirah 94:6",
+                    "category": "Hope",
+                    "type": "quran"
+                },
+
+                {
+                    "quote": "The best of you are those who are best to their families.",
+                    "person": "Prophet Muhammad (PBUH)",
+                    "title": "Hadith",
+                    "category": "Family",
+                    "type": "hadith"
+                },
+
+                {
+                    "quote": "Nothing can dim the light which shines from within.",
+                    "person": "Maya Angelou",
+                    "title": "Poet and Author",
+                    "category": "Strength",
+                    "type": "international"
+                }
+
+            ]
+
+        return jsonify({
+            "quotes": fallback,
+            "language": language,
+            "status": "fallback"
+        })
+        
+    
+        
+@app.route("/tts/urdu", methods=["POST"])
+def urdu_tts():
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+
+    if not text:
+        return jsonify({"error": "Text is required"}), 400
+
+    if len(text) > 3000:
+        return jsonify({"error": "Text is too long"}), 400

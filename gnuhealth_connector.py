@@ -4,14 +4,13 @@ import re
 import subprocess
 
 
-WSL_DISTRO = "Ubuntu"
+WSL_DISTRO = "Ubuntu-24.04"
 
 WSL_PYTHON = (
-    "/home/tellm/.local/share/pipx/venvs/mygnuhealth/bin/python"
+    "/home/usman/.local/share/pipx/venvs/pip/bin/python"
 )
 
-PROFILE_ROOT = "/home/tellm/mygnuhealth_profiles"
-
+PROFILE_ROOT = "/home/usman/mygnuhealth_profiles"
 
 
 def _run_wsl(profile_id, script, payload=None, timeout=60):
@@ -25,25 +24,6 @@ def _run_wsl(profile_id, script, payload=None, timeout=60):
     profile_path = f"{PROFILE_ROOT}/{profile_id}"
 
     try:
-        # Create the profile directory inside WSL.
-        mkdir_result = subprocess.run(
-            [
-                "wsl.exe",
-                "-d", WSL_DISTRO,
-                "--",
-                "mkdir",
-                "-p",
-                profile_path,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        if mkdir_result.returncode != 0:
-            print("Profile directory creation failed:", mkdir_result.stderr)
-            return None
-
         result = subprocess.run(
             [
                 "wsl.exe",
