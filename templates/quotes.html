@@ -3,351 +3,287 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Words of Hope — Empath AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+</script>
+
+<!-- ===== ICONS (separate file) ===== -->
+<script src="/static/icons.js"></script>
+
+<!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+          serif: ['"Instrument Serif"', '"Noto Sans Arabic"', 'Georgia', 'serif'],
+          urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+</script>
+
+<style type="text/tailwindcss">
+  @layer components {
+    .glass {
+      @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+             shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
+    }
+
+    /* ---------- Sidebar ---------- */
+    .side-link {
+      @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+             hover:bg-white/60 hover:text-slate-900;
+    }
+    .side-link [data-icon] { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+    .side-link:hover [data-icon] { @apply text-teal-700; }
+    .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+    .side-link.active [data-icon] { @apply text-teal-700; }
+
+    .icon-btn {
+      @apply relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/60
+             text-slate-700 transition hover:bg-white hover:text-teal-700;
+    }
+    .icon-btn [data-icon] { @apply h-5 w-5; }
+
+    /* ---------- Top bar buttons ---------- */
+    .nav-btn-green {
+      @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+             shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
+    }
+    .nav-btn-orange {
+      @apply inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-white/80 bg-white/70 px-3.5 py-2.5 sm:px-4
+             text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-teal-700;
+    }
+    .nav-btn-orange [data-icon] { @apply block h-4 w-4 transition-transform duration-500; }
+    .nav-btn-orange:hover [data-icon] { @apply rotate-180; }
+
+    /* ---------- Title ---------- */
+    .page-title { @apply mb-7 text-center md:mb-9; animation: fadeUp .5s ease both; }
+    .page-title .subtitle { @apply mt-3 flex flex-wrap items-center justify-center gap-2; }
+    .page-title .subtitle > span:not(.subtitle-sep) {
+      @apply rounded-lg border border-white/80 bg-white/60 px-2.5 py-1 text-xs font-semibold text-slate-600;
+    }
+    .subtitle-sep { @apply hidden; }
+
+    /* ---------- Quote cards (built by the script) ---------- */
+    .quotes-grid { @apply grid w-full max-w-[760px] gap-4; }
+    .quote-card {
+      @apply glass relative overflow-hidden rounded-3xl px-6 pb-5 pt-7 md:px-8 md:pb-6 md:pt-8;
+      opacity: 0; transform: translateY(16px); animation: fadeUp .45s ease forwards;
+    }
+    .quote-card:nth-child(1) { animation-delay: .05s; }
+    .quote-card:nth-child(2) { animation-delay: .15s; }
+    .quote-card:nth-child(3) { animation-delay: .25s; }
+    .quote-card:nth-child(4) { animation-delay: .35s; }
+    .quote-card:nth-child(5) { animation-delay: .45s; }
+    .quote-card::before { content: ''; @apply absolute inset-y-0 start-0 w-1 bg-slate-900; }
+
+    .quote-mark {
+      @apply pointer-events-none absolute end-6 top-1 select-none font-serif text-[88px] leading-none text-teal-600/15;
+    }
+    .quote-text {
+      @apply mb-6 pe-10 font-serif text-[21px] italic leading-relaxed text-slate-800 md:text-[23px];
+    }
+    .quote-footer {
+      @apply flex flex-wrap items-center justify-between gap-3 border-t border-slate-900/[0.07] pt-4;
+    }
+    .quote-person { @apply flex flex-col gap-0.5; }
+    .person-name { @apply text-sm font-bold text-slate-900; }
+    .person-title { @apply text-xs text-slate-500; }
+
+    .badge { @apply whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold; }
+    .badge-hope       { @apply bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-600/15; }
+    .badge-resilience { @apply bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15; }
+    .badge-family     { @apply bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/15; }
+    .badge-patience   { @apply bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/15; }
+    .badge-strength   { @apply bg-cyan-50 text-cyan-800 ring-1 ring-inset ring-cyan-600/15; }
+    .badge-home       { @apply bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-600/15; }
+
+    /* ---------- Loading / empty / error ---------- */
+    .loading-wrap { @apply glass flex w-full flex-col items-center gap-3.5 rounded-3xl px-6 py-16 text-center text-sm text-slate-500; }
+    .loading-dots { @apply flex gap-1.5; }
+    .loading-dots span { @apply h-2 w-2 rounded-full bg-teal-600; animation: blink 1.2s infinite; }
+    .loading-dots span:nth-child(2) { animation-delay: .2s; }
+    .loading-dots span:nth-child(3) { animation-delay: .4s; }
+
+    .footer-note { @apply mt-7 max-w-md text-center text-[13px] leading-relaxed text-slate-500; animation: fadeUp .5s .5s ease both; }
+
+    .helpline-footer {
+      @apply glass flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl px-4 py-3 text-center text-[12.5px] text-slate-500;
+    }
+    .helpline-footer strong { @apply whitespace-nowrap font-semibold text-slate-900; }
+  }
+</style>
+
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Card accent colours — plain CSS because the script builds these class names at runtime */
+  .quote-card.card-quran::before,
+  .quote-card.card-hadith::before { background-color: #0d9488; }
+  .quote-card.card-quaid::before,
+  .quote-card.card-iqbal::before { background-color: #0891b2; }
+  .quote-card.card-international::before { background-color: #0ea5e9; }
 
-:root {
-  --cream:       #f4efe6;
-  --cream-2:     #ece6d9;
-  --cream-3:     #e2dace;
-  --dark:        #2a1f0e;
-  --dark-2:      #3e2f18;
-  --green:       #1a5c42;
-  --green-2:     #0f4430;
-  --green-3:     #0F6E56;
-  --green-light: #e4efe9;
-  --orange:      #d96a35;
-  --orange-2:    #c45a28;
-  --muted:       #7a6e5f;
-  --border:      rgba(42,31,14,0.12);
-  --tan:         #b5886a;
-}
+  /* used by the script for the "Source" link colour */
+  :root { --green-3: #0f766e; }
 
-html, body { min-height: 100%; background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--dark); }
-.page { display: flex; flex-direction: column; min-height: 100vh; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes blink { 0%,80%,100% { opacity:.2; transform:scale(.8); } 40% { opacity:1; transform:scale(1); } }
 
-/* ── NAVBAR (identical to self-assessment) ── */
-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 32px; background: var(--cream);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0; z-index: 10; width: 100%; position: sticky; top: 0;
-}
-.nav-left { display: flex; align-items: center; gap: 14px; }
-.idp-badge { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.idp-icon {
-  width: 42px; height: 42px; border-radius: 50%; background: var(--dark);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.brand-text { display: flex; flex-direction: column; }
-.brand-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; color: var(--dark); line-height: 1.1; }
-.brand-sub  { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
-.nav-divider { width: 1px; height: 28px; background: var(--border); }
-.nav-page-label { font-size: 13px; color: var(--muted); font-weight: 400; }
-.nav-right { display: flex; align-items: center; gap: 10px; }
-.nav-btn-green {
-  background: var(--green-3); border: none; border-radius: 20px;
-  padding: 7px 16px; font-size: 13px; color: white;
-  font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 500;
-  text-decoration: none; transition: background 0.2s, transform 0.15s;
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.nav-btn-green:hover { background: var(--green-2); transform: translateY(-1px); }
-.nav-btn-orange {
-  background: var(--orange); color: white; border: none; border-radius: 20px;
-  padding: 7px 16px; font-size: 13px; font-family: 'DM Sans', sans-serif;
-  cursor: pointer; font-weight: 500; transition: background 0.2s;
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.nav-btn-orange:hover { background: var(--orange-2); }
+  /* Top bar glass on a background layer */
+  .topbar { isolation: isolate; }
+  .topbar::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+    -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+  }
 
-/* ── MAIN ── */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 44px 20px 60px;
-}
+  /* ===== SIDEBAR (same as dashboard) ===== */
+  html .sidebar {
+    position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+    display: flex; flex-direction: column;
+    width: 280px; max-width: calc(100vw - 48px);
+    overflow-y: auto; overflow-x: visible;
+    background: rgba(255,255,255,0.9);
+    transform: translateX(calc(-100% - 24px));
+    transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+  }
+  html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+  html.sidebar-open .sidebar { transform: none; }
+  .sidebar-overlay {
+    position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  }
+  html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+  html.sidebar-open body { overflow: hidden; }
 
-/* ── PAGE TITLE (matches self-assessment style) ── */
-.page-title {
-  text-align: center;
-  margin-bottom: 36px;
-  animation: fadeUp 0.5s ease both;
-}
-.page-title h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 36px;
-  font-weight: 600;
-  color: var(--dark-2);
-  line-height: 1.2;
-}
-.page-title .subtitle {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.subtitle-sep { color: var(--cream-3); }
+  @media (min-width: 1024px) {
+    html .sidebar, html[dir="rtl"] .sidebar {
+      position: sticky; top: 20px; bottom: auto; z-index: 30;
+      height: calc(100vh - 40px); width: 248px; max-width: none;
+      transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+      cursor: pointer;
+    }
+    .sidebar-overlay { display: none; }
+    html.sidebar-collapsed .sidebar { width: 80px; }
+    html.sidebar-collapsed .sidebar .side-label { display: none; }
+    html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+    html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+    html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+    html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+      display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+      transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+    }
+  }
 
-/* ── QUOTES GRID ── */
-.quotes-grid {
-  display: grid;
-  gap: 16px;
-  width: 100%;
-  max-width: 680px;
-}
-
-/* ── QUOTE CARD (matches self-assessment q-card style) ── */
-.quote-card {
-  background: white;
-  border-radius: 18px;
-  padding: 28px 26px 22px;
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 16px rgba(42,31,14,0.07);
-  position: relative;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(16px);
-  animation: fadeUp 0.45s ease forwards;
-}
-.quote-card:nth-child(1) { animation-delay: 0.05s; }
-.quote-card:nth-child(2) { animation-delay: 0.15s; }
-.quote-card:nth-child(3) { animation-delay: 0.25s; }
-.quote-card:nth-child(4) { animation-delay: 0.35s; }
-.quote-card:nth-child(5) { animation-delay: 0.45s; }
-
-@keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
-
-/* left accent bar — same idea as q-card top border */
-.quote-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 4px; height: 100%;
-  border-radius: 18px 0 0 18px;
-  background: var(--dark-2);
-}
-
-/* Card type variants */
-.card-quran::before,
-.card-hadith::before  { background: var(--green-3); }
-.card-quaid::before,
-.card-iqbal::before   { background: var(--tan); }
-.card-international::before { background: var(--orange); }
-
-/* Subtle tint backgrounds */
-.card-quran,
-.card-hadith  { background: #f6faf8; border-color: #d4eadb; }
-.card-quaid,
-.card-iqbal   { background: #faf8f5; border-color: #e8ddd2; }
-
-/* Big decorative open-quote */
-.quote-mark {
-  font-family: 'Playfair Display', serif;
-  font-size: 72px;
-  line-height: 1;
-  color: var(--cream-3);
-  position: absolute;
-  top: 8px; right: 20px;
-  pointer-events: none;
-  user-select: none;
-}
-.card-quran .quote-mark,
-.card-hadith .quote-mark  { color: #cde8d5; }
-.card-quaid .quote-mark,
-.card-iqbal .quote-mark   { color: #e8ddd2; }
-
-/* Quote text */
-.quote-text {
-  font-family: 'Playfair Display', serif;
-  font-size: 16px;
-  font-style: italic;
-  color: var(--dark);
-  line-height: 1.85;
-  margin-bottom: 20px;
-  padding-left: 14px;
-  padding-right: 48px;
-}
-.card-quran .quote-text,
-.card-hadith .quote-text  { color: #2a4535; }
-.card-quaid .quote-text,
-.card-iqbal .quote-text   { color: #3e2f18; }
-
-/* Footer */
-.quote-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-left: 14px;
-}
-.quote-person { display: flex; flex-direction: column; gap: 2px; }
-.person-name {
-  font-size: 13px; font-weight: 600; color: var(--dark-2);
-}
-.person-title {
-  font-size: 11px; color: var(--muted);
-}
-.card-quran .person-name,
-.card-hadith .person-name { color: #2a4535; }
-.card-quran .person-title,
-.card-hadith .person-title { color: #6aaa80; }
-.card-quaid .person-name,
-.card-iqbal .person-name  { color: var(--tan); }
-.card-quaid .person-title,
-.card-iqbal .person-title { color: #9a7a60; }
-
-/* Badge */
-.badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 4px 11px;
-  border-radius: 12px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.badge-hope       { background: #e4efe9; color: var(--green); }
-.badge-resilience { background: #e8f5f0; color: var(--green-3); }
-.badge-family     { background: #f5edfb; color: #7040a0; }
-.badge-patience   { background: #fdf3e7; color: #8a6200; }
-.badge-strength   { background: #fdf0ea; color: var(--orange-2); }
-.badge-home       { background: #faeee6; color: var(--tan); }
-
-/* ── LOADING ── */
-.loading-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: 70px 0;
-  color: var(--muted);
-  font-size: 13px;
-  width: 100%;
-}
-.loading-dots { display: flex; gap: 6px; }
-.loading-dots span {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--muted);
-  animation: blink 1.2s infinite;
-}
-.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
-.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes blink { 0%,80%,100% { opacity:0.2; transform:scale(0.8); } 40% { opacity:1; transform:scale(1); } }
-
-/* ── REFRESH BUTTON ── */
-.refresh-wrap {
-  margin-top: 32px;
-  display: flex;
-  justify-content: center;
-}
-.refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 28px;
-  border-radius: 20px;
-  background: var(--green-3);
-  color: white;
-  border: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-}
-.refresh-btn:hover  { background: var(--green-2); transform: translateY(-1px); }
-.refresh-btn:active { transform: scale(0.97); }
-.refresh-btn:disabled { background: #b0c8c0; cursor: not-allowed; transform: none; }
-.refresh-icon { width: 14px; height: 14px; transition: transform 0.45s; }
-.refresh-btn:not(:disabled):hover .refresh-icon { transform: rotate(180deg); }
-
-/* ── FOOTER NOTE ── */
-.footer-note {
-  margin-top: 28px;
-  font-size: 12px;
-  color: #c0b0a0;
-  text-align: center;
-  max-width: 400px;
-  line-height: 1.7;
-  animation: fadeUp 0.5s 0.5s ease both;
-}
-
-/* ── HELPLINE FOOTER ── */
-.helpline-footer {
-  text-align: center;
-  font-size: 11.5px;
-  color: var(--muted);
-  padding: 10px 20px;
-  background: var(--cream);
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  align-items: center;
-}
-
-.helpline-footer strong {
-  color: var(--dark-2);
-}
-
-@media (max-width: 600px) {
-  nav { padding: 12px 16px; }
-  .main { padding: 28px 16px 48px; }
-  .page-title h1 { font-size: 28px; }
-  .quote-text { font-size: 15px; padding-right: 32px; }
-}
+  /* ===== URDU / RTL ===== */
+  html[dir="rtl"] body { direction: rtl; }
+  html[lang="ur"] body,
+  html[lang="ur"] button { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+  html[lang="ur"] *,
+  html[lang="ur"] *::before,
+  html[lang="ur"] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+  html[lang="ur"] .page-title h1 { line-height: 1.6; }
+  html[lang="ur"] .quote-card .quote-text {
+    font-family: 'Noto Sans Arabic', 'Inter', sans-serif; font-style: normal;
+    font-size: 18px; font-weight: 500; line-height: 2.1;
+  }
+  html[lang="ur"] .person-title,
+  html[lang="ur"] .footer-note,
+  html[lang="ur"] .loading-wrap,
+  html[lang="ur"] .helpline-footer,
+  html[lang="ur"] .side-link { line-height: 1.9; }
+  html[dir="rtl"] .quote-card { text-align: right; }
 </style>
 </head>
-<body>
-<div class="page">
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
+
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="page flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+<!-- ===== SIDEBAR ===== -->
+<aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+  <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+    <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+        <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+      </span>
+      <span class="side-label">Empath AI</span>
+    </a>
+    <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+  </div>
+
+  <nav class="flex flex-col gap-1" aria-label="Main">
+    <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-sidebar-label="dashboard">Dashboard</span></a>
+    <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-sidebar-label="letsChat">Let's Chat</span></a>
+    <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-sidebar-label="weeklyAssessment">Weekly Self Assessment</span></a>
+    <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-sidebar-label="wellnessProgress">Wellness Progress</span></a>
+    <a class="side-link active" href="/quotes" aria-current="page"><span data-icon="hope"></span><span class="side-label" data-sidebar-label="wordsOfHope">Words of Hope</span></a>
+    <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-sidebar-label="quranicCorner">Quranic Comfort Corner</span></a>
+  </nav>
+
+  <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+    <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-sidebar-label="logout">Logout</span></a>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ===== MAIN COLUMN ===== -->
+<div class="min-w-0 flex-1">
 
 <!-- NAVBAR -->
-<nav>
-  <div class="nav-left">
-    <a class="idp-badge" href="/dashboard">
-      <div class="idp-icon">
-        <svg viewBox="0 0 18 18" fill="none" width="20" height="20">
-          <circle cx="9" cy="7" r="4" fill="white"/>
-          <rect x="7" y="11" width="4" height="5" rx="1" fill="white"/>
-        </svg>
+<nav class="topbar sticky top-3 z-40 flex items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
+  <div class="nav-left flex min-w-0 items-center gap-3">
+    <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+    <a class="idp-badge flex min-w-0 items-center gap-2.5 lg:hidden" href="/dashboard">
+      <div class="idp-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+        <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
       </div>
-      <div class="brand-text">
-        <span class="brand-name">Empath AI</span>
-        <span class="brand-sub" data-i18n="brandSub">IDP Mental Health</span>
+      <div class="brand-text hidden min-w-0 flex-col md:flex">
+        <span class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</span>
+        <span class="brand-sub truncate text-[11px] text-slate-500" data-i18n="brandSub">IDP Mental Health</span>
       </div>
     </a>
-    <div class="nav-divider"></div>
-    <span class="nav-page-label" data-i18n="pageLabel">Words of Hope</span>
+    <div class="nav-divider hidden h-7 w-px bg-slate-900/10 md:block lg:hidden"></div>
+    <span class="nav-page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" data-i18n="pageLabel">Words of Hope</span>
   </div>
-  <div class="nav-right">
+  <div class="nav-right flex shrink-0 items-center gap-2">
     <a href="/dashboard" class="nav-btn-green" data-i18n="dashboard">Dashboard</a>
-    <button class="nav-btn-orange" onclick="loadQuotes()">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-        <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-        <path d="M12 2l.4 2.7L9.7 5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span data-i18n="newWords">New Words</span>
+    <button class="nav-btn-orange" onclick="loadQuotes()" aria-label="New Words" title="New Words">
+      <span data-icon="refresh"></span>
+      <span class="hidden sm:inline" data-i18n="newWords">New Words</span>
     </button>
   </div>
 </nav>
 
 <!-- MAIN -->
-<div class="main">
+<div class="main flex flex-col items-center px-1 pb-8 pt-8 md:pt-12">
 
   <div class="page-title">
-    <h1 data-i18n="pageTitle">Words of Hope</h1>
+    <h1 class="text-[28px] font-bold leading-tight tracking-tight text-slate-900 md:text-[38px]" data-i18n="pageTitle">Words of Hope</h1>
     <div class="subtitle">
       <span data-i18n="quranHadith">Quran &amp; Hadith</span>
       <span class="subtitle-sep">·</span>
@@ -372,7 +308,9 @@ nav {
 
 
 <!-- HELPLINE FOOTER -->
+<div class="mx-auto w-full max-w-[760px] pb-4">
 <div class="helpline-footer">
+    <span class="block h-4 w-4 shrink-0 text-teal-700" data-icon="phone"></span>
     <span id="helplineLabel"></span>
     <span>
         <strong dir="ltr">1122</strong>
@@ -385,7 +323,9 @@ nav {
         <span id="rozanLabel"></span>
     </span>
 </div>
+</div>
 
+</div>
 </div>
 
 <script>
@@ -624,6 +564,53 @@ document.addEventListener("DOMContentLoaded", function() {
   applyLanguage(getCurrentLanguage());
   loadQuotes();
 });
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", logout: "لاگ آؤٹ" }
+  };
+
+  let lang = "en";
+  try { lang = localStorage.getItem("empathLanguage") === "ur" ? "ur" : "en"; } catch (e) {}
+  const t = SIDEBAR_TEXT[lang];
+  document.querySelectorAll("[data-sidebar-label]").forEach(function (el) {
+    const key = el.getAttribute("data-sidebar-label");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    const collapsed = root.classList.toggle("sidebar-collapsed");
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e2) {}
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
 </script>
 </body>
 </html>

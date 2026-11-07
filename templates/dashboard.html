@@ -3,911 +3,587 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Empath AI — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+</script>
+
+<!-- ===== ICONS (separate file) ===== -->
+<script src="/static/icons.js"></script>
+
+<!-- ===== TAILWIND CSS (same setup as index & login) ===== -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+          serif: ['"Instrument Serif"', '"Noto Sans Arabic"', 'Georgia', 'serif'],
+          urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+</script>
+
+<style type="text/tailwindcss">
+  @layer components {
+    .glass {
+      @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+             shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
+    }
+    .glass-panel {
+      @apply rounded-2xl border border-white/90 bg-white/95 backdrop-blur-2xl
+             shadow-[0_24px_60px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(255,255,255,0.9)];
+    }
+
+    /* ---------- Sidebar ---------- */
+    .side-link {
+      @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+             hover:bg-white/60 hover:text-slate-900;
+    }
+    .side-link [data-icon] { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+    .side-link:hover [data-icon] { @apply text-teal-700; }
+    .side-link.active {
+      @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)];
+    }
+    .side-link.active [data-icon] { @apply text-teal-700; }
+
+    /* ---------- Top bar buttons ---------- */
+    .icon-btn {
+      @apply relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/60
+             text-slate-700 transition hover:bg-white hover:text-teal-700;
+    }
+    .icon-btn [data-icon] { @apply h-5 w-5; }
+
+    .profile-btn {
+      @apply flex items-center gap-2.5 rounded-xl border border-white/80 bg-white/60 py-1.5 pe-3 ps-1.5 text-sm
+             font-semibold text-slate-900 transition hover:bg-white;
+    }
+    .profile-avatar {
+      @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-[11px] font-bold text-white;
+    }
+    .chevron { @apply block h-4 w-4 text-slate-500 transition-transform duration-200; }
+    .profile-btn.open .chevron { @apply rotate-180; }
+
+    /* ---------- Profile dropdown (script toggles .open) ---------- */
+    .dropdown { @apply glass-panel absolute top-[calc(100%+10px)] z-50 hidden min-w-[220px] overflow-hidden; }
+    .dropdown.open { @apply block; animation: fadeDown .18s ease both; }
+    .dd-header { @apply border-b border-slate-900/[0.06] px-4 pb-3 pt-3.5; }
+    .dd-header p { @apply text-sm font-semibold text-slate-900; }
+    .dd-header span { @apply text-xs text-slate-500; }
+    .dd-item { @apply flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-start text-[13px] font-semibold transition; }
+    .dd-item [data-icon] { @apply h-4 w-4 shrink-0; }
+    .dd-sep { @apply h-px bg-slate-900/[0.06]; }
+    .dd-logout { @apply text-slate-800 hover:bg-slate-900/[0.04]; }
+    .dd-delete { @apply text-red-600 hover:bg-red-50; }
+
+    /* ---------- Notifications ---------- */
+    .notif-badge {
+      @apply absolute -end-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-white
+             bg-teal-600 px-1 text-[10px] font-bold leading-none text-white;
+    }
+    .notif-panel { @apply glass-panel absolute top-[calc(100%+10px)] z-50 hidden w-[360px] overflow-hidden; }
+    .notif-panel.open { @apply block; animation: fadeDown .18s ease both; }
+    .notif-item { @apply relative flex gap-3 border-b border-slate-900/[0.05] px-4 py-3.5 text-start transition last:border-b-0 hover:bg-slate-900/[0.03]; }
+    .notif-item.unread { @apply bg-teal-600/[0.05]; }
+    .notif-ic { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-teal-600/10 text-teal-700; }
+    .notif-ic [data-icon], .notif-ic svg { @apply h-[18px] w-[18px]; }
+    .notif-dot { @apply absolute end-4 top-4 h-2 w-2 rounded-full bg-teal-600; }
+
+    /* ---------- Cards ---------- */
+    .card {
+      @apply glass relative flex h-full flex-col overflow-hidden rounded-3xl p-5 outline-none md:p-6 transition duration-300
+             hover:-translate-y-0.5 hover:bg-white/60 hover:shadow-[0_18px_44px_rgba(15,23,42,0.11),inset_0_1px_0_rgba(255,255,255,0.9)]
+             focus-visible:ring-4 focus-visible:ring-teal-600/25;
+    }
+    .card-icon-wrap {
+      @apply mb-5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/80;
+    }
+    .card-icon-wrap [data-icon] { @apply h-[22px] w-[22px]; }
+    .card h2 { @apply mb-2 text-[17px] font-bold leading-snug tracking-tight text-slate-900; }
+    .card p { @apply mb-5 flex-1 text-sm leading-relaxed text-slate-500; }
+    .card-tags { @apply mb-5 flex flex-wrap gap-1.5; }
+    .tag { @apply rounded-md bg-slate-900/[0.05] px-2 py-1 text-[11px] font-semibold text-slate-600; }
+    .card-cta {
+      @apply mt-auto flex items-center justify-between border-t border-slate-900/[0.07] pt-4 text-[13px] font-semibold text-teal-700;
+    }
+    .cta-arrow { @apply block h-4 w-4 transition-transform duration-200; }
+
+    /* ---------- Featured card (Let's Chat) — lighter teal ---------- */
+    .card.card-chat {
+      border-color: rgba(255,255,255,0.28);
+      background: linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #0d9488 100%);
+      box-shadow: 0 18px 44px rgba(15,118,110,0.25), inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+    .card.card-chat:hover {
+      background: linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #0d9488 100%);
+      box-shadow: 0 22px 50px rgba(15,118,110,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+    .card.card-chat::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(380px 260px at 100% 0%, rgba(255,255,255,0.20), transparent 70%),
+        radial-gradient(320px 240px at 0% 100%, rgba(94,234,212,0.18), transparent 70%);
+      pointer-events: none;
+    }
+    .card.card-chat > * { position: relative; }
+    .card.card-chat h2 { @apply mb-2.5 text-[22px] text-white md:text-2xl; }
+    .card.card-chat p { @apply max-w-xl flex-none text-[15px] text-white/85; }
+    .card.card-chat .card-icon-wrap { @apply border-white/25 bg-white/15 text-white; }
+    .card.card-chat .tag { @apply bg-white/15 text-white; }
+    .card.card-chat .card-tags { @apply mb-6 md:mb-7; }
+    .card.card-chat .card-cta {
+      @apply w-fit gap-3 rounded-xl border-0 bg-white px-[18px] py-3 text-slate-900 shadow-[0_8px_22px_rgba(15,23,42,0.18)];
+    }
+    .card.card-chat .cta-arrow { @apply text-teal-700; }
+    .card.card-chat .chat-mark {
+      @apply pointer-events-none absolute -bottom-9 -end-5 hidden h-[220px] w-[220px] text-white/10 sm:block;
+    }
+
+    .icon-teal    { @apply bg-teal-600/10 text-teal-700; }
+    .icon-cyan    { @apply bg-cyan-600/10 text-cyan-700; }
+    .icon-emerald { @apply bg-emerald-600/10 text-emerald-700; }
+    .icon-sky     { @apply bg-sky-600/10 text-sky-700; }
+
+    /* ---------- Delete modal (script toggles .show) ---------- */
+    .modal-overlay { @apply fixed inset-0 z-[1000] hidden items-center justify-center bg-slate-900/40 p-5 backdrop-blur-sm; }
+    .modal-overlay.show { @apply flex; }
+    .modal-box { @apply glass-panel w-full max-w-[440px] rounded-3xl p-7; animation: fadeUp .25s ease both; }
+    .modal-btn { @apply cursor-pointer rounded-xl px-5 py-3 text-sm font-semibold transition hover:-translate-y-px; }
+    .modal-cancel { @apply border border-slate-900/10 bg-white text-slate-800 hover:bg-slate-50; }
+    .modal-delete { @apply bg-red-600 text-white shadow-[0_8px_20px_rgba(220,38,38,0.25)] hover:bg-red-700; }
+  }
+</style>
+
 <style>
-:root {
-  --brown: #4b2e23;
-  --green: #8fa66b;
-  --green-dark: #0F6E56;
-  --orange: #f47c48;
-  --bg: #f4efe6;
-  --muted: #777;
-  --danger: #c94b4b;
-  --danger-dark: #a73737;
-  --tan: #b5886a;
-  --olive: #6b7c3f;
-}
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  .anim-up   { animation: fadeUp .5s ease both; }
+  .anim-up-2 { animation: fadeUp .5s .08s ease both; }
+  .anim-up-3 { animation: fadeUp .5s .2s ease both; }
 
-* { margin:0; padding:0; box-sizing:border-box; }
-
-body {
-  background: var(--bg);
-  font-family: 'DM Sans', sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* ── NAVBAR ── */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 60px;
-  background: rgba(244,242,239,0.97);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(75,46,35,0.08);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 3px 18px rgba(75,46,35,0.035);
-}
-
-.logo {
-  font-family: 'DM Serif Display', serif;
-  font-size: 20px;
-  color: var(--brown);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-
-.logo-icon {
-  width: 36px; height: 36px;
-  background: var(--brown);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-/* ── PROFILE DROPDOWN ── */
-.profile-wrap { position: relative; }
-
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  background: var(--brown);
-  border: none;
-  border-radius: 25px;
-  padding: 9px 18px;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.2s, transform 0.2s;
-}
-.profile-btn:hover { background: #3a2219; transform: translateY(-1px); }
-
-.profile-avatar {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: var(--orange);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: white;
-  flex-shrink: 0;
-}
-
-.chevron { transition: transform 0.2s; }
-.profile-btn.open .chevron { transform: rotate(180deg); }
-
-.dropdown {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.14);
-  overflow: hidden;
-  min-width: 180px;
-  z-index: 200;
-  display: none;
-  animation: fadeDown 0.18s ease both;
-}
-.dropdown.open { display: block; }
-
-@keyframes fadeDown {
-  from { opacity:0; transform: translateY(-8px); }
-  to   { opacity:1; transform: translateY(0); }
-}
-
-.dd-header {
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid #f0e8df;
-}
-.dd-header p { font-size: 13px; font-weight: 600; color: var(--brown); }
-.dd-header span { font-size: 11px; color: var(--muted); }
-
-.dd-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  border: none;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  font-family: 'DM Sans', sans-serif;
-  text-decoration: none;
-}
-.dd-sep { height: 1px; background: #f0e8df; margin: 2px 0; }
-.dd-logout { color: var(--brown); }
-.dd-logout:hover { background: #f5ede4; }
-.dd-delete { color: var(--danger); }
-.dd-delete:hover { background: #fff0f0; }
-
-/* ── PAGE ── */
-.page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 44px 40px 56px;
-}
-
-/* ── GREETING ── */
-.greeting {
-  text-align: center;
-  margin-bottom: 34px;
-  animation: fadeUp 0.6s ease both;
-}
-.greeting-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--green);
-  margin-bottom: 8px;
-}
-.greeting h1 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 42px;
-  color: var(--brown);
-  line-height: 1.1;
-}
-.greeting h1 span { font-style: italic; color: var(--green); }
-.greeting p {
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 14px;
-  max-width: 440px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.7;
-}
-
-/* ── CARDS GRID ── */
-.cards-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22px;
-    width: 100%;
-    max-width: 1100px;
-    animation: fadeUp 0.6s 0.1s ease both;
-}
-
-/* ── CARD BASE ── */
-.card {
-    border-radius: 24px;
-    padding: 26px 28px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
-                box-shadow 0.3s ease,
-                outline-color 0.2s ease;
-    text-decoration: none;
-    display: block;
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-}
-
-.card:hover {
-    transform: translateY(-8px) scale(1.025);
-    box-shadow: 0 28px 64px rgba(0,0,0,0.18);
-    outline-color: rgba(255,255,255,0.4);
-}
-
-.card::before {
+  /* Glass on a background layer — a blur directly on the bar
+     would make the dropdowns inside it see-through */
+  .navbar { isolation: isolate; }
+  .navbar::before {
     content: '';
-    position: absolute;
-    top: -50px;
-    right: -50px;
-    width: 170px;
-    height: 170px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 50%;
-    pointer-events: none;
-}
-
-.card::after {
-    content: '';
-    position: absolute;
-    bottom: -40px;
-    left: -30px;
-    width: 130px;
-    height: 130px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 50%;
-    pointer-events: none;
-}
-
-/* ── CARD ICON ── */
-.card-icon-wrap {
-    width: 46px;
-    height: 46px;
-    border-radius: 13px;
-    background: rgba(255,255,255,0.14);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    margin-bottom: 14px;
-}
-
-/* ── CARD HEADING ── */
-.card h2 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    line-height: 1.15;
-    margin-bottom: 8px;
-    color: white;
-}
-
-/* ── CARD DESCRIPTION ── */
-.card p {
-    font-size: 13px;
-    line-height: 1.6;
-    margin-bottom: 14px;
-    color: rgba(255,255,255,0.75);
-}
-
-/* ── CARD TAGS ── */
-.card-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-bottom: 28px;
-}
-
-.tag {
-    padding: 5px 11px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    background: rgba(255,255,255,0.14);
-    color: rgba(255,255,255,0.9);
-}
-
-/* ── CARD BUTTON ── */
-.card-cta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 11px 16px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 700;
-    color: white;
-    transition: background 0.2s;
-}
-
-/* ── CARD COLORS ── */
-.card-chat {
-    background: var(--green-dark);
-}
-
-.card-chat .card-cta {
-    background: rgba(255,255,255,0.15);
-}
-
-.card-chat:hover .card-cta {
-    background: rgba(255,255,255,0.26);
-}
-
-.card-assessment {
-    background: var(--brown);
-}
-
-.card-assessment .card-cta {
-    background: var(--orange);
-}
-
-.card-assessment:hover .card-cta {
-    background: #d96a38;
-}
-
-.card-wellness {
-    background: var(--olive);
-}
-
-.card-wellness .card-cta {
-    background: rgba(255,255,255,0.18);
-}
-
-.card-wellness:hover .card-cta {
-    background: rgba(255,255,255,0.28);
-}
-
-.card-quotes {
-    background: var(--tan);
-}
-
-.card-quotes .card-cta {
-    background: rgba(255,255,255,0.2);
-}
-
-.card-quotes:hover .card-cta {
-    background: rgba(255,255,255,0.32);
-}
-
-.card-quran {
-    background: #78613b;
-}
-
-.card-quran .card-cta {
-    background: rgba(255,255,255,0.18);
-}
-
-.card-quran:hover .card-cta {
-    background: rgba(255,255,255,0.29);
-}
-
-/* ── DESKTOP ALIGNMENT ── */
-@media (min-width: 901px) {
-
-    .cards-grid > .card:nth-child(1) {
-        grid-column: 1;
-    }
-
-    .cards-grid > .card:nth-child(2) {
-        grid-column: 2;
-    }
-
-    .cards-grid > .card:nth-child(3) {
-        grid-column: 3;
-    }
-
-    /* Words of Hope below Let's Chat */
-    .cards-grid > .card:nth-child(4) {
-        grid-column: 1;
-        width: 100%;
-    }
-
-    /* Quranic Corner below Weekly Assessment */
-    .cards-grid > .card:nth-child(5) {
-        grid-column: 2;
-        width: 100%;
-    }
-}
-
-/* ── TABLET RESPONSIVE ── */
-@media (max-width: 900px) {
-    .cards-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        max-width: 700px;
-    }
-
-    .cards-grid > .card {
-        grid-column: auto;
-        width: 100%;
-    }
-}
-
-/* ── MOBILE RESPONSIVE ── */
-@media (max-width: 680px) {
-    .cards-grid {
-        grid-template-columns: 1fr;
-        max-width: 420px;
-    }
-
-    .cards-grid > .card {
-        grid-column: 1;
-        width: 100%;
-    }
-}
-
-/* ── CARD COLORS ── */
-.card-chat { background: var(--green-dark); }
-.card-chat .card-cta { background: rgba(255,255,255,0.15); }
-.card-chat:hover .card-cta { background: rgba(255,255,255,0.26); }
-
-.card-assessment { background: var(--brown); }
-.card-assessment .card-cta { background: var(--orange); }
-.card-assessment:hover .card-cta { background: #d96a38; }
-
-.card-wellness { background: var(--olive); }
-.card-wellness .card-cta { background: rgba(255,255,255,0.18); }
-.card-wellness:hover .card-cta { background: rgba(255,255,255,0.28); }
-
-.card-quotes { background: var(--tan); }
-.card-quotes .card-cta { background: rgba(255,255,255,0.2); }
-.card-quotes:hover .card-cta { background: rgba(255,255,255,0.32); }
-
-/* ── QURANIC COMFORT CORNER ── */
-.card-quran { background: #78613b; }
-.card-quran .card-cta { background: rgba(255,255,255,0.18); }
-.card-quran:hover .card-cta { background: rgba(255,255,255,0.29); }
-/* ── PRECISE DESKTOP CARD ALIGNMENT ── */
-@media (min-width: 901px) {
-  .cards-grid > .card:nth-child(1) { grid-column: 1; }
-  .cards-grid > .card:nth-child(2) { grid-column: 2; }
-  .cards-grid > .card:nth-child(3) { grid-column: 3; }
-
-  /* Words of Hope sits directly below Let's Chat. */
-  .cards-grid > .card:nth-child(4) {
-    grid-column: 1;
-    width: 100%;
-    justify-self: stretch;
+    position: absolute; inset: 0; z-index: -1;
+    border-radius: inherit;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.7);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
   }
 
-  /* Quranic Comfort Corner sits directly below Weekly Assessment. */
-  .cards-grid > .card:nth-child(5) {
-    grid-column: 2;
-    width: 100%;
-    justify-self: stretch;
-  }
-}
+  /* Card hover: arrow nudges forward */
+  .card:hover .cta-arrow { transform: translateX(3px); }
 
-/* ── BOTTOM NOTE ── */
-.bottom-note {
-  margin-top: 50px;
-  text-align: center;
-  animation: fadeUp 0.6s 0.3s ease both;
-}
-
-.bottom-note p {
-  font-size: 13px;
-  color: #aaa;
-}
-
-.bottom-note span {
-  color: var(--green-dark);
-  font-weight: 600;
-}
-
-/* ── DELETE MODAL ── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-.modal-overlay.show { display: flex; }
-.modal-box {
-  width: 100%;
-  max-width: 460px;
-  background: #fff;
-  border-radius: 22px;
-  padding: 30px 28px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-  animation: fadeUp 0.25s ease both;
-}
-.modal-box h3 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 28px;
-  color: var(--brown);
-  margin-bottom: 10px;
-}
-.modal-box p {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #6d6258;
-  margin-bottom: 24px;
-}
-.modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
-.modal-btn {
-  border: none;
-  border-radius: 14px;
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-}
-.modal-btn:hover { transform: translateY(-1px); }
-.modal-cancel { background: #eee5d9; color: var(--brown); }
-.modal-cancel:hover { background: #e3d9cb; }
-.modal-delete { background: var(--danger); color: white; }
-.modal-delete:hover { background: var(--danger-dark); }
-
-/* ── ANIMATION ── */
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(24px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-
-
-/* ── LANGUAGE / RTL SUPPORT ──
-   Language is selected only on the Intro page.
-   This dashboard reads that saved language and does NOT show
-   another language selector in its header.
-*/
-.navbar {
-    direction: ltr;
-}
-
-html[dir="rtl"] .navbar {
-    direction: rtl;
-}
-
-.navbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  direction: ltr;
-}
-
-.profile-wrap {
-  direction: ltr;
-}
-
-.profile-btn {
-  min-width: 132px;
-  justify-content: center;
-  box-shadow: 0 5px 16px rgba(75,46,35,0.12);
-}
-
-html[dir="rtl"] body {
-  direction: rtl;
-}
-
-html[dir="rtl"] .language-wrap {
-  direction: rtl;
-  padding: 4px 10px 4px 5px;
-}
-
-html[dir="rtl"] .language-select {
-  direction: rtl;
-  text-align: right;
-  font-family: 'Noto Naskh Arabic', sans-serif;
-  padding: 6px 12px 8px 28px;
-  background-position:
-    9px 50%,
-    13px 50%;
-}
-
-html[dir="rtl"] .profile-btn {
-  direction: rtl;
-}
-
-html[dir="rtl"] .dropdown {
-  right: auto;
-  left: 0;
-}
-
-html[dir="rtl"] .dd-item {
-  text-align: right;
-}
-
-html[dir="rtl"] .card-cta svg {
-  transform: scaleX(-1);
-}
-
-html[lang="ur"] .greeting-label {
-  letter-spacing: 0;
-}
-
-html[lang="ur"] .greeting h1,
-html[lang="ur"] .greeting p,
-html[lang="ur"] .card h2,
-html[lang="ur"] .card p,
-html[lang="ur"] .tag,
-html[lang="ur"] .card-cta,
-html[lang="ur"] .bottom-note {
-  font-family: 'Noto Naskh Arabic', sans-serif;
-}
-
-
-/* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  .cards-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 700px;
+  /* ===== Balanced grid — no empty spaces =====
+     Wide desktop : [ Let's Chat (2) | Assessment ]  /  [ Wellness | Hope | Quran ]
+     Tablet & laptop with sidebar : Let's Chat full width, then 2 + 2
+     Mobile : 1 column */
+  @media (min-width: 768px) {
+    .cards-grid > .card:nth-child(1) { grid-column: span 2 / span 2; }
   }
 
-  .cards-grid > .card:nth-child(1),
-  .cards-grid > .card:nth-child(2),
-  .cards-grid > .card:nth-child(3),
-  .cards-grid > .card:nth-child(4),
-  .cards-grid > .card:nth-child(5) {
-    grid-column: auto;
-    width: 100%;
-    justify-self: stretch;
+  /* ===== Mobile: compact cards (icon + title on one line) ===== */
+  @media (max-width: 767px) {
+    .cards-grid .card:not(.card-chat) {
+      display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: center;
+    }
+    .cards-grid .card:not(.card-chat) > * { grid-column: 1 / -1; }
+    .cards-grid .card:not(.card-chat) .card-icon-wrap { grid-column: 1; margin-bottom: 0; }
+    .cards-grid .card:not(.card-chat) h2 { grid-column: 2; margin-bottom: 0; }
+    .cards-grid .card:not(.card-chat) p { margin-top: 12px; margin-bottom: 14px; }
+    .cards-grid .card:not(.card-chat) .card-tags { margin-bottom: 14px; }
+    .cards-grid .card:not(.card-chat) .card-cta { padding-top: 12px; }
   }
-}
 
-@media (max-width: 680px) {
-  .navbar { padding: 12px 16px; }
-  .navbar-actions { gap: 6px; }
-  .profile-btn { min-width: auto; padding: 8px 11px; }
-  .profile-btn .profile-avatar { width: 24px; height: 24px; }
-  .greeting h1 { font-size: 32px; }
-  .cards-grid { grid-template-columns: 1fr; max-width: 420px; }
-  .page { padding: 28px 20px 40px; }
-}
+  /* ===== Dropdown / panel side (kept from original RTL logic) ===== */
+  .dropdown, .notif-panel { right: 0; }
+  html[dir="rtl"] .dropdown,
+  html[dir="rtl"] .notif-panel { right: auto; left: 0; }
+  @media (max-width: 640px) {
+    .notif-wrap .notif-panel { position: fixed; top: 76px; left: 12px !important; right: 12px !important; width: auto; }
+  }
+
+  /* ===== SIDEBAR =====
+     Mobile/tablet : slide-in drawer (menu button in the top bar)
+     Desktop       : fixed column that can collapse to icons only */
+  html .sidebar {
+    position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+    display: flex; flex-direction: column;
+    width: 280px; max-width: calc(100vw - 48px);
+    overflow-y: auto; overflow-x: visible;
+    background: rgba(255,255,255,0.9);
+    transform: translateX(calc(-100% - 24px));
+    transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+  }
+  html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+  html.sidebar-open .sidebar { transform: none; }
+
+  .sidebar-overlay {
+    position: fixed; inset: 0; z-index: 65;
+    background: rgba(15,23,42,0.35);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  }
+  html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+  html.sidebar-open body { overflow: hidden; }
+
+  @media (min-width: 1024px) {
+    html .sidebar,
+    html[dir="rtl"] .sidebar {
+      position: sticky; top: 20px; bottom: auto; z-index: 30;
+      height: calc(100vh - 40px); width: 248px; max-width: none;
+      transform: none; overflow: visible;
+      background: rgba(255,255,255,0.45);
+    }
+    .sidebar-overlay { display: none; }
+
+    /* Collapsed: icons only, label shows as a tooltip */
+    html.sidebar-collapsed .sidebar { width: 80px; }
+    html.sidebar-collapsed .sidebar .side-label { display: none; }
+    html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+    html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+    html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+    html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+      display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+      transform: translateY(-50%); z-index: 80;
+      padding: 6px 10px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+    }
+    /* Click anywhere on the menu to collapse / open it */
+    html .sidebar { cursor: pointer; }
+  }
+
+
+
+  /* ===== URDU / RTL ===== */
+  html[dir="rtl"] body { direction: rtl; }
+  html[dir="rtl"] .card-cta svg { transform: scaleX(-1); }
+  html[dir="rtl"] .card:hover .cta-arrow { transform: translateX(-3px); }
+
+  html[lang="ur"] body,
+  html[lang="ur"] button { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+  html[lang="ur"] *,
+  html[lang="ur"] *::before,
+  html[lang="ur"] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+  html[lang="ur"] h1 { line-height: 1.6; }
+  html[lang="ur"] .card h2 { line-height: 1.7; }
+  html[lang="ur"] .card-chat h2 { font-size: 22px; }
+  html[lang="ur"] p { line-height: 1.95; }
+  html[lang="ur"] .tag,
+  html[lang="ur"] .card-cta,
+  html[lang="ur"] .side-link,
+  html[lang="ur"] .dd-item { line-height: 1.7; }
 </style>
 </head>
-<body>
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
 
-<!-- NAVBAR -->
-<nav class="navbar">
-  <a class="logo" href="/">
-    <div class="logo-icon">
-      <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
-        <circle cx="9" cy="7" r="4" fill="white"/>
-        <rect x="7" y="11" width="4" height="5" rx="1" fill="white"/>
-      </svg>
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+    <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+      <a href="/" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+          <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+        </span>
+        <span class="side-label">Empath AI</span>
+      </a>
+      <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
     </div>
-    Empath AI
-  </a>
 
-  <div class="navbar-actions">
-    <div class="profile-wrap">
-    <button class="profile-btn" id="profileBtn" onclick="toggleDropdown()">
-      <div class="profile-avatar" id="profileAvatar"></div>
-     <span
+    <nav class="flex flex-col gap-1" aria-label="Main">
+      <a class="side-link active" href="/dashboard" aria-current="page"><span data-icon="home"></span><span class="side-label" data-i18n-extra="dashboard">Dashboard</span></a>
+      <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-i18n="letsChat">Let's Chat</span></a>
+      <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-i18n="weeklyAssessment">Weekly Self Assessment</span></a>
+      <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-i18n="wellnessProgress">Wellness Progress</span></a>
+      <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-i18n="wordsOfHope">Words of Hope</span></a>
+      <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-i18n="quranicCorner">Quranic Comfort Corner</span></a>
+    </nav>
+
+    <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+      <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-i18n="logout">Logout</span></a>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ===== MAIN ===== -->
+  <main class="min-w-0 flex-1">
+
+    <!-- TOP BAR -->
+    <nav class="navbar sticky top-3 z-40 flex items-center justify-between rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
+      <div class="flex min-w-0 items-center gap-2.5">
+      <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+      <a class="logo flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900 lg:hidden" href="/">
+        <div class="logo-icon flex h-9 w-9 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+          <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+        </div>
+        <span class="hidden min-[380px]:inline">Empath AI</span>
+      </a>
+      <p class="hidden text-[15px] font-semibold text-slate-900 lg:block" data-i18n-extra="dashboard">Dashboard</p>
+      </div>
+
+      <div class="navbar-actions flex items-center gap-2">
+
+        <!-- NOTIFICATIONS -->
+        <div class="notif-wrap relative">
+          <button class="icon-btn" id="notifBtn" type="button" onclick="toggleNotifications()" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+            <span data-icon="bell"></span>
+            <span class="notif-badge hidden" id="notifBadge">0</span>
+          </button>
+          <div class="notif-panel" id="notifPanel" role="dialog" aria-labelledby="notifTitle">
+            <div class="flex items-center justify-between gap-3 border-b border-slate-900/[0.06] px-4 py-3.5">
+              <p class="text-sm font-bold text-slate-900" id="notifTitle">Notifications</p>
+              <button type="button" class="text-xs font-semibold text-teal-700 hover:underline disabled:cursor-default disabled:text-slate-400 disabled:no-underline" id="notifMarkAll" onclick="markAllNotificationsRead()">Mark all as read</button>
+            </div>
+            <div id="notifList" class="max-h-[60vh] overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- PROFILE -->
+        <div class="profile-wrap relative">
+          <button class="profile-btn" id="profileBtn" onclick="toggleDropdown()">
+            <div class="profile-avatar" id="profileAvatar"></div>
+           <span
     id="profileUserName"
+    class="hidden max-w-[140px] truncate sm:inline"
     data-name-en="{{ user_name }}"
     data-name-ur="{{ user_name_urdu }}"
 >
     {{ user_name }}
 </span>
-      <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <path d="M2 4l4 4 4-4" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <div class="dropdown" id="dropdown">
-      <div class="dd-header">
-        <p
+            <span class="chevron" data-icon="chevron"></span>
+          </button>
+          <div class="dropdown" id="dropdown">
+            <div class="dd-header">
+              <p
     id="dropdownUserName"
     data-name-en="{{ user_name }}"
     data-name-ur="{{ user_name_urdu }}"
 >
     {{ user_name }}
 </p>
-        <span data-i18n="myAccount">My Account</span>
+              <span data-i18n="myAccount">My Account</span>
+            </div>
+            <a class="dd-item dd-logout" href="/logout">
+              <span data-icon="logout"></span>
+              <span data-i18n="logout">Logout</span>
+            </a>
+            <div class="dd-sep"></div>
+            <button class="dd-item dd-delete" onclick="openDeleteModal(); closeDropdown();">
+              <span data-icon="trash"></span>
+              <span data-i18n="deleteAccount">Delete Account</span>
+            </button>
+          </div>
+        </div>
+
       </div>
-      <a class="dd-item dd-logout" href="/logout">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M5 2H2v10h3M9 4l3 3-3 3M12 7H6" stroke="#4b2e23" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span data-i18n="logout">Logout</span>
-      </a>
-      <div class="dd-sep"></div>
-      <button class="dd-item dd-delete" onclick="openDeleteModal(); closeDropdown();">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M2 4h10M5 4V3h4v1M6 7v3M8 7v3M3 4l1 8h6l1-8" stroke="#c94b4b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span data-i18n="deleteAccount">Delete Account</span>
-      </button>
+    </nav>
+
+    <!-- PAGE -->
+    <div class="page mx-auto w-full max-w-7xl px-1 pb-10 pt-6 md:px-2 md:pt-10">
+
+      <!-- GREETING -->
+      <div class="greeting anim-up mb-6 text-start md:mb-8">
+        <p class="greeting-label mb-2 flex flex-wrap items-center gap-x-2 text-[13px] font-medium text-slate-500">
+          <span class="font-semibold text-teal-700" data-i18n="welcome">Welcome</span>
+          <span aria-hidden="true" class="h-1 w-1 rounded-full bg-slate-400"></span>
+          <span id="todayDate"></span>
+        </p>
+        <h1 class="text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[38px]">
+          <span data-i18n="hello">Hello</span>,
+          <span
+              id="greetingUserName"
+              class="text-teal-700"
+              data-name-en="{{ user_name }}"
+              data-name-ur="{{ user_name_urdu }}"
+          >
+              {{ user_name }}
+          </span>
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" data-i18n="helpToday">How can we help you today? Choose one of the options below to begin your journey towards better mental wellbeing.</p>
+      </div>
+
+      <!-- CARDS -->
+      <div class="cards-grid anim-up-2 grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
+
+        <!-- 1. Let's Chat (primary action) -->
+        <a class="card card-chat group p-6 md:p-8" href="/app">
+            <span class="chat-mark" aria-hidden="true" data-icon="chat"></span>
+            <div class="card-icon-wrap"><span data-icon="chat"></span></div>
+
+            <h2 data-i18n="letsChat">Let's Chat</h2>
+
+            <p data-i18n="chatDescription">
+                Talk openly with Empath AI — a compassionate listener
+                trained specifically for internally displaced people
+                in Pakistan. No judgment, always safe.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="culturallyAware">Culturally Aware</span>
+                <span class="tag" data-i18n="crisisSupport">Crisis Support</span>
+                <span class="tag" data-i18n="private">Private</span>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="startChatting">Start Chatting</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+
+        <!-- 2. Weekly Assessment -->
+        <a class="card card-assessment group" href="/self_assessment">
+            <div class="card-icon-wrap icon-cyan"><span data-icon="assessment"></span></div>
+
+            <h2 data-i18n="weeklyAssessment">
+                Weekly Self Assessment
+            </h2>
+
+            <p data-i18n="assessmentDescription">
+                Answer 21 short questions covering depression,
+                anxiety, and wellbeing. Get your personal PHQ-9,
+                GAD-7, and WHO-5 scores with tailored guidance.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag">PHQ-9</span>
+                <span class="tag">GAD-7</span>
+                <span class="tag">WHO-5</span>
+                <span class="tag" data-i18n="fiveMins">~5 mins</span>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="startAssessment">Start Assessment</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+
+        <!-- 3. Wellness Progress -->
+        <a class="card card-wellness group" href="/wellness">
+            <div class="card-icon-wrap icon-emerald"><span data-icon="wellness"></span></div>
+
+            <h2 data-i18n="wellnessProgress">
+                Wellness Progress
+            </h2>
+
+            <p data-i18n="wellnessDescription">
+                Track your mental health journey over time.
+                View trends in your assessment scores and monitor
+                improvements in your overall wellbeing.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="scoreTrends">Score Trends</span>
+                <span class="tag" data-i18n="weeklyReports">Weekly Reports</span>
+                <span class="tag" data-i18n="insights">Insights</span>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="viewProgress">View Progress</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+
+        <!-- 4. Words of Hope -->
+        <a class="card card-quotes group" href="/quotes">
+            <div class="card-icon-wrap icon-sky"><span data-icon="hope"></span></div>
+
+            <h2 data-i18n="wordsOfHope">Words of Hope</h2>
+
+            <p data-i18n="hopeDescription">
+                Gentle quotes from the Quran, Hadith, Quaid-e-Azam,
+                Allama Iqbal, and voices from around the world —
+                fresh every time you visit.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="quranHadith">Quran &amp; Hadith</span>
+                <span class="tag" data-i18n="pakistaniLeaders">Pakistani Leaders</span>
+                <span class="tag" data-i18n="aiPowered">AI Powered</span>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="readTodaysWords">Read Today's Words</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+
+        <!-- 5. Quranic Comfort Corner -->
+        <a class="card card-quran group" href="/quranic_corner">
+            <div class="card-icon-wrap icon-teal"><span data-icon="quran"></span></div>
+
+            <h2 data-i18n="quranicCorner">
+                Quranic Comfort Corner
+            </h2>
+
+            <p data-i18n="quranicCornerDescription">
+                A peaceful space for spiritual reflection.
+                Choose how you feel and explore carefully verified
+                Quranic verses, translations, context, and
+                gentle reflection prompts.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="verifiedAyat">Verified Ayat</span>
+                <span class="tag" data-i18n="urduEnglish">Urdu &amp; English</span>
+                <span class="tag" data-i18n="privateReflection">Private Reflection</span>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="visitQuranicCorner">Find Comfort</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+      </div>
+
+      <div class="bottom-note anim-up-3 mt-8 flex justify-center">
+        <p class="inline-flex items-center gap-2 text-[13px] text-slate-500">
+            <span class="block h-4 w-4 text-teal-600" data-icon="lock"></span>
+            <span data-i18n="conversationsAre">Your conversations are</span>
+            <span class="font-semibold text-slate-700" data-i18n="privateAnonymous">private and anonymous</span>
+        </p>
+      </div>
+
     </div>
-  </div>
-</nav>
-
-<!-- MAIN PAGE -->
-<div class="page">
-
-  <div class="greeting">
-    <p class="greeting-label">✦ <span data-i18n="welcome">Welcome</span> ✦</p>
-   <h1>
-    <span data-i18n="hello">Hello</span>,
-    <span
-        id="greetingUserName"
-        data-name-en="{{ user_name }}"
-        data-name-ur="{{ user_name_urdu }}"
-    >
-        {{ user_name }}
-    </span>
-    👋
-</h1>
-    <p data-i18n="helpToday">How can we help you today? Choose one of the options below to begin your journey towards better mental wellbeing.</p>
-  </div>
-
-  <div class="cards-grid">
-
-    <!-- 1. Let's Chat -->
-    <a class="card card-chat" href="/app">
-        <div class="card-icon-wrap">🤝</div>
-
-        <h2 data-i18n="letsChat">Let's Chat</h2>
-
-        <p data-i18n="chatDescription">
-            Talk openly with Empath AI — a compassionate listener
-            trained specifically for internally displaced people
-            in Pakistan. No judgment, always safe.
-        </p>
-
-        <div class="card-tags">
-            <span class="tag" data-i18n="culturallyAware">Culturally Aware</span>
-            <span class="tag" data-i18n="crisisSupport">Crisis Support</span>
-            <span class="tag" data-i18n="private">Private</span>
-        </div>
-
-        <div class="card-cta">
-            <span data-i18n="startChatting">Start Chatting</span>
-
-            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-                <path d="M4 9h10M10 5l4 4-4 4"
-                      stroke="white"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"/>
-            </svg>
-        </div>
-    </a>
-
-
-    <!-- 2. Weekly Assessment -->
-    <a class="card card-assessment" href="/self_assessment">
-        <div class="card-icon-wrap">📋</div>
-
-        <h2 data-i18n="weeklyAssessment">
-            Weekly Self Assessment
-        </h2>
-
-        <p data-i18n="assessmentDescription">
-            Answer 21 short questions covering depression,
-            anxiety, and wellbeing. Get your personal PHQ-9,
-            GAD-7, and WHO-5 scores with tailored guidance.
-        </p>
-
-        <div class="card-tags">
-            <span class="tag">PHQ-9</span>
-            <span class="tag">GAD-7</span>
-            <span class="tag">WHO-5</span>
-            <span class="tag" data-i18n="fiveMins">~5 mins</span>
-        </div>
-
-        <div class="card-cta">
-            <span data-i18n="startAssessment">Start Assessment</span>
-
-            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-                <path d="M4 9h10M10 5l4 4-4 4"
-                      stroke="white"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"/>
-            </svg>
-        </div>
-    </a>
-
-
-    <!-- 3. Wellness Progress -->
-    <a class="card card-wellness" href="/wellness">
-        <div class="card-icon-wrap">📈</div>
-
-        <h2 data-i18n="wellnessProgress">
-            Wellness Progress
-        </h2>
-
-        <p data-i18n="wellnessDescription">
-            Track your mental health journey over time.
-            View trends in your assessment scores and monitor
-            improvements in your overall wellbeing.
-        </p>
-
-        <div class="card-tags">
-            <span class="tag" data-i18n="scoreTrends">Score Trends</span>
-            <span class="tag" data-i18n="weeklyReports">Weekly Reports</span>
-            <span class="tag" data-i18n="insights">Insights</span>
-        </div>
-
-        <div class="card-cta">
-            <span data-i18n="viewProgress">View Progress</span>
-
-            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-                <path d="M4 9h10M10 5l4 4-4 4"
-                      stroke="white"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"/>
-            </svg>
-        </div>
-    </a>
-
-
-    <!-- 4. Words of Hope -->
-    <a class="card card-quotes" href="/quotes">
-        <div class="card-icon-wrap">🕊️</div>
-
-        <h2 data-i18n="wordsOfHope">Words of Hope</h2>
-
-        <p data-i18n="hopeDescription">
-            Gentle quotes from the Quran, Hadith, Quaid-e-Azam,
-            Allama Iqbal, and voices from around the world —
-            fresh every time you visit.
-        </p>
-
-        <div class="card-tags">
-            <span class="tag" data-i18n="quranHadith">Quran &amp; Hadith</span>
-            <span class="tag" data-i18n="pakistaniLeaders">Pakistani Leaders</span>
-            <span class="tag" data-i18n="aiPowered">AI Powered</span>
-        </div>
-
-        <div class="card-cta">
-            <span data-i18n="readTodaysWords">Read Today's Words</span>
-
-            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-                <path d="M4 9h10M10 5l4 4-4 4"
-                      stroke="white"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"/>
-            </svg>
-        </div>
-    </a>
-
-
-    <!-- 5. Quranic Comfort Corner -->
-    <a class="card card-quran" href="/quranic_corner">
-        <div class="card-icon-wrap">☾</div>
-
-        <h2 data-i18n="quranicCorner">
-            Quranic Comfort Corner
-        </h2>
-
-        <p data-i18n="quranicCornerDescription">
-            A peaceful space for spiritual reflection.
-            Choose how you feel and explore carefully verified
-            Quranic verses, translations, context, and
-            gentle reflection prompts.
-        </p>
-
-        <div class="card-tags">
-            <span class="tag" data-i18n="verifiedAyat">Verified Ayat</span>
-            <span class="tag" data-i18n="urduEnglish">Urdu &amp; English</span>
-            <span class="tag" data-i18n="privateReflection">Private Reflection</span>
-        </div>
-
-        <div class="card-cta">
-            <span data-i18n="visitQuranicCorner">Find Comfort</span>
-
-            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
-                <path d="M4 9h10M10 5l4 4-4 4"
-                      stroke="white"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"/>
-            </svg>
-        </div>
-    </a>
-
-</div>
-
-<div class="bottom-note">
-    <p>
-        🔒
-        <span data-i18n="conversationsAre">Your conversations are</span>
-        <span data-i18n="privateAnonymous">private and anonymous</span>.
-    </p>
-</div>
-    </a>
-
- 
-
+  </main>
 </div>
 
 <!-- DELETE ACCOUNT MODAL -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box">
-    <h3 data-i18n="deleteAccountQuestion">Delete Account?</h3>
-    <p data-i18n="deleteWarning">This action will permanently remove your account and all related data. This cannot be undone.</p>
-    <div class="modal-actions">
+    <h3 class="mb-2.5 text-2xl font-bold tracking-tight text-slate-900" data-i18n="deleteAccountQuestion">Delete Account?</h3>
+    <p class="mb-6 text-sm leading-relaxed text-slate-500" data-i18n="deleteWarning">This action will permanently remove your account and all related data. This cannot be undone.</p>
+    <div class="modal-actions flex justify-end gap-3">
       <button class="modal-btn modal-cancel" onclick="closeDeleteModal()" data-i18n="cancel">Cancel</button>
       <button class="modal-btn modal-delete" onclick="deleteAccount()" data-i18n="yesDelete">Yes, Delete</button>
     </div>
@@ -1089,6 +765,254 @@ async function deleteAccount() {
     alert(translations[getCurrentLanguage()].somethingWrong);
   }
 }
+</script>
+
+<script>
+/* =========================================================
+   DATE + EXTRA LABELS (Dashboard)
+   Uses the same saved "empathLanguage" value.
+   ========================================================= */
+(function () {
+  const EXTRA = {
+    en: { dashboard: "Dashboard" },
+    ur: { dashboard: "ڈیش بورڈ" }
+  };
+
+  function applyExtras() {
+    let lang = "en";
+    try { lang = localStorage.getItem("empathLanguage") === "ur" ? "ur" : "en"; } catch (e) {}
+
+    document.querySelectorAll("[data-i18n-extra]").forEach(function (el) {
+      const key = el.getAttribute("data-i18n-extra");
+      if (EXTRA[lang][key]) el.textContent = EXTRA[lang][key];
+    });
+
+    const dateEl = document.getElementById("todayDate");
+    if (dateEl) {
+      try {
+        dateEl.textContent = new Intl.DateTimeFormat(lang === "ur" ? "ur-PK" : "en-GB", {
+          weekday: "long", day: "numeric", month: "long"
+        }).format(new Date());
+      } catch (e) {
+        dateEl.textContent = new Date().toDateString();
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", applyExtras);
+})();
+</script>
+
+<script>
+/* =========================================================
+   NOTIFICATIONS
+   - Weekly assessment reminder (comes back every new week)
+   - Daily Words of Hope reminder (comes back every day)
+   - Weekly Quranic Comfort Corner reminder
+   Read state is saved in localStorage ("empathNotificationsRead").
+   Language follows the saved "empathLanguage" value.
+   ========================================================= */
+(function () {
+  const READ_KEY = "empathNotificationsRead";
+
+  const NOTIF_TEXT = {
+    en: {
+      title: "Notifications",
+      markAll: "Mark all as read",
+      empty: "You're all caught up",
+      today: "Today",
+      thisWeek: "This week",
+      items: {
+        assessment: { title: "Your weekly check-in is ready", text: "Take the self assessment to see how you have been feeling this week." },
+        hope:       { title: "New words of hope for today", text: "Fresh quotes from the Quran, Hadith and great voices are waiting for you." },
+        quran:      { title: "Take a quiet moment", text: "Visit the Quranic Comfort Corner for a calm, private reflection." }
+      }
+    },
+    ur: {
+      title: "اطلاعات",
+      markAll: "سب پڑھ لیے",
+      empty: "کوئی نئی اطلاع نہیں",
+      today: "آج",
+      thisWeek: "اس ہفتے",
+      items: {
+        assessment: { title: "آپ کا ہفتہ وار جائزہ تیار ہے", text: "اس ہفتے اپنی کیفیت جاننے کے لیے خود تشخیصی جائزہ مکمل کریں۔" },
+        hope:       { title: "آج کے لیے امید کے نئے الفاظ", text: "قرآن، حدیث اور عظیم شخصیات کے نئے اقوال آپ کے منتظر ہیں۔" },
+        quran:      { title: "سکون کا ایک لمحہ", text: "پُرسکون اور ذاتی غور و فکر کے لیے قرآنی سکون کے گوشے میں جائیں۔" }
+      }
+    }
+  };
+
+  function lang() {
+    try { return localStorage.getItem("empathLanguage") === "ur" ? "ur" : "en"; } catch (e) { return "en"; }
+  }
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function localDay(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+
+  function isoWeek(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return t.getUTCFullYear() + "-W" + pad(Math.ceil(((t - yearStart) / 86400000 + 1) / 7));
+  }
+
+  function getItems() {
+    const now = new Date();
+    const week = isoWeek(now);
+    return [
+      { id: "assessment-" + week,       key: "assessment", icon: "assessment", tint: "bg-cyan-600/10 text-cyan-700",   href: "/self_assessment", when: "thisWeek" },
+      { id: "hope-" + localDay(now),    key: "hope",       icon: "hope",       tint: "bg-sky-600/10 text-sky-700",     href: "/quotes",          when: "today" },
+      { id: "quran-" + week,            key: "quran",      icon: "quran",      tint: "bg-teal-600/10 text-teal-700",   href: "/quranic_corner",  when: "thisWeek" }
+    ];
+  }
+
+  function getRead() {
+    try { return JSON.parse(localStorage.getItem(READ_KEY)) || []; } catch (e) { return []; }
+  }
+
+  function setRead(list) {
+    try { localStorage.setItem(READ_KEY, JSON.stringify(list.slice(-60))); } catch (e) {}
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function render() {
+    const t = NOTIF_TEXT[lang()];
+    const read = getRead();
+    const items = getItems();
+    const unread = items.filter(function (i) { return read.indexOf(i.id) === -1; });
+
+    document.getElementById("notifTitle").textContent = t.title;
+    const markAll = document.getElementById("notifMarkAll");
+    markAll.textContent = t.markAll;
+    markAll.disabled = unread.length === 0;
+
+    const badge = document.getElementById("notifBadge");
+    badge.textContent = unread.length;
+    badge.classList.toggle("hidden", unread.length === 0);
+
+    const list = document.getElementById("notifList");
+    list.innerHTML = items.map(function (i) {
+      const isUnread = read.indexOf(i.id) === -1;
+      const txt = t.items[i.key];
+      return (
+        '<a class="notif-item' + (isUnread ? " unread" : "") + '" href="' + i.href + '" data-notif-id="' + i.id + '">' +
+          '<span class="notif-ic ' + i.tint + '">' + (window.empathIcon ? window.empathIcon(i.icon) : "") + '</span>' +
+          '<span class="min-w-0 flex-1 pe-4">' +
+            '<span class="block text-[13px] font-semibold text-slate-900">' + escapeHtml(txt.title) + '</span>' +
+            '<span class="mt-0.5 block text-xs leading-relaxed text-slate-500">' + escapeHtml(txt.text) + '</span>' +
+            '<span class="mt-1.5 block text-[11px] font-medium text-teal-700">' + escapeHtml(t[i.when]) + '</span>' +
+          '</span>' +
+          (isUnread ? '<span class="notif-dot"></span>' : '') +
+        '</a>'
+      );
+    }).join("") +
+    (unread.length === 0
+      ? '<div class="flex items-center justify-center gap-2 px-4 py-3 text-xs font-medium text-slate-500">' +
+          '<span class="block h-4 w-4 text-teal-600">' + (window.empathIcon ? window.empathIcon("check") : "") + '</span>' +
+          escapeHtml(t.empty) +
+        '</div>'
+      : "");
+  }
+
+  function setOpen(open) {
+    const panel = document.getElementById("notifPanel");
+    const btn = document.getElementById("notifBtn");
+    panel.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  window.toggleNotifications = function () {
+    const open = !document.getElementById("notifPanel").classList.contains("open");
+    if (open && typeof closeDropdown === "function") closeDropdown();
+    render();
+    setOpen(open);
+  };
+
+  window.markAllNotificationsRead = function () {
+    const read = getRead();
+    getItems().forEach(function (i) { if (read.indexOf(i.id) === -1) read.push(i.id); });
+    setRead(read);
+    render();
+  };
+
+  document.addEventListener("click", function (e) {
+    const item = e.target.closest("[data-notif-id]");
+    if (item) {
+      const read = getRead();
+      const id = item.getAttribute("data-notif-id");
+      if (read.indexOf(id) === -1) { read.push(id); setRead(read); }
+    }
+    if (!e.target.closest(".notif-wrap")) setOpen(false);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") setOpen(false);
+  });
+
+  document.addEventListener("DOMContentLoaded", render);
+})();
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — mobile drawer + desktop collapse
+   Collapse choice is saved in localStorage ("empathSidebarCollapsed").
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  function syncButtons() {
+    const menuBtn = document.getElementById("menuBtn");
+    if (menuBtn) menuBtn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () {
+    root.classList.add("sidebar-open");
+    if (typeof closeDropdown === "function") closeDropdown();
+    syncButtons();
+  };
+
+  window.closeSidebar = function () {
+    root.classList.remove("sidebar-open");
+    syncButtons();
+  };
+
+  window.toggleSidebarCollapse = function () {
+    setCollapsed(!root.classList.contains("sidebar-collapsed"));
+  };
+
+  function setCollapsed(collapsed) {
+    root.classList.toggle("sidebar-collapsed", collapsed);
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e) {}
+    syncButtons();
+  }
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  // (Clicking a menu link still opens that page.)
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    setCollapsed(!root.classList.contains("sidebar-collapsed"));
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") window.closeSidebar();
+  });
+
+  window.addEventListener("resize", function () {
+    if (window.innerWidth >= 1024) window.closeSidebar();
+  });
+
+  document.addEventListener("DOMContentLoaded", syncButtons);
+})();
 </script>
 
 </body>

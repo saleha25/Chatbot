@@ -3,501 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23503b2b'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
     <title>Mental Health Support — Empath AI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        :root {
-            --cream:       #f4efe6;
-            --cream-2:     #ece6d9;
-            --cream-3:     #e2dace;
-            --dark:        #2a1f0e;
-            --dark-2:      #3e2f18;
-            --green:       #1a5c42;
-            --green-2:     #0f4430;
-            --green-light: #e4efe9;
-            --orange:      #d96a35;
-            --orange-2:    #c45a28;
-            --muted:       #7a6e5f;
-            --border:      rgba(42,31,14,0.12);
-            --red:         #c54545;
-            --gray-btn:    #8d877f;
-            --gray-btn-2:  #6f6961;
+    <script>
+      try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+    </script>
+
+    <!-- ===== ICONS (separate file) ===== -->
+    <script src="/static/icons.js"></script>
+
+    <!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+              urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer components {
+        .glass {
+          @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+                 shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
         }
 
-        html, body {
-            height: 100%;
-            background: var(--cream);
-            font-family: 'DM Sans', sans-serif;
-            color: var(--dark);
+        /* ---------- Sidebar ---------- */
+        .side-link {
+          @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+                 hover:bg-white/60 hover:text-slate-900;
         }
+        .side-link [data-icon] { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+        .side-link:hover [data-icon] { @apply text-teal-700; }
+        .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+        .side-link.active [data-icon] { @apply text-teal-700; }
 
-        .page {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        .icon-btn {
+          @apply relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/60
+                 text-slate-700 transition hover:bg-white hover:text-teal-700;
         }
+        .icon-btn [data-icon] { @apply h-5 w-5; }
 
-        nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 32px;
-            background: var(--cream);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-            z-index: 10;
-            width: 100%;
-        }
-
-        .nav-left { display: flex; align-items: center; gap: 14px; }
-
+        /* ---------- Top bar ---------- */
         .back-btn {
-            display: flex; align-items: center; gap: 7px;
-            background: var(--green);
-            border: none;
-            border-radius: 20px;
-            padding: 7px 16px;
-            font-size: 13px; color: white;
-            font-family: 'DM Sans', sans-serif;
-            font-weight: 500;
-            cursor: pointer; text-decoration: none;
-            transition: background 0.2s, transform 0.15s;
+          @apply inline-flex items-center whitespace-nowrap rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
         }
-        .back-btn:hover { background: var(--green-2); transform: translateY(-1px); }
-
-        .idp-badge {
-            display: flex; align-items: center; gap: 10px;
-            text-decoration: none;
-        }
-        .idp-icon {
-            width: 42px; height: 42px; border-radius: 50%;
-            background: var(--dark);
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .idp-icon svg { width: 22px; height: 22px; }
-
-        .brand-text { display: flex; flex-direction: column; }
-        .brand-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 17px; font-weight: 600;
-            color: var(--dark); line-height: 1.1;
-        }
-        .brand-sub {
-            font-size: 10px; color: var(--muted);
-            letter-spacing: 0.5px; text-transform: uppercase;
-        }
-
-        .nav-divider {
-            width: 1px; height: 28px;
-            background: var(--border);
-        }
-
-        .nav-page-label {
-            font-size: 13px; color: var(--muted);
-            font-weight: 400;
-        }
-
-        .nav-right { display: flex; align-items: center; gap: 10px; }
-
-        .status-pill {
-            display: none; align-items: center; gap: 6px;
-            background: var(--green-light);
-            border: 1px solid rgba(26,92,66,0.15);
-            border-radius: 20px; padding: 5px 12px;
-        }
-        .status-pill.visible { display: flex; }
-        .status-dot {
-            width: 7px; height: 7px; border-radius: 50%;
-            background: #27ae60;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%,100% { box-shadow: 0 0 0 2px rgba(39,174,96,0.2); }
-            50%      { box-shadow: 0 0 0 5px rgba(39,174,96,0.07); }
-        }
-        .status-text { font-size: 12px; color: var(--green); font-weight: 500; }
-
         .nav-btn {
-            background: var(--orange); color: white;
-            border: none; border-radius: 20px;
-            padding: 7px 16px; font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            cursor: pointer; font-weight: 500;
-            transition: background 0.2s;
+          @apply inline-flex cursor-pointer items-center whitespace-nowrap rounded-xl border border-white/80 bg-white/70 px-4 py-2.5
+                 text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-teal-700;
         }
-        .nav-btn:hover { background: var(--orange-2); }
+        .status-pill {
+          @apply hidden items-center gap-1.5 rounded-full border border-emerald-600/15 bg-emerald-50/80 px-3 py-1.5;
+        }
+        .status-pill.visible { @apply flex; }
+        .status-dot { @apply h-[7px] w-[7px] rounded-full bg-emerald-500; animation: pulse 2s infinite; }
+        .status-text { @apply text-xs font-semibold text-emerald-700; }
 
+        /* ---------- Disclaimer ---------- */
         .disclaimer {
-            background: #fff8f0;
-            border-bottom: 1px solid rgba(217,106,53,0.18);
-            padding: 9px 32px;
-            font-size: 12.5px; color: #7a4a20;
-            text-align: center; flex-shrink: 0;
-            line-height: 1.5;
+          @apply glass flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 rounded-2xl border-teal-600/15 bg-teal-600/[0.06]
+                 px-3 py-1.5 text-center text-[11.5px] leading-snug text-slate-600 md:px-4 md:py-2 md:text-[12.5px] md:leading-relaxed;
         }
-        .disclaimer strong { color: var(--orange); }
+        .disclaimer strong { @apply whitespace-nowrap font-bold text-teal-700; }
 
-        .content-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            max-width: 860px;
-            width: 100%;
-            margin: 0 auto;
-            align-self: stretch;
-        }
-
-        #welcome-state {
-            flex: 1;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 32px 28px 20px;
-            gap: 18px;
-            transition: opacity 0.4s ease;
-        }
-
-        .idp-illustration {
-            width: 110px; height: 110px;
-            position: relative; flex-shrink: 0;
-        }
-        .idp-illustration svg { width: 100%; height: 100%; }
-
-        .greeting {
-            font-family: 'Playfair Display', serif;
-            font-size: 30px; font-weight: 600;
-            color: var(--dark); text-align: center;
-            line-height: 1.25;
-        }
-        .greeting em { font-style: italic; color: var(--green); }
-
-        .greeting-sub {
-            font-size: 14px; color: var(--muted);
-            text-align: center; max-width: 400px;
-            line-height: 1.75;
-        }
-
-        .chips {
-            display: flex; flex-wrap: wrap;
-            gap: 8px; justify-content: center;
-            max-width: 520px;
-        }
+        /* ---------- Welcome ---------- */
+        .greeting { @apply text-center text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[32px]; }
+        .greeting em { @apply not-italic text-teal-700; }
+        .greeting-sub { @apply max-w-lg text-center text-[14.5px] leading-relaxed text-slate-500; }
+        .chips { @apply flex max-w-xl flex-wrap justify-center gap-2; }
         .chip {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 22px;
-            padding: 8px 16px;
-            font-size: 13px; color: var(--dark-2);
-            cursor: pointer; font-family: 'DM Sans', sans-serif;
-            transition: background 0.2s, border-color 0.2s, transform 0.15s;
-        }
-        .chip:hover {
-            background: var(--green-light);
-            border-color: rgba(26,92,66,0.3);
-            transform: translateY(-1px);
+          @apply cursor-pointer rounded-xl border border-white/90 bg-white/70 px-4 py-2 text-[13px] font-medium text-slate-700
+                 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:-translate-y-px hover:border-teal-600/40 hover:bg-white hover:text-teal-800;
         }
 
         .center-input-wrap {
-            display: flex; align-items: center; gap: 10px;
-            background: white;
-            border: 1px solid var(--cream-3);
-            border-radius: 30px;
-            padding: 10px 10px 10px 20px;
-            width: 100%; max-width: 620px;
-            box-shadow: 0 2px 16px rgba(42,31,14,0.07);
-            transition: border-color 0.2s, box-shadow 0.2s;
+          @apply flex w-full max-w-[640px] items-center gap-2 rounded-2xl border border-white/90 bg-white/75 py-2 pe-2 ps-4
+                 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur transition
+                 focus-within:border-teal-600/40 focus-within:ring-4 focus-within:ring-teal-600/10;
         }
-        .center-input-wrap:focus-within {
-            border-color: rgba(26,92,66,0.4);
-            box-shadow: 0 2px 20px rgba(26,92,66,0.1);
-        }
-        #center-input {
-            flex: 1; border: none; outline: none;
-            background: transparent;
-            font-size: 14px; color: var(--dark);
-            font-family: 'DM Sans', sans-serif;
-        }
-        #center-input::placeholder { color: #b8ae9e; }
+        #center-input { @apply min-w-0 flex-1 border-0 bg-transparent py-2 text-[14.5px] text-slate-900 outline-none placeholder:text-slate-400; }
 
-        .center-send {
-            width: 38px; height: 38px; border-radius: 50%;
-            background: var(--green); border: none;
-            cursor: pointer; display: flex; align-items: center;
-            justify-content: center; flex-shrink: 0;
-            transition: background 0.2s, transform 0.15s;
-        }
-        .center-send:hover { background: var(--green-2); transform: scale(1.05); }
-        .center-send svg { width: 16px; height: 16px; fill: white; }
-
+        /* ---------- Voice + send buttons ---------- */
         .voice-btn {
-            width: 38px; height: 38px;
-            border-radius: 50%;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: background 0.2s, transform 0.15s;
-            font-size: 16px;
-            color: white;
+          @apply flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border-0 transition hover:scale-105;
         }
-        .voice-btn:hover {
-            transform: scale(1.05);
+        .voice-btn [data-icon] { @apply h-[18px] w-[18px]; }
+        .voice-start { @apply bg-slate-900/[0.06] text-slate-600 hover:bg-slate-900/10 hover:text-teal-700; }
+        .voice-stop  { @apply bg-rose-50 text-rose-600 hover:bg-rose-100; }
+        .voice-stop [data-icon] { @apply h-4 w-4; }
+        .center-send, .send-btn {
+          @apply flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border-0 bg-teal-700 text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.28)] transition hover:scale-105 hover:bg-teal-800;
         }
-        .voice-start {
-            background: var(--gray-btn);
-        }
-        .voice-start:hover {
-            background: var(--gray-btn-2);
-        }
-        .voice-stop {
-            background: var(--red);
-        }
-        .voice-stop:hover {
-            background: #a73737;
-        }
-        .voice-listening {
-            background: var(--red) !important;
-            animation: pulseRecord 1.2s infinite;
-        }
-        @keyframes pulseRecord {
-            0%   { box-shadow: 0 0 0 0 rgba(197,69,69,0.40); }
-            70%  { box-shadow: 0 0 0 10px rgba(197,69,69,0); }
-            100% { box-shadow: 0 0 0 0 rgba(197,69,69,0); }
-        }
+        .center-send [data-icon], .send-btn [data-icon] { @apply h-[18px] w-[18px]; }
 
-        #chat-state {
-            display: none; flex: 1;
-            flex-direction: column; overflow: hidden;
-        }
-
-        #messages {
-            flex: 1; overflow-y: auto;
-            padding: 22px 28px;
-            display: flex; flex-direction: column;
-            gap: 14px; scroll-behavior: smooth;
-            background: var(--cream);
-        }
-        #messages::-webkit-scrollbar { width: 4px; }
-        #messages::-webkit-scrollbar-thumb { background: var(--cream-3); border-radius: 4px; }
-
-        .message {
-            display: flex; gap: 10px;
-            align-items: flex-end;
-            max-width: 76%;
-            animation: msgIn 0.25s ease;
-        }
-        @keyframes msgIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .message.user { align-self: flex-end; flex-direction: row-reverse; }
-        .message.bot  { align-self: flex-start; }
-
-        .msg-avatar {
-            width: 30px; height: 30px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 600; flex-shrink: 0;
-        }
-        .message.bot  .msg-avatar { background: var(--green); color: white; }
-        .message.user .msg-avatar { background: var(--orange); color: white; }
-
-        .msg-body { display: flex; flex-direction: column; gap: 4px; }
-        .message.user .msg-body { align-items: flex-end; }
-
-        .msg-bubble {
-            padding: 11px 16px;
-            font-size: 14px; line-height: 1.65;
-            border-radius: 18px;
-            white-space: pre-wrap;
-            word-break: break-word;
-            position: relative;
-        }
+        /* ---------- Messages (built by the script) ---------- */
+        .message { @apply flex max-w-[82%] items-end gap-2.5 md:max-w-[76%]; animation: msgIn .25s ease; }
+        .message.user { @apply flex-row-reverse self-end; }
+        .message.bot { @apply self-start; }
+        .msg-avatar { @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[11px] font-bold text-white; }
+        .message.bot .msg-avatar { @apply bg-teal-700; }
+        .message.user .msg-avatar { @apply bg-slate-900; }
+        .msg-body { @apply flex min-w-0 flex-col gap-1; }
+        .message.user .msg-body { @apply items-end; }
+        .msg-bubble { @apply relative whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-[14.5px] leading-relaxed; }
         .message.bot .msg-bubble {
-            background: white; border: 1px solid var(--border);
-            border-bottom-left-radius: 4px; color: var(--dark);
+          @apply rounded-bl-md border border-white/90 bg-white/80 text-slate-800 shadow-[0_4px_16px_rgba(15,23,42,0.06)] backdrop-blur;
         }
-        .message.user .msg-bubble {
-            background: var(--green); color: white;
-            border-bottom-right-radius: 4px;
-        }
-        .msg-time { font-size: 11px; color: var(--muted); padding: 0 4px; }
-        .message.user .msg-time { text-align: right; }
+        .message.user .msg-bubble { @apply rounded-br-md bg-teal-700 text-white shadow-[0_6px_16px_rgba(15,118,110,0.22)]; }
+        .msg-time { @apply px-1 text-[11px] text-slate-400; }
+        .message.user .msg-time { @apply text-right; }
 
-        .bubble-controls {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
+        .bubble-controls { @apply mt-3 flex flex-wrap gap-2 whitespace-normal; }
         .bubble-voice-btn {
-            border: none;
-            border-radius: 16px;
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-family: 'DM Sans', sans-serif;
-            transition: 0.2s ease;
+          @apply inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition;
         }
-
-        .bubble-speak {
-            background: var(--green-light);
-            color: var(--green);
-            border: 1px solid rgba(26,92,66,0.18);
-        }
-        .bubble-speak:hover {
-            background: #d6e8df;
-        }
-
-        .bubble-stop {
-            background: #fdeaea;
-            color: var(--red);
-            border: 1px solid rgba(197,69,69,0.18);
-        }
-        .bubble-stop:hover {
-            background: #f9d7d7;
-        }
+        .bubble-speak { @apply border-teal-600/20 bg-teal-600/[0.08] text-teal-800 hover:bg-teal-600/15; }
+        .bubble-stop  { @apply border-rose-600/15 bg-rose-50 text-rose-700 hover:bg-rose-100; }
 
         .typing-bubble {
-            background: white; border: 1px solid var(--border);
-            border-radius: 18px; border-bottom-left-radius: 4px;
-            padding: 12px 18px;
-            display: flex; gap: 5px; align-items: center;
+          @apply flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-white/90 bg-white/80 px-4 py-3.5 backdrop-blur;
         }
-        .typing-bubble span {
-            width: 7px; height: 7px; border-radius: 50%;
-            background: var(--muted);
-            animation: typingBlink 1.3s infinite;
-        }
-        .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typingBlink {
-            0%,80%,100% { opacity: 0.25; transform: scale(0.85); }
-            40% { opacity: 1; transform: scale(1); }
-        }
+        .typing-bubble span { @apply h-2 w-2 rounded-full bg-teal-600; animation: typingBlink 1.3s infinite; }
+        .typing-bubble span:nth-child(2) { animation-delay: .2s; }
+        .typing-bubble span:nth-child(3) { animation-delay: .4s; }
 
-        #bottom-input {
-            display: none;
-            padding: 12px 20px;
-            background: var(--cream);
-            border-top: 1px solid var(--border);
-            flex-shrink: 0;
-        }
         .bottom-input-wrap {
-            display: flex; align-items: flex-end; gap: 10px;
-            background: white;
-            border: 1px solid var(--cream-3);
-            border-radius: 26px;
-            padding: 10px 10px 10px 18px;
-            box-shadow: 0 2px 12px rgba(42,31,14,0.06);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .bottom-input-wrap:focus-within {
-            border-color: rgba(26,92,66,0.4);
-            box-shadow: 0 2px 18px rgba(26,92,66,0.1);
+          @apply flex items-end gap-2 rounded-2xl border border-white/90 bg-white/80 py-2 pe-2 ps-4
+                 shadow-[0_6px_20px_rgba(15,23,42,0.06)] transition
+                 focus-within:border-teal-600/40 focus-within:ring-4 focus-within:ring-teal-600/10;
         }
         #userInput {
-            flex: 1; border: none; outline: none;
-            background: transparent;
-            font-size: 14px; color: var(--dark);
-            font-family: 'DM Sans', sans-serif;
-            resize: none; line-height: 1.5;
-            max-height: 120px; overflow-y: auto;
+          @apply max-h-[120px] min-w-0 flex-1 resize-none overflow-y-auto border-0 bg-transparent py-2 text-[14.5px] leading-normal
+                 text-slate-900 outline-none placeholder:text-slate-400;
         }
-        #userInput::placeholder { color: #b8ae9e; }
-        .send-btn {
-            width: 38px; height: 38px; border-radius: 50%;
-            background: var(--green); border: none;
-            cursor: pointer; display: flex; align-items: center;
-            justify-content: center; flex-shrink: 0;
-            transition: background 0.2s, transform 0.15s;
-        }
-        .send-btn:hover { background: var(--green-2); transform: scale(1.05); }
-        .send-btn svg { width: 16px; height: 16px; fill: white; }
 
+        /* ---------- Footer ---------- */
         .helpline-footer {
-            text-align: center;
-            font-size: 11.5px; color: var(--muted);
-            padding: 8px 20px;
-            background: var(--cream);
-            border-top: 1px solid var(--border);
-            flex-shrink: 0;
-            display: flex; flex-wrap: wrap;
-            gap: 6px; justify-content: center; align-items: center;
+          @apply glass flex flex-wrap items-center justify-center gap-x-2 gap-y-0 rounded-2xl px-3 py-1.5 text-center text-[11px] leading-snug text-slate-500 md:px-4 md:py-2 md:text-[12px];
         }
-        .helpline-footer strong { color: var(--dark-2); }
+        .helpline-footer strong { @apply whitespace-nowrap font-semibold text-slate-900; }
+      }
+    </style>
 
-        #error-toast {
-            display: none;
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            background: #c0392b; color: white;
-            padding: 10px 20px; border-radius: 20px;
-            font-size: 13px; z-index: 999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-html[dir="rtl"] body {
-            direction:rtl;
-            font-family:Tahoma,sans-serif;
-        }
-        html[dir="rtl"] .message.user { flex-direction:row; }
-        html[dir="rtl"] .message.bot { flex-direction:row-reverse; }
-        html[dir="rtl"] .message.user .msg-body { align-items:flex-start; }
-        html[dir="rtl"] .message.user .msg-time { text-align:left; }
-        html[dir="rtl"] #center-input,
-        html[dir="rtl"] #userInput {
-            direction:rtl; text-align:right;
-            font-family:Tahoma,sans-serif;
-        }
-        html[dir="rtl"] .greeting,
-        html[dir="rtl"] .greeting-sub,
-        html[dir="rtl"] .chip,
-        html[dir="rtl"] .disclaimer,
-        html[dir="rtl"] .helpline-footer,
-        html[dir="rtl"] .back-btn,
-        html[dir="rtl"] .nav-btn {
-            font-family:Tahoma,sans-serif;
-        }
-        html[dir="rtl"] .msg-bubble { line-height:2; }
+    <style>
+      @keyframes pulse { 0%,100% { box-shadow: 0 0 0 2px rgba(16,185,129,0.2); } 50% { box-shadow: 0 0 0 5px rgba(16,185,129,0.07); } }
+      @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+      @keyframes typingBlink { 0%,80%,100% { opacity:.25; transform:scale(.85); } 40% { opacity:1; transform:scale(1); } }
+      @keyframes pulseRecord { 0% { box-shadow:0 0 0 0 rgba(225,29,72,.4); } 70% { box-shadow:0 0 0 10px rgba(225,29,72,0); } 100% { box-shadow:0 0 0 0 rgba(225,29,72,0); } }
 
-        html[dir="rtl"] .msg-time {
-    direction: ltr !important;
-    text-align: left !important;
-    unicode-bidi: plaintext !important;
-}
+      /* States toggled by the script (inline styles from the script still win) */
+      #welcome-state { display: flex; transition: opacity .4s ease; }
+      #chat-state { display: none; }
+      #bottom-input { display: none; }
+      #messages::-webkit-scrollbar { width: 5px; }
+      #messages::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.12); border-radius: 4px; }
+      .voice-btn.voice-listening { background: #e11d48 !important; color: #fff !important; animation: pulseRecord 1.2s infinite; }
 
+      #error-toast {
+        display: none; position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 999;
+        background: #be123c; color: #fff; padding: 10px 18px; border-radius: 12px;
+        font-size: 13px; font-weight: 500; box-shadow: 0 10px 30px rgba(190,18,60,0.3);
+      }
+
+      /* Top bar glass on a background layer */
+      .topbar { isolation: isolate; }
+      .topbar::before {
+        content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+        background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+        -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+      @media (max-width: 639px) { .topbar .status-pill.visible { display: none; } }
+
+      /* ===== SIDEBAR (same as dashboard) ===== */
+      html .sidebar {
+        position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+        display: flex; flex-direction: column;
+        width: 280px; max-width: calc(100vw - 48px);
+        overflow-y: auto; overflow-x: visible;
+        background: rgba(255,255,255,0.9);
+        transform: translateX(calc(-100% - 24px));
+        transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+      }
+      html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+      html.sidebar-open .sidebar { transform: none; }
+      .sidebar-overlay {
+        position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+        -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+
+      @media (min-width: 1024px) {
+        html .sidebar, html[dir="rtl"] .sidebar {
+          position: relative; top: auto; bottom: auto; inset: auto; z-index: 30;
+          height: 100%; width: 248px; max-width: none;
+          transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+          cursor: pointer; flex-shrink: 0;
+        }
+        .sidebar-overlay { display: none; }
+        html.sidebar-collapsed .sidebar { width: 80px; }
+        html.sidebar-collapsed .sidebar .side-label { display: none; }
+        html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+        html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+        html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+        html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+          display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+          transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+          background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+          box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+        }
+      }
+
+      /* ===== URDU / RTL (message layout kept from the original) ===== */
+      html[dir="rtl"] body { direction: rtl; }
+      html[dir="rtl"] .message.user { flex-direction: row; }
+      html[dir="rtl"] .message.bot { flex-direction: row-reverse; }
+      html[dir="rtl"] .message.user .msg-body { align-items: flex-start; }
+      html[dir="rtl"] .message.user .msg-time { text-align: left; }
+      html[dir="rtl"] #center-input,
+      html[dir="rtl"] #userInput { direction: rtl; text-align: right; }
+      html[dir="rtl"] .msg-bubble { line-height: 2; }
+      html[dir="rtl"] .msg-time { direction: ltr !important; text-align: left !important; unicode-bidi: plaintext !important; }
+      html[dir="rtl"] .message.bot .msg-bubble { border-bottom-left-radius: 1rem; border-bottom-right-radius: 0.375rem; }
+      html[dir="rtl"] .message.user .msg-bubble { border-bottom-right-radius: 1rem; border-bottom-left-radius: 0.375rem; }
+      html[dir="rtl"] .typing-bubble { border-bottom-left-radius: 1rem; border-bottom-right-radius: 0.375rem; }
+      html[dir="rtl"] .center-send [data-icon],
+      html[dir="rtl"] .send-btn [data-icon] { transform: scaleX(-1); }
+
+      html[lang="ur"] body,
+      html[lang="ur"] button,
+      html[lang="ur"] input,
+      html[lang="ur"] textarea { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+      html[lang="ur"] *,
+      html[lang="ur"] *::before,
+      html[lang="ur"] *::after { letter-spacing: 0 !important; }
+      html[lang="ur"] .greeting { line-height: 1.7; }
+      html[lang="ur"] .greeting-sub { line-height: 2; }
+      html[lang="ur"] .chip,
+      html[lang="ur"] .disclaimer,
+      html[lang="ur"] .helpline-footer,
+      html[lang="ur"] .side-link,
+      html[lang="ur"] .back-btn,
+      html[lang="ur"] .nav-btn { line-height: 1.8; }
     </style>
 </head>
-<body>
+<body class="h-[100dvh] overflow-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
 
-<div class="page">
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
 
-    <nav>
-        <div class="nav-left">
-            <div class="idp-badge">
-                <div class="idp-icon">
-                    <svg viewBox="0 0 18 18" fill="none" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="9" cy="7" r="4" fill="white"/>
-                        <rect x="7" y="11" width="4" height="5" rx="1" fill="white"/>
-                    </svg>
+<div class="page flex h-full gap-5 p-3 md:p-5">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+      <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+        <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+            <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+          </span>
+          <span class="side-label">Empath AI</span>
+        </a>
+        <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+      </div>
+
+      <nav class="flex flex-col gap-1" aria-label="Main">
+        <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-sidebar-label="dashboard">Dashboard</span></a>
+        <a class="side-link active" href="/app" aria-current="page"><span data-icon="chat"></span><span class="side-label" data-sidebar-label="letsChat">Let's Chat</span></a>
+        <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-sidebar-label="weeklyAssessment">Weekly Self Assessment</span></a>
+        <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-sidebar-label="wellnessProgress">Wellness Progress</span></a>
+        <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-sidebar-label="wordsOfHope">Words of Hope</span></a>
+        <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-sidebar-label="quranicCorner">Quranic Comfort Corner</span></a>
+      </nav>
+
+      <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+        <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-sidebar-label="logout">Logout</span></a>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-2.5 md:gap-3">
+
+    <nav class="topbar relative z-40 flex shrink-0 items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:ps-5">
+        <div class="nav-left flex min-w-0 items-center gap-3">
+            <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+            <div class="idp-badge flex min-w-0 items-center gap-2.5 lg:hidden">
+                <div class="idp-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+                    <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
                 </div>
-                <div class="brand-text">
-                    <span class="brand-name">Empath AI</span>
-                    <span class="brand-sub" data-i18n="brandSub">IDP Mental Health</span>
+                <div class="brand-text hidden min-w-0 flex-col md:flex">
+                    <span class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</span>
+                    <span class="brand-sub truncate text-[11px] text-slate-500" data-i18n="brandSub">IDP Mental Health</span>
                 </div>
             </div>
-            <div class="nav-divider"></div>
-            <span class="nav-page-label" data-i18n="supportChat">Support Chat</span>
+            <div class="nav-divider hidden h-7 w-px bg-slate-900/10 md:block lg:hidden"></div>
+            <span class="nav-page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" data-i18n="supportChat">Support Chat</span>
         </div>
 
-        <div class="nav-right">
+        <div class="nav-right flex shrink-0 items-center gap-2">
             <div class="status-pill">
                 <div class="status-dot"></div>
                 <span class="status-text" data-i18n="online">Online</span>
@@ -507,7 +331,7 @@ html[dir="rtl"] body {
         </div>
     </nav>
 
-   <div class="disclaimer">
+   <div class="disclaimer mx-auto w-full max-w-[900px] shrink-0">
     <span data-i18n="disclaimer">This is a support tool, not a replacement for professional care.</span> &nbsp;
     <span data-i18n="danger">If you are in immediate danger, call</span>
     <strong dir="ltr">1122</strong>
@@ -515,26 +339,12 @@ html[dir="rtl"] body {
     <strong dir="ltr">0317-4288665</strong>
 </div>
 
-    <div class="content-area">
+    <div class="content-area glass mx-auto flex min-h-0 w-full max-w-[900px] flex-1 flex-col overflow-hidden rounded-3xl">
 
-        <div id="welcome-state">
-            <div class="idp-illustration">
-                <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <ellipse cx="55" cy="95" rx="42" ry="6" fill="#e2dace"/>
-                    <circle cx="42" cy="52" r="34" fill="#dfd8cc" opacity="0.5"/>
-                    <path d="M20 75 L55 28 L90 75 Z" fill="#c45a28"/>
-                    <path d="M20 75 L55 28 L55 75 Z" fill="#d96a35"/>
-                    <path d="M46 75 Q46 62 55 62 Q64 62 64 75 Z" fill="#2a1f0e" opacity="0.85"/>
-                    <line x1="55" y1="28" x2="55" y2="18" stroke="#3e2f18" stroke-width="1.5" stroke-linecap="round"/>
-                    <circle cx="55" cy="17" r="3" fill="#d96a35"/>
-                    <line x1="18" y1="75" x2="14" y2="82" stroke="#3e2f18" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="92" y1="75" x2="96" y2="82" stroke="#3e2f18" stroke-width="1.5" stroke-linecap="round"/>
-                    <path d="M55 52C55 52 50 48 50 45.5C50 43.5 51.8 42 53.5 42C54.2 42 55 42.7 55 42.7C55 42.7 55.8 42 56.5 42C58.2 42 60 43.5 60 45.5C60 48 55 52 55 52Z" fill="white" opacity="0.9"/>
-                    <circle cx="38" cy="60" r="4" fill="#3e2f18" opacity="0.3"/>
-                    <path d="M34 75 Q34 66 38 66 Q42 66 42 75" fill="#3e2f18" opacity="0.3"/>
-                    <circle cx="72" cy="60" r="4" fill="#3e2f18" opacity="0.3"/>
-                    <path d="M68 75 Q68 66 72 66 Q76 66 76 75" fill="#3e2f18" opacity="0.3"/>
-                </svg>
+        <div id="welcome-state" class="min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-5 py-8 md:gap-5 md:px-8">
+            <div class="idp-illustration flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_rgba(15,118,110,0.35)]"
+                 style="background: linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #0d9488 100%);">
+                <span class="block h-8 w-8" data-icon="chat"></span>
             </div>
 
             <div class="greeting">
@@ -554,43 +364,43 @@ html[dir="rtl"] body {
                 <div class="chip" onclick="sendChip(this)" data-i18n="somethingElse">Something else</div>
             </div>
 
-            <div class="center-input-wrap">
+            <div class="center-input-wrap mt-1">
                 <input id="center-input" type="text"
                     data-placeholder-en="Share what's on your mind..." data-placeholder-ur="جو کچھ آپ کے ذہن میں ہے، شیئر کریں..." placeholder="Share what's on your mind..."
                     onkeydown="if(event.key==='Enter') sendFromCenter()" />
 
-                <button id="centerMicBtn" class="voice-btn voice-start" type="button" title="Start voice input">🎤</button>
-                <button id="centerMicStopBtn" class="voice-btn voice-stop" type="button" title="Stop voice input">⏹</button>
+                <button id="centerMicBtn" class="voice-btn voice-start" type="button" title="Start voice input" aria-label="Start voice input"><span data-icon="mic"></span></button>
+                <button id="centerMicStopBtn" class="voice-btn voice-stop" type="button" title="Stop voice input" aria-label="Stop voice input"><span data-icon="stop"></span></button>
 
-                <button class="center-send" onclick="sendFromCenter()">
-                    <svg viewBox="0 0 20 20"><path d="M2 10L18 2L10 18L9 11L2 10Z"/></svg>
+                <button class="center-send" onclick="sendFromCenter()" aria-label="Send">
+                    <span data-icon="send"></span>
                 </button>
             </div>
         </div>
 
-        <div id="chat-state">
-            <div id="messages"></div>
+        <div id="chat-state" class="min-h-0 flex-1 flex-col overflow-hidden">
+            <div id="messages" class="flex flex-1 flex-col gap-4 overflow-y-auto scroll-smooth px-4 py-5 md:px-7 md:py-6"></div>
         </div>
 
-        <div id="bottom-input">
+        <div id="bottom-input" class="shrink-0 border-t border-white/60 bg-white/30 p-3 md:px-5 md:py-4">
             <div class="bottom-input-wrap">
                 <textarea id="userInput" rows="1"
                     data-placeholder-en="Type your message..." data-placeholder-ur="اپنا پیغام لکھیں..." placeholder="Type your message..."
                     onkeydown="handleKey(event)"
                     oninput="autoResize(this)"></textarea>
 
-                <button id="micBtn" class="voice-btn voice-start" type="button" title="Start voice input">🎤</button>
-                <button id="micStopBtn" class="voice-btn voice-stop" type="button" title="Stop voice input">⏹</button>
+                <button id="micBtn" class="voice-btn voice-start" type="button" title="Start voice input" aria-label="Start voice input"><span data-icon="mic"></span></button>
+                <button id="micStopBtn" class="voice-btn voice-stop" type="button" title="Stop voice input" aria-label="Stop voice input"><span data-icon="stop"></span></button>
 
-                <button class="send-btn" onclick="sendMessage()">
-                    <svg viewBox="0 0 20 20"><path d="M2 10L18 2L10 18L9 11L2 10Z"/></svg>
+                <button class="send-btn" onclick="sendMessage()" aria-label="Send">
+                    <span data-icon="send"></span>
                 </button>
             </div>
         </div>
 
     </div>
 
-    <div class="helpline-footer">
+    <div class="helpline-footer mx-auto w-full max-w-[900px] shrink-0">
     <span data-i18n="crisis">🆘 Crisis helplines always available:</span>
     <span>
         <strong dir="ltr">1122</strong>
@@ -604,6 +414,7 @@ html[dir="rtl"] body {
     </span>
 </div>
 
+    </div>
 </div>
 
 <div id="error-toast"></div>
@@ -1172,6 +983,53 @@ function addMessage(text, role) {
             window.speechSynthesis.getVoices();
         };
     }
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", logout: "لاگ آؤٹ" }
+  };
+
+  let lang = "en";
+  try { lang = (localStorage.getItem("empathLanguage") || "en").toLowerCase() === "ur" ? "ur" : "en"; } catch (e) {}
+  const t = SIDEBAR_TEXT[lang];
+  document.querySelectorAll("[data-sidebar-label]").forEach(function (el) {
+    const key = el.getAttribute("data-sidebar-label");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    const collapsed = root.classList.toggle("sidebar-collapsed");
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e2) {}
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
 </script>
 </body>
 </html>

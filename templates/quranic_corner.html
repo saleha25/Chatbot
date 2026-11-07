@@ -3,835 +3,342 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
 <title>Quranic Comfort Corner | Empath AI</title>
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<style>
-:root {
-    --cream: #f4efe6;
-    --cream-light: #faf6ee;
-    --beige: #eee4d3;
-    --brown: #4b2e23;
-    --brown-dark: #352116;
-    --green: #0F6E56;
-    --green-dark: #07543f;
-    --green-soft: #e4eee2;
-    --gold: #b5886a;
-    --gold-light: #e8d1b4;
-    --text-muted: #817164;
-    --white: #fffdf9;
-    --border: #e3d1bc;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    background: var(--cream);
-    color: var(--brown);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-}
-
-button, textarea {
-    font: inherit;
-}
-
-/* =========================
-   HEADER — WELLNESS PROGRESS STYLE
-========================= */
-
-.navbar {
-    min-height: 72px;
-    width: 100%;
-    padding: 12px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--cream);
-    border-bottom: 1px solid rgba(75,46,35,.13);
-}
-
-.nav-left {
-    display: flex;
-    align-items: center;
-    flex-direction: row;
-    gap: 14px;
-    min-width: 0;
-}
-
-.brand-area {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 11px;
-    text-decoration: none;
-    color: inherit;
-    flex-shrink: 0;
-}
-
-.brand-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    background: var(--brown-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    flex-shrink: 0;
-}
-
-.brand-text {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.brand-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 1.1;
-    color: var(--brown-dark);
-    white-space: nowrap;
-}
-
-.brand-sub {
-    font-size: 10px;
-    color: var(--text-muted);
-    letter-spacing: .4px;
-    white-space: nowrap;
-}
-
-.nav-divider {
-    height: 34px;
-    width: 1px;
-    background: var(--border);
-    flex-shrink: 0;
-}
-
-.page-label {
-    font-size: 14px;
-    color: var(--text-muted);
-    white-space: nowrap;
-}
-
-.dashboard-btn {
-    background: var(--green);
-    color: white;
-    text-decoration: none;
-    padding: 10px 23px;
-    border-radius: 24px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: .2s;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.dashboard-btn:hover {
-    background: var(--green-dark);
-}
-
-/* Header layout remains consistent in both languages */
-
-html[dir="rtl"] .navbar {
-    direction: rtl;
-}
-
-html[dir="rtl"] .nav-left {
-    direction: ltr;
-    flex-direction: row;
-}
-
-html[dir="rtl"] .brand-area {
-    direction: ltr;
-}
-
-html[dir="rtl"] .brand-name {
-    direction: ltr;
-    text-align: left;
-}
-
-html[dir="rtl"] .brand-sub {
-    direction: rtl;
-    text-align: left;
-    letter-spacing: 0;
-}
-
-html[dir="rtl"] .page-label {
-    direction: rtl;
-    text-align: right;
-}
-
-html[dir="rtl"] .dashboard-btn {
-    direction: rtl;
-}
-
-/* =========================
-   MAIN LAYOUT
-========================= */
-
-.main {
-    max-width: 1250px;
-    padding: 0 30px 45px;
-    margin: auto;
-}
-
-/* =========================
-   HERO
-========================= */
-
-.hero {
-    text-align: center;
-    padding: 43px 15px 24px;
-    position: relative;
-}
-
-.hero-moon {
-    color: var(--gold);
-    font-size: 37px;
-    margin-bottom: 7px;
-}
-
-.hero h1 {
-    font-family: 'Playfair Display', serif;
-    color: var(--brown-dark);
-    font-size: 43px;
-    font-weight: 600;
-    margin-bottom: 15px;
-}
-
-.hero p {
-    color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1.9;
-    max-width: 700px;
-    margin: auto;
-}
-
-/* =========================
-   FEELINGS SECTION
-========================= */
-
-.feelings-section {
-    margin-top: 15px;
-}
-
-.section-heading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    margin: 20px auto 27px;
-    text-align: center;
-}
-
-.section-heading::before,
-.section-heading::after {
-    content: "";
-    height: 1px;
-    width: 90px;
-    background: var(--gold-light);
-}
-
-.section-heading h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 25px;
-    font-weight: 600;
-    color: var(--brown);
-}
-
-.feelings-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-}
-
-.feeling-card {
-    min-height: 137px;
-    padding: 17px 12px;
-    border: 1px solid var(--border);
-    border-radius: 23px;
-    background: rgba(255,253,249,.48);
-    color: var(--brown-dark);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 9px;
-    transition: .22s ease;
-}
-
-.feeling-card:hover {
-    background: var(--cream-light);
-    border-color: var(--gold);
-    transform: translateY(-3px);
-}
-
-.feeling-card.active {
-    background: var(--green-soft);
-    border: 2px solid var(--green);
-    color: var(--green-dark);
-}
-
-/* =========================
-   PROFESSIONAL SVG ICONS
-========================= */
-
-.feeling-icon {
-    width: 63px;
-    height: 63px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.feeling-icon svg {
-    width: 47px;
-    height: 47px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.feeling-card[data-feeling="anxiety"] .feeling-icon {
-    color: var(--green);
-}
-
-.feeling-card[data-feeling="sadness"] .feeling-icon {
-    color: #b5886a;
-}
-
-.feeling-card[data-feeling="hopelessness"] .feeling-icon {
-    color: #9b7448;
-}
-
-.feeling-card[data-feeling="fear"] .feeling-icon {
-    color: #98744a;
-}
-
-.feeling-card[data-feeling="loneliness"] .feeling-icon {
-    color: #b5883e;
-}
-
-.feeling-card[data-feeling="gratitude"] .feeling-icon {
-    color: #567342;
-}
-
-.feeling-card.active .feeling-icon {
-    color: var(--green-dark);
-}
-
-.feeling-card span:last-child {
-    font-size: 17px;
-    font-weight: 600;
-}
-
-/* =========================
-   QURANIC REFLECTION CARD
-========================= */
-
-.ayah-card {
-    margin-top: 34px;
-    min-height: 260px;
-    border-radius: 22px;
-    border: 1px solid var(--border);
-    background: var(--white);
-    display: grid;
-    grid-template-columns: 31% 69%;
-    overflow: hidden;
-    box-shadow: 0 7px 24px rgba(75,46,35,.045);
-}
-
-.ayah-art {
-    min-height: 250px;
-    background: linear-gradient(145deg, #f8f0e4, #eee1ce);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.ayah-art svg {
-    width: 100%;
-    max-width: 250px;
-    height: 190px;
-}
-
-.ayah-content {
-    padding: 28px 35px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: right;
-}
-
-.ayah-heading {
-    display: inline-flex;
-    align-items: center;
-    gap: 11px;
-    align-self: flex-start;
-    background: #f5ead8;
-    padding: 11px 20px;
-    border-radius: 30px;
-    margin-bottom: 24px;
-    font-size: 19px;
-    font-weight: 600;
-}
-
-.ayah-heading svg {
-    width: 27px;
-    height: 27px;
-    color: var(--green);
-}
-
-.ayah-placeholder {
-    color: var(--text-muted);
-    line-height: 1.9;
-    font-size: 15px;
-}
-
-.ayah-reference {
-    margin-top: 17px;
-    align-self: flex-start;
-    border: 1px solid var(--gold-light);
-    background: #fbf2e3;
-    border-radius: 25px;
-    padding: 8px 17px;
-    font-size: 13px;
-    color: var(--brown);
-    display: none;
-}
-
-/* =========================
-   PERSONAL JOURNAL
-========================= */
-
-.journal-card {
-    margin-top: 28px;
-    padding: 27px;
-    border-radius: 21px;
-    background: var(--beige);
-    border: 1px solid #dfcfb9;
-}
-
-.journal-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 9px;
-}
-
-.journal-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.journal-title svg {
-    width: 29px;
-    height: 29px;
-    color: var(--gold);
-}
-
-.journal-title h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 23px;
-    font-weight: 600;
-}
-
-.journal-description {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 17px;
-    line-height: 1.8;
-}
-
-.journal-input {
-    display: block;
-    width: 100%;
-    min-height: 115px;
-    padding: 17px;
-    border: 1px solid #d8c2a9;
-    border-radius: 14px;
-    background: var(--white);
-    resize: vertical;
-    outline: none;
-    color: var(--brown);
-    font-size: 15px;
-}
-
-.journal-input:focus {
-    border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(15,110,86,.08);
-}
-
-.journal-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 15px;
-}
-
-.save-btn {
-    border: none;
-    background: var(--green);
-    color: white;
-    border-radius: 13px;
-    padding: 12px 22px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: not-allowed;
-    opacity: .75;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-
-.save-btn svg {
-    width: 17px;
-    height: 17px;
-}
-
-/* =========================
-   PRIVACY FOOTER
-========================= */
-
-.privacy-note {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    color: var(--text-muted);
-    text-align: center;
-    font-size: 13px;
-    margin: 28px auto 5px;
-}
-
-.privacy-note svg {
-    width: 17px;
-    height: 17px;
-    color: var(--gold);
-    flex-shrink: 0;
-}
-
-/* =========================
-   URDU SUPPORT
-========================= */
-
-html[dir="rtl"] body {
-    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
-}
-
-html[dir="rtl"] .navbar {
-    direction: rtl;
-}
-
-html[dir="rtl"] .nav-left {
-    direction: ltr;
-    flex-direction: row;
-}
-
-html[dir="rtl"] .brand-area {
-    direction: ltr;
-}
-
-html[dir="rtl"] .brand-name {
-    direction: ltr;
-    text-align: left;
-}
-
-html[dir="rtl"] .brand-sub {
-    direction: rtl;
-    letter-spacing: 0;
-    text-align: left;
-}
-
-html[dir="rtl"] .page-label {
-    direction: rtl;
-    text-align: right;
-}
-
-html[dir="rtl"] .hero h1,
-html[dir="rtl"] .section-heading h2,
-html[dir="rtl"] .journal-title h3,
-html[dir="rtl"] .ayah-heading {
-    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
-    line-height: 1.8;
-}
-
-html[dir="rtl"] .hero p,
-html[dir="rtl"] .feeling-card,
-html[dir="rtl"] .journal-description,
-html[dir="rtl"] .journal-input,
-html[dir="rtl"] .ayah-content,
-html[dir="rtl"] .privacy-note {
-    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
-}
-
-html[dir="rtl"] .ayah-content,
-html[dir="rtl"] .journal-card {
-    direction: rtl;
-    text-align: right;
-}
-
-html[dir="rtl"] .journal-footer {
-    justify-content: flex-start;
-}
-
-html[dir="rtl"] .ayah-heading {
-    align-self: flex-start;
-}
-
-html[dir="rtl"] .ayah-reference {
-    align-self: flex-start;
-}
-
-
-/* Dynamic Quranic Ayat results */
-.ayah-count-control {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin: 0 auto 22px;
-    color: var(--text-muted);
-    font-size: 14px;
-}
-.ayah-count-control select {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 12px;
-    background: var(--white);
-    color: var(--brown);
-}
-.ayah-result {
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-    text-align: right;
-}
-.ayah-result:last-child { border-bottom: 0; }
-.ayah-result-reference {
-    display: inline-block;
-    margin-bottom: 12px;
-    border: 1px solid var(--gold-light);
-    background: #fbf2e3;
-    border-radius: 25px;
-    padding: 7px 14px;
-    font-size: 13px;
-    color: var(--brown);
-}
-.ayah-result-arabic {
-    direction: rtl;
-    text-align: right;
-    font-family: 'Noto Naskh Arabic', serif;
-    font-size: 27px;
-    line-height: 2.1;
-    color: var(--brown-dark);
-    margin: 8px 0 14px;
-}
-.ayah-result-translation {
-    direction: ltr;
-    text-align: left;
-    color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1.9;
-}
-html[dir="rtl"] .ayah-result-translation {
-    direction: rtl;
-    text-align: right;
-    font-family: 'Noto Naskh Arabic', Tahoma, sans-serif;
-    font-size: 17px;
-}
-.ayah-loading, .ayah-error {
-    padding: 12px 0;
-    line-height: 1.8;
-}
-.ayah-error { color: #a33b32; }
-
-/* =========================
-   RESPONSIVE DESIGN
-========================= */
-
-@media(max-width: 850px) {
-    .main {
-        padding: 0 20px 35px;
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+</script>
+
+<!-- ===== ICONS (separate file) ===== -->
+<script src="/static/icons.js"></script>
+
+<!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+          urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+        }
+      }
+    }
+  }
+</script>
+
+<style type="text/tailwindcss">
+  @layer components {
+    .glass {
+      @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+             shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
     }
 
-    .ayah-card {
-        grid-template-columns: 1fr;
+    /* ---------- Sidebar ---------- */
+    .side-link {
+      @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+             hover:bg-white/60 hover:text-slate-900;
     }
+    .side-link [data-icon] { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+    .side-link:hover [data-icon] { @apply text-teal-700; }
+    .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+    .side-link.active [data-icon] { @apply text-teal-700; }
 
-    .ayah-art {
-        min-height: 150px;
+    .icon-btn {
+      @apply relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/60
+             text-slate-700 transition hover:bg-white hover:text-teal-700;
     }
-
-    .ayah-art svg {
-        height: 130px;
-    }
-
-    .ayah-content {
-        padding: 24px;
-    }
-}
-
-@media(max-width: 650px) {
-    .navbar {
-        padding: 11px 14px;
-    }
-
-    .brand-name {
-        font-size: 16px;
-    }
-
-    .brand-sub {
-        font-size: 8px;
-    }
-
-    .page-label {
-        font-size: 11px;
-    }
-
-    .brand-icon {
-        width: 42px;
-        height: 42px;
-    }
+    .icon-btn [data-icon] { @apply h-5 w-5; }
 
     .dashboard-btn {
-        padding: 8px 13px;
-        font-size: 12px;
+      @apply inline-flex items-center whitespace-nowrap rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+             shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
     }
 
-    .hero {
-        padding-top: 34px;
+    /* ---------- Hero ---------- */
+    .hero { @apply px-2 pb-6 pt-8 text-center md:pt-12; animation: fadeUp .5s ease both; }
+    .hero-moon {
+      @apply mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-[0_14px_34px_rgba(15,118,110,0.35)];
+      background: linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #0d9488 100%);
     }
+    .hero-moon [data-icon] { @apply h-7 w-7; }
+    .hero h1 { @apply mb-3 text-[28px] font-bold leading-tight tracking-tight text-slate-900 md:text-[38px]; }
+    .hero p { @apply mx-auto max-w-2xl text-[15px] leading-relaxed text-slate-500; }
 
-    .hero h1 {
-        font-size: 32px;
-    }
+    /* ---------- Feelings ---------- */
+    .section-heading { @apply mb-5 mt-4 flex items-center justify-center gap-4 text-center; }
+    .section-heading::before, .section-heading::after { content: ''; @apply h-px w-10 bg-slate-900/10 md:w-20; }
+    .section-heading h2 { @apply text-lg font-bold tracking-tight text-slate-900 md:text-xl; }
 
-    .hero p {
-        font-size: 13px;
-    }
-
-    .feelings-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 11px;
-    }
-
+    .feelings-grid { @apply grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4; }
     .feeling-card {
-        min-height: 120px;
+      @apply glass flex min-h-[124px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-2xl px-3 py-4 text-slate-800 transition
+             hover:-translate-y-0.5 hover:bg-white/70 md:min-h-[136px];
+    }
+    .feeling-card.active { @apply border-teal-600/50 bg-teal-600/[0.08] text-teal-900 ring-2 ring-teal-600/30; }
+    .feeling-icon { @apply flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80; }
+    .feeling-icon [data-icon] { @apply h-8 w-8; }
+    .feeling-card > span:last-child { @apply text-[15px] font-semibold md:text-base; }
+
+    .ayah-count-control { @apply mx-auto mt-5 flex items-center justify-center gap-2.5 text-sm text-slate-500; }
+    .ayah-count-control select {
+      @apply cursor-pointer rounded-xl border border-white/90 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-900 outline-none
+             focus:ring-4 focus:ring-teal-600/15;
     }
 
-    .section-heading h2 {
-        font-size: 20px;
+    /* ---------- Ayah card ---------- */
+    .ayah-card { @apply glass mt-7 grid overflow-hidden rounded-3xl md:grid-cols-[30%_70%]; }
+    .ayah-art { @apply relative flex min-h-[150px] items-center justify-center overflow-hidden p-6 md:min-h-[260px]; }
+    .ayah-content { @apply flex flex-col justify-center p-6 text-start md:p-8; }
+    .ayah-heading {
+      @apply mb-5 inline-flex items-center gap-2.5 self-start rounded-full border border-teal-600/15 bg-teal-600/[0.08]
+             px-4 py-2 text-[15px] font-semibold text-teal-900;
     }
+    .ayah-heading [data-icon] { @apply h-5 w-5 text-teal-700; }
 
-    .section-heading::before,
-    .section-heading::after {
-        width: 25px;
+    /* #ayahMessage — the script sets these class names directly */
+    .ayah-placeholder { @apply text-[15px] leading-relaxed text-slate-500; }
+    .ayah-loading, .ayah-error { @apply py-3 leading-relaxed; }
+    .ayah-error { @apply text-rose-700; }
+    .ayah-reference { @apply mt-4 hidden self-start rounded-full border border-teal-600/15 bg-white/70 px-4 py-2 text-[13px] text-slate-700; }
+
+    .ayah-result {
+      @apply cursor-pointer rounded-2xl border border-transparent p-4 text-start outline-none transition
+             hover:border-teal-600/20 hover:bg-white/70 focus-visible:ring-2 focus-visible:ring-teal-600/40;
     }
-
-    .journal-card {
-        padding: 20px 15px;
+    .ayah-result + .ayah-result { @apply mt-2 border-t-slate-900/[0.07]; }
+    .ayah-result-reference {
+      @apply mb-3 inline-block rounded-full border border-teal-600/15 bg-teal-600/[0.08] px-3 py-1 text-xs font-semibold text-teal-800;
     }
+    .ayah-result-arabic { @apply my-2 text-right text-[27px] leading-[2.1] text-slate-900; font-family: 'Noto Naskh Arabic', serif; direction: rtl; }
+    .ayah-result-translation { @apply text-left text-[15px] leading-relaxed text-slate-600; direction: ltr; }
+    .ayah-click-hint { @apply mt-3 text-center text-xs font-semibold text-teal-700; }
 
-    .journal-title h3 {
-        font-size: 19px;
+    /* ---------- Journal ---------- */
+    .journal-card { @apply glass mt-6 rounded-3xl p-5 md:p-7; }
+    .journal-heading { @apply mb-2 flex items-center justify-between; }
+    .journal-title { @apply flex items-center gap-3; }
+    .journal-title [data-icon] { @apply flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600/10 p-2.5 text-teal-700; }
+    .journal-title h3 { @apply text-lg font-bold tracking-tight text-slate-900 md:text-xl; }
+    .journal-description { @apply mb-4 text-sm leading-relaxed text-slate-500; }
+    .journal-input {
+      @apply block min-h-[115px] w-full resize-y rounded-2xl border border-white/90 bg-white/70 p-4 text-[15px] text-slate-900 outline-none
+             placeholder:text-slate-400 focus:border-teal-600/40 focus:ring-4 focus:ring-teal-600/10 disabled:cursor-not-allowed disabled:opacity-80;
     }
-
-    .privacy-note {
-        font-size: 11px;
+    .journal-footer { @apply mt-4 flex justify-end; }
+    .save-btn {
+      @apply flex cursor-not-allowed items-center gap-2 rounded-xl border-0 bg-teal-700 px-5 py-3 text-sm font-semibold text-white opacity-70;
     }
-}
+    .save-btn [data-icon] { @apply h-4 w-4; }
 
-@media(max-width: 400px) {
-    .nav-divider,
-    .page-label {
-        display: none;
+    .privacy-note { @apply mx-auto mb-2 mt-7 flex items-center justify-center gap-2.5 text-center text-[13px] text-slate-500; }
+    .privacy-note [data-icon] { @apply h-4 w-4 shrink-0 text-teal-600; }
+
+    /* ---------- Ayah detail popup ---------- */
+    .ayah-detail-modal { @apply fixed inset-0 z-[3000] hidden items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm; }
+    .ayah-detail-modal.show { @apply flex; }
+    .ayah-detail-box {
+      @apply relative max-h-[88vh] w-full max-w-[760px] overflow-auto rounded-3xl border border-white bg-white p-6 md:p-8
+             shadow-[0_30px_80px_rgba(15,23,42,0.25)];
     }
-
-    .brand-name {
-        font-size: 14px;
+    .ayah-detail-close {
+      @apply sticky top-0 z-[1] float-right flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border-0 bg-slate-900/[0.06]
+             text-2xl leading-none text-slate-700 transition hover:bg-slate-900/10;
     }
-
-    .feelings-grid {
-        gap: 9px;
+    .ayah-detail-box h2 { @apply mb-4 me-12 mt-1 text-xl font-bold tracking-tight text-slate-900 md:text-2xl; }
+    .ayah-detail-reference {
+      @apply mb-4 inline-block rounded-full border border-teal-600/15 bg-teal-600/[0.08] px-3 py-1 text-xs font-semibold text-teal-800;
     }
+    .ayah-detail-section { @apply border-t border-slate-900/[0.07] py-4; }
+    .ayah-detail-section h3 { @apply mb-2 text-[15px] font-bold text-teal-800; }
+    .ayah-detail-section p { @apply whitespace-pre-wrap text-[15px] leading-relaxed text-slate-700; }
+  }
+</style>
 
-    .feeling-card span:last-child {
-        font-size: 15px;
+<style>
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+  /* Feeling icon colours (by data-feeling, not affected by the script) */
+  .feeling-card[data-feeling="anxiety"] .feeling-icon      { background: rgba(13,148,136,0.10); color: #0f766e; }
+  .feeling-card[data-feeling="sadness"] .feeling-icon      { background: rgba(2,132,199,0.10);  color: #0369a1; }
+  .feeling-card[data-feeling="hopelessness"] .feeling-icon { background: rgba(99,102,241,0.10); color: #4f46e5; }
+  .feeling-card[data-feeling="fear"] .feeling-icon         { background: rgba(8,145,178,0.10);  color: #0e7490; }
+  .feeling-card[data-feeling="loneliness"] .feeling-icon   { background: rgba(71,85,105,0.10);  color: #334155; }
+  .feeling-card[data-feeling="gratitude"] .feeling-icon    { background: rgba(5,150,105,0.10);  color: #047857; }
+  .feeling-card.active .feeling-icon { background: #0f766e !important; color: #fff !important; border-color: #0f766e; }
+
+  /* Translation heading inside each Ayah (the script adds class "section-heading") */
+  .ayah-result h4.section-heading {
+    display: block; text-align: start; color: #0f766e;
+    font-weight: 700; font-size: 13px !important; letter-spacing: .02em;
+  }
+  .ayah-result h4.section-heading::before,
+  .ayah-result h4.section-heading::after { display: none; }
+
+  /* Ayah art panel */
+  .ayah-art { background: linear-gradient(150deg, #0f172a 0%, #12343f 50%, #0f766e 100%); }
+  .ayah-art::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(240px 200px at 85% 10%, rgba(45,212,191,0.35), transparent 70%),
+      radial-gradient(260px 220px at 0% 100%, rgba(14,116,144,0.45), transparent 70%);
+  }
+
+  /* Top bar glass on a background layer */
+  .topbar { isolation: isolate; }
+  .topbar::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+    -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+
+  /* ===== SIDEBAR (same as dashboard) ===== */
+  html .sidebar {
+    position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+    display: flex; flex-direction: column;
+    width: 280px; max-width: calc(100vw - 48px);
+    overflow-y: auto; overflow-x: visible;
+    background: rgba(255,255,255,0.9);
+    transform: translateX(calc(-100% - 24px));
+    transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+  }
+  html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+  html.sidebar-open .sidebar { transform: none; }
+  .sidebar-overlay {
+    position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  }
+  html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+  html.sidebar-open body { overflow: hidden; }
+
+  @media (min-width: 1024px) {
+    html .sidebar, html[dir="rtl"] .sidebar {
+      position: sticky; top: 20px; bottom: auto; z-index: 30;
+      height: calc(100vh - 40px); width: 248px; max-width: none;
+      transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+      cursor: pointer;
     }
-}
-/* AYAH DETAIL MODAL */
-.ayah-detail-modal{position:fixed;inset:0;background:rgba(38,27,18,.58);display:none;align-items:center;justify-content:center;z-index:3000;padding:18px}
-.ayah-detail-modal.show{display:flex}
-.ayah-detail-box{width:min(760px,100%);max-height:88vh;overflow:auto;background:var(--white);border:1px solid var(--border);border-radius:22px;padding:28px;box-shadow:0 22px 70px rgba(0,0,0,.25);position:relative}
-.ayah-detail-close{position:sticky;top:0;float:right;border:0;border-radius:50%;width:38px;height:38px;background:var(--beige);color:var(--brown);font-size:23px;cursor:pointer;z-index:1}
-.ayah-detail-box h2{font-family:'Playfair Display',serif;font-size:25px;margin:5px 45px 18px 0;color:var(--brown)}
-.ayah-detail-reference{color:var(--text-muted);font-size:13px;margin-bottom:18px}
-.ayah-detail-section{padding:16px 0;border-top:1px solid var(--border)}
-.ayah-detail-section h3{font-size:17px;color:var(--green-dark);margin-bottom:8px}
-.ayah-detail-section p{font-size:15px;line-height:1.9;color:var(--brown);white-space:pre-wrap}
-.ayah-result{cursor:pointer;border-radius:14px;padding:12px;transition:background .2s,border .2s;border:1px solid transparent}
-.ayah-result:hover{background:var(--cream-light);border-color:var(--gold-light)}
-.ayah-result:focus{outline:2px solid var(--green);outline-offset:2px}
-html[dir="rtl"] .ayah-detail-box{direction:rtl;text-align:right;font-family:'Noto Naskh Arabic',Tahoma,sans-serif}
-html[dir="rtl"] .ayah-detail-box h2{font-family:'Noto Naskh Arabic',Tahoma,sans-serif;margin:5px 0 18px 45px}
-html[dir="rtl"] .ayah-detail-close{float:left}
+    .sidebar-overlay { display: none; }
+    html.sidebar-collapsed .sidebar { width: 80px; }
+    html.sidebar-collapsed .sidebar .side-label { display: none; }
+    html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+    html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+    html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+    html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+      display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+      transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+      background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+    }
+  }
 
-
-.ayah-click-hint{margin-top:12px;font-size:13px;color:var(--green-dark);font-weight:600;text-align:center;}
-.ayah-result{cursor:pointer;border-radius:14px;padding:12px;transition:background .2s,border .2s;border:1px solid transparent;}
-.ayah-result:hover{background:var(--cream-light);border-color:var(--gold-light);}
-.ayah-result:focus{outline:2px solid var(--green);outline-offset:2px;}
-html[dir="rtl"] .ayah-detail-box{direction:rtl;text-align:right;font-family:"Noto Naskh Arabic",Tahoma,sans-serif;}
-html[dir="rtl"] .ayah-detail-box h2{font-family:"Noto Naskh Arabic",Tahoma,sans-serif;}
-html[dir="rtl"] .ayah-detail-close{float:left;}
+  /* ===== URDU / RTL ===== */
+  html[dir="rtl"] body { direction: rtl; }
+  html[lang="ur"] body,
+  html[lang="ur"] button,
+  html[lang="ur"] select,
+  html[lang="ur"] textarea { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+  html[lang="ur"] *,
+  html[lang="ur"] *::before,
+  html[lang="ur"] *::after { letter-spacing: 0 !important; }
+  html[lang="ur"] .hero h1,
+  html[lang="ur"] .section-heading h2,
+  html[lang="ur"] .journal-title h3,
+  html[lang="ur"] .ayah-detail-box h2 { line-height: 1.7; }
+  html[lang="ur"] .hero p,
+  html[lang="ur"] .ayah-placeholder,
+  html[lang="ur"] .journal-description,
+  html[lang="ur"] .ayah-detail-section p,
+  html[lang="ur"] .privacy-note { line-height: 2; }
+  html[dir="rtl"] .ayah-content,
+  html[dir="rtl"] .journal-card,
+  html[dir="rtl"] .ayah-detail-box { direction: rtl; text-align: right; }
+  html[dir="rtl"] .ayah-result-translation { direction: rtl; text-align: right; font-size: 17px; line-height: 2; }
+  html[dir="rtl"] .journal-footer { justify-content: flex-start; }
+  html[dir="rtl"] .ayah-detail-close { float: left; }
 </style>
 </head>
 
-<body>
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
+
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+<!-- ===== SIDEBAR ===== -->
+<aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+  <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+    <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+        <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+      </span>
+      <span class="side-label">Empath AI</span>
+    </a>
+    <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+  </div>
+
+  <nav class="flex flex-col gap-1" aria-label="Main">
+    <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-sidebar-label="dashboard">Dashboard</span></a>
+    <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-sidebar-label="letsChat">Let's Chat</span></a>
+    <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-sidebar-label="weeklyAssessment">Weekly Self Assessment</span></a>
+    <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-sidebar-label="wellnessProgress">Wellness Progress</span></a>
+    <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-sidebar-label="wordsOfHope">Words of Hope</span></a>
+    <a class="side-link active" href="/quranic_corner" aria-current="page"><span data-icon="quran"></span><span class="side-label" data-sidebar-label="quranicCorner">Quranic Comfort Corner</span></a>
+  </nav>
+
+  <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+    <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-sidebar-label="logout">Logout</span></a>
+  </div>
+</aside>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ===== MAIN COLUMN ===== -->
+<div class="min-w-0 flex-1">
 
 <!-- =========================
-     HEADER — WELLNESS STYLE
+     HEADER
 ========================= -->
 
-<header class="navbar">
+<header class="navbar topbar sticky top-3 z-40 flex items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
 
-    <div class="nav-left">
+    <div class="nav-left flex min-w-0 items-center gap-3">
 
-        <a href="/dashboard" class="brand-area">
+        <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
 
-            <div class="brand-icon">
-                <svg viewBox="0 0 24 24" width="23" height="23"
-                     fill="none" stroke="white" stroke-width="1.8"
-                     stroke-linecap="round">
-                    <circle cx="12" cy="8" r="4" fill="white"/>
-                    <path d="M7 21v-3a5 5 0 0 1 10 0v3"/>
-                </svg>
+        <a href="/dashboard" class="brand-area flex min-w-0 items-center gap-2.5 lg:hidden">
+
+            <div class="brand-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+                <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
             </div>
 
-            <div class="brand-text">
-                <div class="brand-name">Empath AI</div>
-                <div class="brand-sub" id="brandSub">
+            <div class="brand-text hidden min-w-0 flex-col md:flex">
+                <div class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</div>
+                <div class="brand-sub truncate text-[11px] text-slate-500" id="brandSub">
                     IDP MENTAL HEALTH
                 </div>
             </div>
 
         </a>
 
-        <div class="nav-divider"></div>
+        <div class="nav-divider hidden h-7 w-px bg-slate-900/10 md:block lg:hidden"></div>
 
-        <span class="page-label" id="navPageLabel">
+        <span class="page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" id="navPageLabel">
             Quranic Comfort Corner
         </span>
 
@@ -844,13 +351,13 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
 </header>
 
 
-<main class="main">
+<main class="main mx-auto w-full max-w-[1100px] px-1 pb-8 md:px-2">
 
     <!-- HERO -->
 
     <section class="hero">
 
-        <div class="hero-moon">☾</div>
+        <div class="hero-moon"><span data-icon="quran"></span></div>
 
         <h1 id="pageTitle">Quranic Comfort Corner</h1>
 
@@ -873,117 +380,34 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
 
         <div class="feelings-grid">
 
-            <!-- ANXIETY -->
-
             <button class="feeling-card" data-feeling="anxiety">
-
-                <span class="feeling-icon">
-                    <svg viewBox="0 0 48 48">
-                        <path d="M24 7
-                            C17 7 12 12 12 19
-                            C8 20 7 25 10 29
-                            C9 34 13 37 18 36
-                            C20 40 25 40 27 36
-                            C33 38 38 34 37 29
-                            C41 25 39 20 35 19
-                            C35 12 30 7 24 7Z"/>
-                        <path d="M24 8V37"/>
-                        <path d="M17 17C13 20 15 24 19 25"/>
-                        <path d="M30 16C34 19 32 23 29 25"/>
-                        <path d="M17 30C19 27 22 29 22 32"/>
-                        <path d="M31 30C29 27 26 29 26 32"/>
-                    </svg>
-                </span>
-
+                <span class="feeling-icon"><span data-icon="feelAnxiety"></span></span>
                 <span id="anxietyLabel">Anxiety</span>
-
             </button>
-
-
-            <!-- SADNESS -->
 
             <button class="feeling-card" data-feeling="sadness">
-
-                <span class="feeling-icon">
-                    <svg viewBox="0 0 48 48">
-                        <path d="M24 6C18 15 10 23 10 31a14 14 0 0 0 28 0C38 23 30 15 24 6Z"/>
-                        <path d="M18 32c1 4 4 6 8 6"/>
-                    </svg>
-                </span>
-
+                <span class="feeling-icon"><span data-icon="feelSadness"></span></span>
                 <span id="sadnessLabel">Sadness</span>
-
             </button>
-
-
-            <!-- HOPELESSNESS -->
 
             <button class="feeling-card" data-feeling="hopelessness">
-
-                <span class="feeling-icon">
-                    <svg viewBox="0 0 48 48">
-                        <path d="M12 29a10 10 0 0 1 1-19 12 12 0 0 1 22 4 9 9 0 0 1 1 18H13"/>
-                        <path d="M17 36l-3 6"/>
-                        <path d="M25 36l-3 6"/>
-                        <path d="M33 36l-3 6"/>
-                    </svg>
-                </span>
-
+                <span class="feeling-icon"><span data-icon="feelHopeless"></span></span>
                 <span id="hopelessnessLabel">Hopelessness</span>
-
             </button>
-
-
-            <!-- FEAR -->
 
             <button class="feeling-card" data-feeling="fear">
-
-                <span class="feeling-icon">
-                    <svg viewBox="0 0 48 48">
-                        <path d="M24 5 39 11v11c0 10-6 16-15 21C15 38 9 32 9 22V11L24 5Z"/>
-                        <path d="M24 15v11"/>
-                        <circle cx="24" cy="32" r="1"/>
-                    </svg>
-                </span>
-
+                <span class="feeling-icon"><span data-icon="feelFear"></span></span>
                 <span id="fearLabel">Fear</span>
-
             </button>
-
-
-            <!-- LONELINESS -->
 
             <button class="feeling-card" data-feeling="loneliness">
-
-                <span class="feeling-icon">
-                    <svg viewBox="0 0 48 48">
-                        <circle cx="24" cy="13" r="7"/>
-                        <path d="M10 40v-4a14 14 0 0 1 28 0v4"/>
-                        <path d="M17 39v-4"/>
-                        <path d="M31 39v-4"/>
-                    </svg>
-                </span>
-
+                <span class="feeling-icon"><span data-icon="feelLonely"></span></span>
                 <span id="lonelinessLabel">Loneliness</span>
-
             </button>
 
-
-            <!-- GRATITUDE -->
-
             <button class="feeling-card" data-feeling="gratitude">
-
-                <span class="feeling-icon">
-                    <svg viewBox="0 0 48 48">
-                        <path d="M24 39S7 28 7 17a9 9 0 0 1 17-4 9 9 0 0 1 17 4c0 11-17 22-17 22Z"/>
-                        <path d="M5 37c3-2 5-5 8-5"/>
-                        <path d="M43 37c-3-2-5-5-8-5"/>
-                        <path d="M17 28l7 7 7-7"/>
-                    </svg>
-                </span>
-
+                <span class="feeling-icon"><span data-icon="feelGratitude"></span></span>
                 <span id="gratitudeLabel">Gratitude</span>
-
             </button>
 
         </div>
@@ -1004,60 +428,17 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
 
     <section class="ayah-card">
 
-        <div class="ayah-art">
-
-            <svg viewBox="0 0 260 190" fill="none">
-
-                <path d="M45 165V80Q45 35 130 15Q215 35 215 80V165"
-                      stroke="#d8b98e" stroke-width="2" opacity=".5"/>
-
-                <path d="M47 143L130 168L213 143"
-                      stroke="#9b7048" stroke-width="5"
-                      stroke-linecap="round"/>
-
-                <path d="M130 168V183M103 155L130 183L157 155"
-                      stroke="#9b7048" stroke-width="4"
-                      stroke-linecap="round"/>
-
-                <path d="M57 113Q93 104 130 130Q167 104 203 113V151Q165 142 130 160Q95 142 57 151Z"
-                      fill="#fffaf0" stroke="#b5886a" stroke-width="2"/>
-
-                <path d="M130 130V160M67 121Q96 118 119 136M141 136Q165 118 193 121"
-                      stroke="#b5886a" stroke-width="1.5"/>
-
-                <path d="M225 93V78M215 78H235L231 69H219Z"
-                      stroke="#b5886a" stroke-width="2"/>
-
-                <path d="M216 80L212 103L216 133H234L238 103L234 80Z"
-                      fill="#f6e5c5" stroke="#b5886a" stroke-width="2"/>
-
-                <path d="M225 87V124M218 103H232"
-                      stroke="#c99a58" stroke-width="1.5"/>
-
-                <path d="M221 69H229"
-                      stroke="#b5886a" stroke-width="2"/>
-
-                <path d="M28 157V120M28 139Q9 134 12 119Q29 121 28 139ZM28 129Q43 112 48 121Q45 136 28 129Z"
-                      stroke="#607b4d" stroke-width="2"/>
-
-            </svg>
-
+        <div class="ayah-art" aria-hidden="true">
+            <span class="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-white/20 bg-white/10 text-teal-200 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] md:h-24 md:w-24">
+                <span class="block h-10 w-10 md:h-12 md:w-12" data-icon="book"></span>
+            </span>
         </div>
 
         <div class="ayah-content">
 
             <div class="ayah-heading">
-
-                <svg viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.7">
-
-                    <path d="M3 5c4-2 7-1 9 1v15c-2-2-5-3-9-1z"/>
-                    <path d="M21 5c-4-2-7-1-9 1v15c2-2 5-3 9-1z"/>
-
-                </svg>
-
+                <span data-icon="book"></span>
                 <span id="ayahTitle">A Moment of Reflection</span>
-
             </div>
 
             <div class="ayah-placeholder" id="ayahMessage">
@@ -1077,23 +458,10 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
     <section class="journal-card">
 
         <div class="journal-heading">
-
             <div class="journal-title">
-
-                <svg viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.7"
-                     stroke-linecap="round" stroke-linejoin="round">
-
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4z"/>
-                    <path d="M14 5l5 5"/>
-
-                </svg>
-
+                <span data-icon="pen"></span>
                 <h3 id="journalTitle">Your Personal Reflection</h3>
-
             </div>
-
         </div>
 
         <p class="journal-description" id="journalDescription">
@@ -1108,22 +476,10 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
             disabled></textarea>
 
         <div class="journal-footer">
-
             <button class="save-btn" disabled>
-
-                <svg viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2">
-
-                    <rect x="4" y="10" width="16" height="11" rx="2"/>
-                    <path d="M8 10V7a4 4 0 1 1 8 0v3"/>
-                    <path d="M12 14v3"/>
-
-                </svg>
-
+                <span data-icon="lock"></span>
                 <span id="saveLabel">Save Reflection</span>
-
             </button>
-
         </div>
 
     </section>
@@ -1132,23 +488,17 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
     <!-- PRIVACY NOTE -->
 
     <div class="privacy-note">
-
-        <svg viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.7">
-
-            <rect x="5" y="10" width="14" height="11" rx="2"/>
-            <path d="M8 10V7a4 4 0 1 1 8 0v3"/>
-
-        </svg>
-
+        <span data-icon="lock"></span>
         <span id="privacyNote">
             Your spiritual journey is personal.
             Your reflections should remain private.
         </span>
-
     </div>
 
 </main>
+
+</div>
+</div>
 
 
 <!-- Ayah reflection popup -->
@@ -1160,8 +510,6 @@ html[dir="rtl"] .ayah-detail-close{float:left;}
     <div id="ayahDetailSections"></div>
   </div>
 </div>
-
-
 
 
 <script>
@@ -1404,6 +752,51 @@ document.querySelectorAll(".feeling-card").forEach(card => {
 document.getElementById("ayahCount").addEventListener("change", () => {
     if (selectedFeeling) loadQuranicGuidance(selectedFeeling);
 });
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", logout: "لاگ آؤٹ" }
+  };
+
+  const t = SIDEBAR_TEXT[root.lang === "ur" ? "ur" : "en"];
+  document.querySelectorAll("[data-sidebar-label]").forEach(function (el) {
+    const key = el.getAttribute("data-sidebar-label");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    const collapsed = root.classList.toggle("sidebar-collapsed");
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e2) {}
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
 </script>
 
 </body>
