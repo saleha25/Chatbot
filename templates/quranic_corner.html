@@ -537,6 +537,7 @@ const translations = {
         privacy: "Your spiritual journey is personal. Your reflections should remain private.",
         selected: "You selected ", count: "Show Ayat:", loading: "Loading Quranic guidance...",
         translation: "Translation", clickHint: "Click an Ayah to read its explanation and reflection.", tafseer: "Tafseer", story: "Quranic context / story", lesson: "A lesson from the Quran", heartMessage: "A message for your heart", reflectionQuestion: "A moment to reflect", unavailable: "This information is not available yet.", noVerses: "No Ayat are available in this category yet.",
+        tafseerSoon: "A verse-specific explanation for this Ayah is being prepared and checked. For now, please read the translation and the reflection below.",
         error: "Unable to load Quranic guidance. Please try again.", retry: "Please try again."
     },
     ur: {
@@ -553,6 +554,7 @@ const translations = {
         privacy: "آپ کا روحانی سفر ذاتی ہے۔ آپ کے خیالات نجی رہنے چاہئیں۔",
         selected: "آپ نے منتخب کیا: ", count: "آیات کی تعداد:", loading: "قرآنی رہنمائی لوڈ ہو رہی ہے...",
         translation: "ترجمہ", clickHint: "تفسیر اور غور و فکر پڑھنے کے لیے آیت پر کلک کریں۔", tafseer: "تفسیر", story: "قرآنی پس منظر / واقعہ", lesson: "قرآن سے ایک سبق", heartMessage: "آپ کے دل کے لیے ایک پیغام", reflectionQuestion: "غور و فکر کا ایک لمحہ", unavailable: "یہ معلومات فی الحال دستیاب نہیں ہیں۔", noVerses: "اس کیٹیگری میں ابھی آیات دستیاب نہیں ہیں۔",
+        tafseerSoon: "اس آیت کی الگ تفسیر تیار اور جانچی جا رہی ہے۔ فی الحال اوپر دیا گیا ترجمہ اور نیچے دیا گیا غور و فکر پڑھیں۔",
         error: "قرآنی رہنمائی حاصل نہیں ہو سکی۔ دوبارہ کوشش کریں۔", retry: "براہ کرم دوبارہ کوشش کریں۔"
     }
 };
@@ -615,9 +617,13 @@ console.log("QURANIC VERSE DATA:", verse);
     [t.reflectionQuestion || "A Moment to Reflect", verse.reflection_question_en]
 ];
     let hasContent = false;
-    details.forEach(([heading, value]) => {
+    details.forEach(([heading, value], index) => {
         if (typeof value === "string" && value.trim()) {
             addDetailSection(sections, heading, value);
+            hasContent = true;
+        } else if (index === 0 && verse.tafseer_pending) {
+            // Tafseer for this Ayah is still being written: say so instead of hiding it
+            addDetailSection(sections, heading, t.tafseerSoon);
             hasContent = true;
         }
     });
