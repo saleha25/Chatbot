@@ -39,9 +39,125 @@ from .core import (
 
 
 
+# Wellness page shows only the most recent points; the history page shows everything.
+WELLNESS_LATEST_POINTS = 7       # last 7 entries in each chart (sleep, mood, energy)
+WELLNESS_LATEST_ASSESSMENTS = 5  # last 5 weekly check-ins
+
+
 @app.route("/wellness")
 @login_required
 def wellness():
+    return _render_wellness(show_all=False)
+
+
+MOOD_LEVEL = {"very_low": 1, "very low": 1, "low": 2, "anxious": 2, "okay": 3, "good": 4, "better": 4}
+ENERGY_LEVEL = {"very_low": 1, "very low": 1, "low": 2, "medium": 3, "high": 4}
+
+
+@app.route("/wellness/history")
+@login_required
+def wellness_history():
+    """Full history as a day-by-day timeline (separate design from the Wellness page)."""
+    db = get_db()
+    user_id = session.get("user_id")
+
+    wellbeing_rows = db.execute(
+        "SELECT * FROM wellbeing_logs WHERE user_id = ? ORDER BY log_date DESC, id DESC",
+        (user_id,),
+    ).fetchall()
+    assessment_rows = db.execute(
+        "SELECT * FROM assessments WHERE user_id = ? ORDER BY assessment_date DESC",
+        (user_id,),
+    ).fetchall()
+
+    def to10(value, max_score):
+        return round((float(value) / max_score) * 10, 1) if value is not None else 0
+
+    entries = []  # (sort_key, date, entry)
+    for r in wellbeing_rows:
+        if r["sleep_hours"] is None and not r["mood"] and not r["energy"]:
+            continue
+        raw = str(r["log_date"] or "")
+        mood = str(r["mood"]).lower() if r["mood"] else ""
+        energy = str(r["energy"]).lower() if r["energy"] else ""
+        has = []
+        if r["sleep_hours"] is not None:
+            has.append("sleep")
+        if mood:
+            has.append("mood")
+        if energy:
+            has.append("energy")
+        entries.append((raw, raw[:10], {
+            "type": "chat",
+            "time": raw[11:16],
+            "sleep": f'{float(r["sleep_hours"]):g}' if r["sleep_hours"] is not None else "",
+            "mood": mood.replace("_", " ").title(),
+            "mood_level": MOOD_LEVEL.get(mood, 2),
+            "energy": energy.replace("_", " ").title(),
+            "energy_level": ENERGY_LEVEL.get(energy, 2),
+            "has": has,
+        }))
+
+    for r in assessment_rows:
+        raw = str(r["assessment_date"] or "")
+        entries.append((raw, raw[:10], {
+            "type": "assessment",
+            "phq10": to10(r["phq9_total"], 27),
+            "gad10": to10(r["gad7_total"], 21),
+            "who10": to10(r["who5_total"], 25),
+            "severity": r["severity"] or "—",
+            "has": ["assessment"],
+        }))
+
+    entries.sort(key=lambda e: e[0], reverse=True)
+
+    # Group: month -> day -> entries (newest first)
+    timeline = []
+    for _, day_str, entry in entries:
+        try:
+            d = datetime.strptime(day_str, "%Y-%m-%d")
+        except ValueError:
+            continue
+        month_key = d.strftime("%Y-%m")
+        if not timeline or timeline[-1]["key"] != month_key:
+            timeline.append({"key": month_key, "label": d.strftime("%B %Y"), "days": []})
+        days = timeline[-1]["days"]
+        if not days or days[-1]["date"] != day_str:
+            days.append({
+                "date": day_str,
+                "day": d.day,
+                "weekday": d.weekday(),
+                "weekday_label": d.strftime("%a"),
+                "entries": [],
+                "has": [],
+            })
+        days[-1]["entries"].append(entry)
+        for h in entry["has"]:
+            if h not in days[-1]["has"]:
+                days[-1]["has"].append(h)
+
+    all_days = [day["date"] for month in timeline for day in month["days"]]
+    stats = {
+        "days_tracked": len(all_days),
+        "chat_entries": sum(1 for e in entries if e[2]["type"] == "chat"),
+        "assessments": sum(1 for e in entries if e[2]["type"] == "assessment"),
+        "first_date": min(all_days) if all_days else "—",
+    }
+
+    return render_template(
+        "wellness_history.html",
+        timeline=timeline,
+        stats=stats,
+        has_data=bool(timeline),
+        user_name_urdu=get_urdu_name_for_account(session.get("account_id")),
+    )
+
+
+def _last(items, n):
+    return list(items[-n:]) if n else list(items)
+
+
+def _render_wellness(show_all=False):
     db = get_db()
     user_id = session.get("user_id")
 
@@ -147,8 +263,44 @@ def wellness():
             "emotion_detected": r["emotion_detected"] or "—"
         })
 
+    # ---- DAY-BY-DAY RECORDS (full history page only), newest first ----
+    wellbeing_records = []
+    if show_all:
+        for r in reversed(wellbeing_rows):
+            if r["sleep_hours"] is None and not r["mood"] and not r["energy"]:
+                continue
+            raw_date = str(r["log_date"] or "")
+            wellbeing_records.append({
+                "date": raw_date[:10],
+                "time": raw_date[11:16],
+                "sleep": (f'{float(r["sleep_hours"]):g}' if r["sleep_hours"] is not None else ""),
+                "mood": (str(r["mood"]).replace("_", " ").title() if r["mood"] else ""),
+                "energy": (str(r["energy"]).replace("_", " ").title() if r["energy"] else ""),
+            })
+
+    # ---- LATEST vs FULL HISTORY ----
+    total_counts = {
+        "sleep": len(sleep_values),
+        "mood": len(mood_values),
+        "energy": len(energy_values),
+        "assessments": len(assessment_labels),
+    }
+    if not show_all:
+        n = WELLNESS_LATEST_POINTS
+        sleep_labels, sleep_values, sleep_colors = _last(sleep_labels, n), _last(sleep_values, n), _last(sleep_colors, n)
+        mood_labels, mood_values = _last(mood_labels, n), _last(mood_values, n)
+        energy_labels, energy_values = _last(energy_labels, n), _last(energy_values, n)
+        a = WELLNESS_LATEST_ASSESSMENTS
+        assessment_labels, phq, gad, who = _last(assessment_labels, a), _last(phq, a), _last(gad, a), _last(who, a)
+        assessment_rows = _last(assessment_rows, a)
+
     return render_template(
         "wellness.html",
+        view_mode="all" if show_all else "latest",
+        wellbeing_records=wellbeing_records,
+        total_counts=total_counts,
+        latest_points=WELLNESS_LATEST_POINTS,
+        latest_assessments=WELLNESS_LATEST_ASSESSMENTS,
         summary={
             "avg_sleep": latest_sleep,
             "latest_mood": latest_mood,

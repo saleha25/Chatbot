@@ -97,6 +97,22 @@
         .empty-box { @apply glass mt-2 flex flex-col items-center rounded-3xl px-6 py-14 text-center; }
         .empty-box p { @apply mx-auto max-w-md text-[15px] leading-relaxed text-slate-500; }
 
+        /* ---------- Latest / Full history switch ---------- */
+        .history-btn {
+          @apply inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-white/80 bg-white/70 px-4 py-2.5
+                 text-sm font-semibold text-teal-800 backdrop-blur
+                 shadow-[0_4px_14px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]
+                 transition hover:-translate-y-0.5 hover:bg-white hover:text-teal-900;
+        }
+        .history-btn.primary {
+          @apply border-transparent bg-teal-700 text-white shadow-[0_6px_16px_rgba(15,118,110,0.25)] hover:bg-teal-800 hover:text-white;
+        }
+        .history-btn [data-icon] { @apply h-4 w-4; }
+        .view-pill {
+          @apply mt-3 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/60 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur;
+        }
+        .view-pill .dot { @apply h-1.5 w-1.5 rounded-full bg-teal-500; }
+
         .helpline-footer {
           @apply glass mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl px-4 py-3 text-center text-[12.5px] text-slate-500;
         }
@@ -253,9 +269,22 @@
     <!-- MAIN -->
     <div class="main mx-auto w-full max-w-7xl px-1 pb-8 pt-6 md:px-2 md:pt-10">
 
-        <div class="page-header anim-up mb-6 md:mb-8">
-            <h1 class="wellness-title text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[36px]" id="pageTitle">{{ session.get('name', 'Your') }}'s Wellness Progress</h1>
-            <p class="wellness-subtitle mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" id="pageSubtitle">Tracking mood, sleep, and energy from your conversations — updated automatically as you chat.</p>
+        <div class="page-header anim-up mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
+            <div class="min-w-0">
+                <h1 class="wellness-title text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[36px]" id="pageTitle">{{ session.get('name', 'Your') }}'s Wellness Progress</h1>
+                <p class="wellness-subtitle mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" id="pageSubtitle">Tracking mood, sleep, and energy from your conversations — updated automatically as you chat.</p>
+                {% if has_data %}
+                <span class="view-pill" id="viewPill"><span class="dot"></span><span id="viewPillText"></span></span>
+                {% endif %}
+            </div>
+
+            {% if has_data %}
+            {% if view_mode == 'all' %}
+            <a href="/wellness" class="history-btn" id="historyBtn">← Back to Latest</a>
+            {% else %}
+            <a href="/wellness/history" class="history-btn primary" id="historyBtn">View Full History →</a>
+            {% endif %}
+            {% endif %}
         </div>
 
         {% if has_data %}
@@ -330,6 +359,42 @@
                 <div class="chart-box"><canvas id="assessmentChart"></canvas></div>
             </div>
         </div>
+
+        {% if view_mode == 'all' %}
+        <!-- DAY-BY-DAY RECORDS (full history only) -->
+        <div class="table-card anim-up-4 mb-5">
+            <div class="chart-header">
+                <h3 class="chart-title" data-i18n="dailyRecords">Daily Records</h3>
+                <p class="chart-subtitle" data-i18n="dailyRecordsSubtitle">Every sleep, mood and energy entry from your chats — newest first</p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="date">Date</th>
+                            <th data-i18n="time">Time</th>
+                            <th data-i18n="sleepHours">Sleep Hours</th>
+                            <th data-i18n="mood">Mood</th>
+                            <th data-i18n="energy">Energy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in wellbeing_records %}
+                        <tr>
+                            <td>{{ rec.date }}</td>
+                            <td>{{ rec.time or '—' }}</td>
+                            <td>{% if rec.sleep %}{{ rec.sleep }} <span class="rec-unit" data-i18n="hrs">hrs</span>{% else %}—{% endif %}</td>
+                            <td class="rec-mood">{{ rec.mood or '—' }}</td>
+                            <td class="rec-energy">{{ rec.energy or '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-slate-500" data-i18n="noDailyRecords">No sleep, mood or energy entries yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- TABLE -->
         <div class="table-card anim-up-4">
@@ -436,7 +501,18 @@ umang:'Umang',
 rozan:'Rozan',
         moodVeryLow:'Very Low', moodLow:'Low', moodOkay:'Okay', moodBetter:'Better',
         energyVeryLow:'Very Low', energyLow:'Low', energyMedium:'Medium', energyHigh:'High',
-        minimal:'Minimal', mild:'Mild', moderate:'Moderate', severe:'Severe'
+        minimal:'Minimal', mild:'Mild', moderate:'Moderate', severe:'Severe',
+        historyPage:'Full Wellness History',
+        historySubtitle:'Every sleep, mood, energy and assessment record since you started — old and new.',
+        viewFullHistory:'View Full History →', backToLatest:'← Back to Latest',
+        latestPill:'Showing your latest {points} entries and {assessments} check-ins',
+        allPill:'Showing all {total} records',
+        latestAssessmentSubtitle:'Your latest weekly self-assessment results',
+        titleLatest:"{name}'s Wellness Progress", titleLatestNoName:'Your Wellness Progress',
+        titleAll:"{name}'s Full Wellness History", titleAllNoName:'Your Full Wellness History',
+        dailyRecords:'Daily Records', dailyRecordsSubtitle:'Every sleep, mood and energy entry from your chats — newest first',
+        time:'Time', mood:'Mood', energy:'Energy', hrs:'hrs',
+        noDailyRecords:'No sleep, mood or energy entries yet.'
     },
     ur: {
         brandSub:'آئی ڈی پی ذہنی صحت', page:'صحت کی پیش رفت', dashboard:'ڈیش بورڈ',
@@ -458,7 +534,18 @@ umang:'اُمنگ',
 rozan:'روزن',
         moodVeryLow:'بہت کم', moodLow:'کم', moodOkay:'ٹھیک', moodBetter:'بہتر',
         energyVeryLow:'بہت کم', energyLow:'کم', energyMedium:'درمیانی', energyHigh:'زیادہ',
-        minimal:'کم سے کم', mild:'ہلکی', moderate:'درمیانی', severe:'شدید'
+        minimal:'کم سے کم', mild:'ہلکی', moderate:'درمیانی', severe:'شدید',
+        historyPage:'صحت کی مکمل تاریخ',
+        historySubtitle:'شروع سے اب تک نیند، موڈ، توانائی اور جائزوں کا سارا ریکارڈ — پرانا اور نیا۔',
+        viewFullHistory:'مکمل تاریخ دیکھیں ←', backToLatest:'حالیہ ڈیٹا پر واپس جائیں →',
+        latestPill:'آپ کی آخری {points} اندراجات اور {assessments} جائزے دکھائے جا رہے ہیں',
+        allPill:'تمام {total} ریکارڈ دکھائے جا رہے ہیں',
+        latestAssessmentSubtitle:'آپ کے حالیہ ہفتہ وار خود جائزوں کے نتائج',
+        titleLatest:'{name} کی صحت کی پیش رفت', titleLatestNoName:'آپ کی صحت کی پیش رفت',
+        titleAll:'{name} کی صحت کی مکمل تاریخ', titleAllNoName:'آپ کی صحت کی مکمل تاریخ',
+        dailyRecords:'روزانہ کا ریکارڈ', dailyRecordsSubtitle:'آپ کی گفتگو سے نیند، موڈ اور توانائی کا ہر اندراج — نئے سے پرانے کی طرف',
+        time:'وقت', mood:'موڈ', energy:'توانائی', hrs:'گھنٹے',
+        noDailyRecords:'ابھی نیند، موڈ یا توانائی کا کوئی اندراج موجود نہیں۔'
     }
 }[wellnessLanguage];
 
@@ -489,14 +576,42 @@ if (assessmentCount && wellnessIsUrdu) {
 const userName = {{ session.get('name', 'Your')|tojson }};
 const userNameUrdu = {{ user_name_urdu|default('', true)|tojson }};
 
-document.getElementById('pageTitle').textContent =
-    wellnessIsUrdu
-        ? `${userNameUrdu || userName} کی صحت کی پیش رفت`
-        : `${userName}'s Wellness Progress`;
+// ---- Latest vs full history ----
+const wellnessView = {{ (view_mode or 'latest')|tojson }};
+const isHistoryView = wellnessView === 'all';
+const totalCounts = {{ (total_counts or {})|tojson }};
+const latestPoints = {{ (latest_points or 7)|tojson }};
+const latestAssessments = {{ (latest_assessments or 5)|tojson }};
+
+const displayName = wellnessIsUrdu ? (userNameUrdu || userName) : userName;
+const hasRealName = displayName && displayName !== 'Your';
+const titleKey = (isHistoryView ? 'titleAll' : 'titleLatest') + (hasRealName ? '' : 'NoName');
+document.getElementById('pageTitle').textContent = W[titleKey].replace('{name}', displayName);
+
 document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (W[key] !== undefined) el.textContent = W[key];
 });
+
+const historyBtn = document.getElementById('historyBtn');
+if (historyBtn) historyBtn.textContent = isHistoryView ? W.backToLatest : W.viewFullHistory;
+
+if (isHistoryView) {
+    document.getElementById('navPageLabel').textContent = W.historyPage;
+    document.getElementById('pageSubtitle').textContent = W.historySubtitle;
+    document.title = 'Wellness History — Empath AI';
+}
+
+const pillText = document.getElementById('viewPillText');
+if (pillText) {
+    const total = (totalCounts.sleep || 0) + (totalCounts.mood || 0) + (totalCounts.energy || 0) + (totalCounts.assessments || 0);
+    pillText.textContent = isHistoryView
+        ? W.allPill.replace('{total}', total)
+        : W.latestPill.replace('{points}', latestPoints).replace('{assessments}', latestAssessments);
+}
+
+const historySub = document.querySelector('[data-i18n="assessmentHistorySubtitle"]');
+if (historySub && !isHistoryView) historySub.textContent = W.latestAssessmentSubtitle;
 
 function translateMood(value) {
     const v = String(value || '').toLowerCase().replace(/_/g,' ');
@@ -532,6 +647,13 @@ if (cards.length >= 4) {
 
 document.querySelectorAll('tbody .sev').forEach(el => {
     el.textContent = translateSeverity(el.textContent);
+});
+
+document.querySelectorAll('tbody .rec-mood').forEach(el => {
+    if (el.textContent.trim() !== '—') el.textContent = translateMood(el.textContent.trim());
+});
+document.querySelectorAll('tbody .rec-energy').forEach(el => {
+    if (el.textContent.trim() !== '—') el.textContent = translateEnergy(el.textContent.trim());
 });
 
 window.WELLNESS_TRANSLATIONS = {

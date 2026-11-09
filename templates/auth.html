@@ -86,8 +86,27 @@
 </style>
 
 <style>
-  /* Signup form starts hidden — switchTab() shows it */
-  #signupForm { display: none; }
+  /* Signup / forgot / reset forms start hidden — switchTab() shows them */
+  #signupForm, #forgotForm, #resetForm { display: none; }
+
+  /* "Forgot password?" link under the password box */
+  .forgot-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .forgot-link {
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: #0f766e;
+  }
+  .forgot-link:hover { text-decoration: underline; color: #115e59; }
+  html[lang="ur"] .forgot-row { justify-content: flex-start; direction: rtl; }
+  html[lang="ur"] .forgot-link { font-size: 14px; }
+
+  /* Password rules checklist on the reset form */
+  .pw-rules { list-style: none; margin: -6px 0 16px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+  .pw-rules li { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 5px; }
+  .pw-rules li::before { content: "○"; font-size: 11px; }
+  .pw-rules li.ok { color: #047857; }
+  .pw-rules li.ok::before { content: "✓"; font-weight: 700; }
+  html[lang="ur"] .pw-rules { direction: rtl; }
+  @media (max-width: 480px) { .pw-rules { grid-template-columns: 1fr; } }
 
   /* Highlighted brand inside translated heading */
   .left-panel h1 em {
@@ -275,6 +294,16 @@
             aria-label="Show or hide password"
           ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
+
+        <!-- FORGOT PASSWORD LINK -->
+        <div class="forgot-row">
+          <button
+            type="button"
+            class="forgot-link"
+            onclick="switchTab('forgot')"
+            data-i18n="forgotLink"
+          >Forgot password?</button>
+        </div>
       </div>
 
       <button
@@ -366,6 +395,7 @@
             required
             minlength="8"
             autocomplete="new-password"
+            oninput="updatePasswordRules('signupPassword', 'signupPwRules')"
           />
 
           <button
@@ -376,6 +406,15 @@
           ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
       </div>
+
+      <!-- Password rules: tick as the user types -->
+      <ul class="pw-rules" id="signupPwRules">
+        <li data-rule="len" data-i18n="ruleLen">8+ characters</li>
+        <li data-rule="upper" data-i18n="ruleUpper">One uppercase letter</li>
+        <li data-rule="lower" data-i18n="ruleLower">One lowercase letter</li>
+        <li data-rule="num" data-i18n="ruleNum">One number</li>
+        <li data-rule="special" data-i18n="ruleSpecial">One special character</li>
+      </ul>
 
       <!-- CONFIRM PASSWORD -->
       <div class="form-group">
@@ -421,6 +460,121 @@
           onclick="switchTab('login')"
           data-i18n="login"
         >Login</button>
+      </div>
+
+    </form>
+
+    <!-- FORGOT PASSWORD: STEP 1 — verify email + name + date of birth -->
+    <form id="forgotForm" onsubmit="handleForgotVerify(event)">
+
+      <div class="form-group">
+        <label for="forgotEmail" data-i18n="emailLabel">Email Address</label>
+        <input
+          type="email"
+          id="forgotEmail"
+          data-i18n-placeholder="emailPlaceholder"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="forgotName" data-i18n="nameLabel">Full Name</label>
+        <input
+          type="text"
+          id="forgotName"
+          data-i18n-placeholder="forgotNamePlaceholder"
+          placeholder="Same name you signed up with"
+          required
+          autocomplete="name"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="forgotDob" data-i18n="dobLabel">Date of Birth</label>
+        <input type="date" id="forgotDob" required />
+      </div>
+
+      <button
+        type="submit"
+        class="submit-btn"
+        id="forgotBtn"
+        data-i18n="verifyButton"
+      >Verify Details →</button>
+
+      <div class="or-divider" data-i18n="or">or</div>
+
+      <div class="switch-text">
+        <span data-i18n="rememberPassword">Remembered your password?</span>
+        <button type="button" onclick="switchTab('login')" data-i18n="login">Login</button>
+      </div>
+
+    </form>
+
+    <!-- FORGOT PASSWORD: STEP 2 — set the new password -->
+    <form id="resetForm" onsubmit="handleResetPassword(event)">
+
+      <div class="form-group">
+        <label for="resetPassword" data-i18n="newPasswordLabel">New Password</label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="resetPassword"
+            data-i18n-placeholder="newPasswordPlaceholder"
+            placeholder="Enter a new password"
+            required
+            autocomplete="new-password"
+            oninput="updatePasswordRules()"
+          />
+          <button
+            type="button"
+            class="password-eye"
+            onclick="togglePassword('resetPassword')"
+            aria-label="Show or hide password"
+          ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+
+      <ul class="pw-rules" id="pwRules">
+        <li data-rule="len" data-i18n="ruleLen">8+ characters</li>
+        <li data-rule="upper" data-i18n="ruleUpper">One uppercase letter</li>
+        <li data-rule="lower" data-i18n="ruleLower">One lowercase letter</li>
+        <li data-rule="num" data-i18n="ruleNum">One number</li>
+        <li data-rule="special" data-i18n="ruleSpecial">One special character</li>
+      </ul>
+
+      <div class="form-group">
+        <label for="resetConfirm" data-i18n="confirmPasswordLabel">Confirm Password</label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="resetConfirm"
+            data-i18n-placeholder="confirmPlaceholder"
+            placeholder="Repeat your password"
+            required
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="password-eye"
+            onclick="togglePassword('resetConfirm')"
+            aria-label="Show or hide password"
+          ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="submit-btn"
+        id="resetBtn"
+        data-i18n="saveNewPassword"
+      >Save New Password →</button>
+
+      <div class="or-divider" data-i18n="or">or</div>
+
+      <div class="switch-text">
+        <button type="button" onclick="switchTab('login')" data-i18n="backToLogin">← Back to Login</button>
       </div>
 
     </form>
@@ -483,7 +637,20 @@ const AUTH_TRANSLATIONS = {
     passwordPlaceholder: "Enter your password",
     namePlaceholder: "Your full name",
     passwordPlaceholderSignup: "At least 8 characters",
-    confirmPlaceholder: "Repeat your password"
+    confirmPlaceholder: "Repeat your password",
+    forgotLink: "Forgot password?",
+    forgotNamePlaceholder: "Same name you signed up with",
+    verifyButton: "Verify Details →",
+    rememberPassword: "Remembered your password?",
+    newPasswordLabel: "New Password",
+    newPasswordPlaceholder: "Enter a new password",
+    saveNewPassword: "Save New Password →",
+    backToLogin: "← Back to Login",
+    ruleLen: "8+ characters",
+    ruleUpper: "One uppercase letter",
+    ruleLower: "One lowercase letter",
+    ruleNum: "One number",
+    ruleSpecial: "One special character"
   },
 
   ur: {
@@ -516,7 +683,20 @@ const AUTH_TRANSLATIONS = {
     passwordPlaceholder: "اپنا پاس ورڈ درج کریں",
     namePlaceholder: "اپنا پورا نام",
     passwordPlaceholderSignup: "کم از کم 8 حروف",
-    confirmPlaceholder: "اپنا پاس ورڈ دوبارہ درج کریں"
+    confirmPlaceholder: "اپنا پاس ورڈ دوبارہ درج کریں",
+    forgotLink: "پاس ورڈ بھول گئے؟",
+    forgotNamePlaceholder: "وہی نام جو سائن اَپ پر لکھا تھا",
+    verifyButton: "تفصیلات کی تصدیق کریں ←",
+    rememberPassword: "پاس ورڈ یاد آگیا؟",
+    newPasswordLabel: "نیا پاس ورڈ",
+    newPasswordPlaceholder: "نیا پاس ورڈ درج کریں",
+    saveNewPassword: "نیا پاس ورڈ محفوظ کریں ←",
+    backToLogin: "لاگ اِن پر واپس جائیں →",
+    ruleLen: "کم از کم 8 حروف",
+    ruleUpper: "ایک بڑا حرف",
+    ruleLower: "ایک چھوٹا حرف",
+    ruleNum: "ایک عدد",
+    ruleSpecial: "ایک خاص علامت"
   }
 };
 
@@ -549,12 +729,16 @@ function applyAuthLanguage() {
 
 document.addEventListener("DOMContentLoaded", applyAuthLanguage);
 
-function switchTab(tab) {
-  const loginForm = document.getElementById('loginForm');
-  const signupForm = document.getElementById('signupForm');
+function switchTab(tab, keepAlerts) {
+  const forms = {
+    login: document.getElementById('loginForm'),
+    signup: document.getElementById('signupForm'),
+    forgot: document.getElementById('forgotForm'),
+    reset: document.getElementById('resetForm')
+  };
   const title = document.getElementById('authTitle');
   const subtitle = document.getElementById('authSubtitle');
-  clearAlerts();
+  if (!keepAlerts) clearAlerts();
 
   const lang = localStorage.getItem(EMPATH_LANGUAGE_KEY) || "en";
   const content = {
@@ -562,27 +746,48 @@ function switchTab(tab) {
       loginTitle: "Hello, welcome back",
       loginSubtitle: "Sign in to your account",
       signupTitle: "Create your account",
-      signupSubtitle: "Join Empath AI today"
+      signupSubtitle: "Join Empath AI today",
+      forgotTitle: "Forgot your password?",
+      forgotSubtitle: "Enter the details you used at sign up so we can confirm it's you",
+      resetTitle: "Set a new password",
+      resetSubtitle: "Your new password will replace the old one"
     },
     ur: {
       loginTitle: "خوش آمدید، دوبارہ",
       loginSubtitle: "اپنے اکاؤنٹ میں لاگ اِن کریں",
       signupTitle: "اپنا اکاؤنٹ بنائیں",
-      signupSubtitle: "آج ہی Empath AI کا حصہ بنیں"
+      signupSubtitle: "آج ہی Empath AI کا حصہ بنیں",
+      forgotTitle: "پاس ورڈ بھول گئے؟",
+      forgotSubtitle: "سائن اَپ والی تفصیلات درج کریں تاکہ ہم تصدیق کر سکیں کہ یہ آپ ہی ہیں",
+      resetTitle: "نیا پاس ورڈ بنائیں",
+      resetSubtitle: "نیا پاس ورڈ پرانے پاس ورڈ کی جگہ لے لے گا"
     }
   };
 
   const t = content[lang] || content.en;
-  if (tab === 'login') {
-    loginForm.style.display = 'block';
-    signupForm.style.display = 'none';
-    title.textContent = t.loginTitle;
-    subtitle.textContent = t.loginSubtitle;
-  } else {
-    loginForm.style.display = 'none';
-    signupForm.style.display = 'block';
-    title.textContent = t.signupTitle;
-    subtitle.textContent = t.signupSubtitle;
+  if (!forms[tab]) tab = 'login';
+  Object.keys(forms).forEach(function(key) {
+    forms[key].style.display = key === tab ? 'block' : 'none';
+  });
+  title.textContent = t[tab + 'Title'];
+  subtitle.textContent = t[tab + 'Subtitle'];
+
+  if (tab === 'forgot') {
+    // Carry over the email if it was already typed on the login form
+    const loginEmail = document.getElementById('loginEmail').value.trim();
+    if (loginEmail && !document.getElementById('forgotEmail').value) {
+      document.getElementById('forgotEmail').value = loginEmail;
+    }
+    document.getElementById('forgotDob').max = new Date().toISOString().split('T')[0];
+  }
+  if (tab === 'signup') {
+    updatePasswordRules('signupPassword', 'signupPwRules');
+  }
+  if (tab === 'reset') {
+    document.getElementById('resetPassword').value = '';
+    document.getElementById('resetConfirm').value = '';
+    updatePasswordRules();
+    document.getElementById('resetPassword').focus();
   }
 }
 
@@ -604,7 +809,18 @@ function authText(key) {
       age: "You must be 18 or older. You are {age} years old.",
       mismatch: "Passwords do not match.",
       shortPassword: "Password must be at least 8 characters.",
-      weakPassword: "Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character."
+      weakPassword: "Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.",
+      fillAll: "Please fill in all fields.",
+      checking: "Checking…",
+      verified: "Details verified. Please choose a new password.",
+      verifyFailed: "These details don't match our records.",
+      saving: "Saving…",
+      passwordUpdated: "Your password has been updated. Please log in with your new password.",
+      resetFailed: "Could not update password. Please try again.",
+      badEmail: "Please enter a valid email address.",
+      noMatch: "These details don't match our records. Please check your email, full name and date of birth. {left} attempt(s) left.",
+      locked: "Too many wrong attempts. Please try again in {minutes} minute(s).",
+      expired: "Your reset session has expired. Please start again."
     },
     ur: {
       creating: "اکاؤنٹ بنایا جا رہا ہے…",
@@ -618,7 +834,18 @@ function authText(key) {
       age: "آپ کی عمر 18 سال یا اس سے زیادہ ہونی چاہیے۔ آپ کی عمر {age} سال ہے۔",
       mismatch: "پاس ورڈ ایک جیسے نہیں ہیں۔",
       shortPassword: "پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے۔",
-      weakPassword: "پاس ورڈ میں کم از کم 8 حروف، ایک بڑا حرف، ایک چھوٹا حرف، ایک عدد اور ایک خاص علامت شامل کریں۔"
+      weakPassword: "پاس ورڈ میں کم از کم 8 حروف، ایک بڑا حرف، ایک چھوٹا حرف، ایک عدد اور ایک خاص علامت شامل کریں۔",
+      fillAll: "براہِ کرم تمام خانے پُر کریں۔",
+      checking: "تصدیق کی جا رہی ہے…",
+      verified: "تفصیلات کی تصدیق ہوگئی۔ اب نیا پاس ورڈ بنائیں۔",
+      verifyFailed: "یہ تفصیلات ہمارے ریکارڈ سے میل نہیں کھاتیں۔",
+      saving: "محفوظ کیا جا رہا ہے…",
+      passwordUpdated: "آپ کا پاس ورڈ تبدیل ہوگیا ہے۔ اب نئے پاس ورڈ سے لاگ اِن کریں۔",
+      resetFailed: "پاس ورڈ تبدیل نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+      badEmail: "براہِ کرم درست ای میل ایڈریس درج کریں۔",
+      noMatch: "یہ تفصیلات ہمارے ریکارڈ سے میل نہیں کھاتیں۔ اپنی ای میل، پورا نام اور تاریخِ پیدائش دوبارہ چیک کریں۔ {left} کوششیں باقی ہیں۔",
+      locked: "بہت زیادہ غلط کوششیں ہو گئیں۔ {minutes} منٹ بعد دوبارہ کوشش کریں۔",
+      expired: "آپ کا وقت ختم ہو گیا ہے۔ براہِ کرم دوبارہ شروع کریں۔"
     }
   };
 
@@ -713,8 +940,114 @@ async function handleLogin(e) {
   finally { btn.disabled = false; btn.textContent = AUTH_TRANSLATIONS[localStorage.getItem(EMPATH_LANGUAGE_KEY) || 'en'].loginButton; }
 }
 
+/* ---------- forgot password ---------- */
+
+// Turn the server's error "code" into a message in the selected language
+function resetErrorText(data, fallbackKey) {
+  data = data || {};
+  const map = {
+    fill_all: 'fillAll', bad_email: 'badEmail', no_match: 'noMatch', locked: 'locked',
+    expired: 'expired', mismatch: 'mismatch', weak: 'weakPassword'
+  };
+  const key = map[data.code];
+  if (key && authText(key)) {
+    return authText(key)
+      .replace('{left}', data.left != null ? data.left : '')
+      .replace('{minutes}', data.minutes != null ? data.minutes : '');
+  }
+  return data.error || authText(fallbackKey);
+}
+const PASSWORD_RULES = {
+  len: function(v) { return v.length >= 8; },
+  upper: function(v) { return /[A-Z]/.test(v); },
+  lower: function(v) { return /[a-z]/.test(v); },
+  num: function(v) { return /\d/.test(v); },
+  special: function(v) { return /[^A-Za-z0-9]/.test(v); }
+};
+
+// Ticks each rule (✓) as the password is typed.
+// Used by the signup form and the reset-password form.
+function updatePasswordRules(inputId, listId) {
+  inputId = inputId || 'resetPassword';
+  listId = listId || 'pwRules';
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const v = input.value;
+  document.querySelectorAll('#' + listId + ' li').forEach(function(li) {
+    li.classList.toggle('ok', PASSWORD_RULES[li.dataset.rule](v));
+  });
+}
+
+async function handleForgotVerify(e) {
+  e.preventDefault(); clearAlerts();
+  const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const name  = document.getElementById('forgotName').value.trim();
+  const dob   = document.getElementById('forgotDob').value;
+
+  if (!email || !name || !dob) { showError(authText('fillAll')); return; }
+
+  const btn = document.getElementById('forgotBtn');
+  btn.disabled = true; btn.textContent = authText('checking');
+
+  try {
+    const res = await fetch('/forgot-password/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name, dob })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      switchTab('reset');
+      showSuccess(authText('verified'));
+    } else {
+      showError(resetErrorText(data, 'verifyFailed'));
+    }
+  } catch { showError(authText('network')); }
+  finally { btn.disabled = false; btn.textContent = AUTH_TRANSLATIONS[localStorage.getItem(EMPATH_LANGUAGE_KEY) || 'en'].verifyButton; }
+}
+
+async function handleResetPassword(e) {
+  e.preventDefault(); clearAlerts();
+  const password = document.getElementById('resetPassword').value;
+  const confirm  = document.getElementById('resetConfirm').value;
+
+  const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  if (!strongPassword.test(password)) { showError(authText('weakPassword')); return; }
+  if (password !== confirm) { showError(authText('mismatch')); return; }
+
+  const btn = document.getElementById('resetBtn');
+  btn.disabled = true; btn.textContent = authText('saving');
+
+  try {
+    const res = await fetch('/forgot-password/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password, confirm })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      // Back to login with the email filled in, ready for the new password
+      const email = document.getElementById('forgotEmail').value.trim();
+      document.getElementById('forgotForm').reset();
+      document.getElementById('resetForm').reset();
+      switchTab('login');
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginPassword').focus();
+      showSuccess(authText('passwordUpdated'));
+    } else {
+      showError(resetErrorText(data, 'resetFailed'));
+      if (data.code === 'expired') {
+        setTimeout(function() { switchTab('forgot', true); }, 1500);
+      }
+    }
+  } catch { showError(authText('network')); }
+  finally { btn.disabled = false; btn.textContent = AUTH_TRANSLATIONS[localStorage.getItem(EMPATH_LANGUAGE_KEY) || 'en'].saveNewPassword; }
+}
+
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('tab') === 'signup') switchTab('signup');
+if (urlParams.get('tab') === 'forgot') switchTab('forgot');
 
 function togglePassword(id) {
     const input = document.getElementById(id);

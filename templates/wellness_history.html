@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+    <title>Wellness History — Empath AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+    </script>
+
+    <!-- ===== ICONS (separate file) ===== -->
+    <script src="/static/icons.js"></script>
+
+    <!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+              urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer components {
+        .glass {
+          @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+                 shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
+        }
+
+        /* ---------- Sidebar ---------- */
+        .side-link {
+          @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+                 hover:bg-white/60 hover:text-slate-900;
+        }
+        .side-link [data-icon] { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+        .side-link:hover [data-icon] { @apply text-teal-700; }
+        .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+        .side-link.active [data-icon] { @apply text-teal-700; }
+
+        .icon-btn {
+          @apply relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/60
+                 text-slate-700 transition hover:bg-white hover:text-teal-700;
+        }
+        .icon-btn [data-icon] { @apply h-5 w-5; }
+
+        /* ---------- Top bar ---------- */
+        .nav-btn-green {
+          @apply inline-flex items-center rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
+        }
+
+        /* ---------- Summary cards ---------- */
+        .summary-card { @apply glass relative flex flex-col rounded-2xl p-5; }
+        .summary-head { @apply mb-4 flex items-center justify-between gap-3; }
+        .mini-label { @apply text-xs font-semibold text-slate-500; }
+        .sum-ic { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/80; }
+        .sum-ic [data-icon] { @apply h-[18px] w-[18px]; }
+        .big-value { @apply mb-1 text-[32px] font-bold leading-none tracking-tight text-slate-900; }
+        .value-text { @apply mb-1 text-[22px] font-bold leading-tight tracking-tight text-slate-900; }
+        .subtext { @apply text-xs text-slate-500; }
+
+        /* ---------- Charts & table ---------- */
+        .chart-card { @apply glass flex flex-col rounded-2xl p-5 md:p-6; }
+        .chart-header { @apply mb-4; }
+        .chart-title { @apply mb-1 text-base font-bold tracking-tight text-slate-900; }
+        .chart-subtitle { @apply text-[13px] leading-relaxed text-slate-500; }
+        .chart-box { @apply relative h-[260px]; }
+
+        .table-card { @apply glass rounded-2xl p-5 pb-2 md:p-6 md:pb-3; }
+        .table-wrap { @apply -mx-1 mt-2 overflow-x-auto; }
+        .table-card table { @apply w-full min-w-[600px] border-collapse; }
+        .table-card thead th {
+          @apply border-b border-slate-900/[0.07] px-3 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500;
+        }
+        .table-card tbody td { @apply border-b border-slate-900/[0.05] px-3 py-3.5 text-[13.5px] text-slate-800; }
+        .table-card tbody tr:last-child td { @apply border-b-0; }
+        .table-card tbody tr:hover td { @apply bg-white/60; }
+
+        .sev { @apply inline-block rounded-full px-2.5 py-1 text-xs font-semibold; }
+        .sev-minimal  { @apply bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15; }
+        .sev-mild     { @apply bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/15; }
+        .sev-moderate { @apply bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-600/15; }
+        .sev-severe   { @apply bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/15; }
+
+        .empty-box { @apply glass mt-2 flex flex-col items-center rounded-3xl px-6 py-14 text-center; }
+        .empty-box p { @apply mx-auto max-w-md text-[15px] leading-relaxed text-slate-500; }
+
+        /* ---------- Latest / Full history switch ---------- */
+        .history-btn {
+          @apply inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-white/80 bg-white/70 px-4 py-2.5
+                 text-sm font-semibold text-teal-800 backdrop-blur
+                 shadow-[0_4px_14px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]
+                 transition hover:-translate-y-0.5 hover:bg-white hover:text-teal-900;
+        }
+        .history-btn.primary {
+          @apply border-transparent bg-teal-700 text-white shadow-[0_6px_16px_rgba(15,118,110,0.25)] hover:bg-teal-800 hover:text-white;
+        }
+        .history-btn [data-icon] { @apply h-4 w-4; }
+        .view-pill {
+          @apply mt-3 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/60 px-3 py-1 text-xs font-medium text-slate-600 backdrop-blur;
+        }
+        .view-pill .dot { @apply h-1.5 w-1.5 rounded-full bg-teal-500; }
+
+        .helpline-footer {
+          @apply glass mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl px-4 py-3 text-center text-[12.5px] text-slate-500;
+        }
+        .helpline-footer strong { @apply whitespace-nowrap font-semibold text-slate-900; }
+      }
+    </style>
+
+    <style>
+      @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      .anim-up   { animation: fadeUp .5s ease both; }
+      .anim-up-2 { animation: fadeUp .5s .06s ease both; }
+      .anim-up-3 { animation: fadeUp .5s .12s ease both; }
+      .anim-up-4 { animation: fadeUp .5s .18s ease both; }
+
+      /* Top bar glass on a background layer */
+      .topbar { isolation: isolate; }
+      .topbar::before {
+        content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+        background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+        -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+
+      /* ===== SIDEBAR (same as dashboard) ===== */
+      html .sidebar {
+        position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+        display: flex; flex-direction: column;
+        width: 280px; max-width: calc(100vw - 48px);
+        overflow-y: auto; overflow-x: visible;
+        background: rgba(255,255,255,0.9);
+        transform: translateX(calc(-100% - 24px));
+        transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+      }
+      html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+      html.sidebar-open .sidebar { transform: none; }
+      .sidebar-overlay {
+        position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+        -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+      html.sidebar-open body { overflow: hidden; }
+
+      @media (min-width: 1024px) {
+        html .sidebar, html[dir="rtl"] .sidebar {
+          position: sticky; top: 20px; bottom: auto; z-index: 30;
+          height: calc(100vh - 40px); width: 248px; max-width: none;
+          transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+          cursor: pointer;
+        }
+        .sidebar-overlay { display: none; }
+        html.sidebar-collapsed .sidebar { width: 80px; }
+        html.sidebar-collapsed .sidebar .side-label { display: none; }
+        html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+        html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+        html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+        html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+          display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+          transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+          background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+          box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+        }
+      }
+
+      /* ===== Charts: equal-height cards ===== */
+      .chart-card .chart-box { flex: 1 1 auto; min-height: 240px; }
+
+      /* ===== URDU / RTL ===== */
+      html[dir="rtl"] body { direction: rtl; }
+      html[lang="ur"] body,
+      html[lang="ur"] button { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+      html[lang="ur"] *,
+      html[lang="ur"] *::before,
+      html[lang="ur"] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+      html[lang="ur"] .wellness-title { line-height: 1.6; }
+      html[lang="ur"] p,
+      html[lang="ur"] .subtext,
+      html[lang="ur"] .chart-subtitle { line-height: 1.9; }
+      html[lang="ur"] .mini-label,
+      html[lang="ur"] .side-link,
+      html[lang="ur"] .helpline-footer { line-height: 1.8; }
+      html[dir="rtl"] .table-card thead th,
+      html[dir="rtl"] .table-card tbody td { text-align: right; }
+      /* keep dates / numbers like "7 Nov 2026" in the right order inside RTL */
+      html[dir="rtl"] .table-card tbody td { unicode-bidi: plaintext; }
+    </style>
+    <style>
+      /* ===== HISTORY PAGE ===== */
+      .history-btn {
+        display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; flex-shrink: 0;
+        border-radius: 12px; border: 1px solid rgba(255,255,255,.8); background: rgba(255,255,255,.7);
+        padding: 10px 16px; font-size: 14px; font-weight: 600; color: #115e59;
+        box-shadow: 0 4px 14px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.9);
+        transition: transform .15s, background .15s;
+      }
+      .history-btn:hover { transform: translateY(-2px); background: #fff; }
+
+      .stats-strip { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+      .stat {
+        display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px;
+        border: 1px solid rgba(255,255,255,.7); background: rgba(255,255,255,.45);
+        backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: 0 8px 32px rgba(15,23,42,.07), inset 0 1px 0 rgba(255,255,255,.8);
+      }
+      .stat-ic { display: flex; height: 38px; width: 38px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid rgba(255,255,255,.8); }
+      .stat-ic [data-icon] { height: 18px; width: 18px; }
+      .stat-val { font-size: 22px; font-weight: 700; line-height: 1.1; color: #0f172a; letter-spacing: -.02em; }
+      .stat-val.stat-date { font-size: 16px; white-space: nowrap; }
+      @media (max-width: 420px) { .stat-val.stat-date { font-size: 14px; } .stat { padding: 12px; gap: 10px; } }
+      .stat-lbl { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+      .filter-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .filter-chip {
+        border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+        color: #475569; background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.85);
+        transition: background .15s, color .15s;
+      }
+      .filter-chip:hover { background: #fff; color: #0f172a; }
+      .filter-chip.active { background: #0f766e; color: #fff; border-color: transparent; box-shadow: 0 6px 16px rgba(15,118,110,.25); }
+
+      .month-block { margin-bottom: 28px; }
+      .month-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: #0f766e; margin: 0 0 12px 4px; }
+      .month-line { position: relative; padding-inline-start: 0; }
+
+      .day-row { display: grid; grid-template-columns: 64px 1fr; gap: 14px; position: relative; padding-bottom: 14px; }
+      .day-row::before {
+        content: ''; position: absolute; top: 56px; bottom: 0; inset-inline-start: 31px; width: 2px;
+        background: linear-gradient(rgba(15,118,110,.25), rgba(15,118,110,.05));
+      }
+      .month-line .day-row:last-child::before { display: none; }
+      .day-date {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        height: 56px; width: 64px; border-radius: 16px; background: #fff; color: #0f172a;
+        border: 1px solid rgba(255,255,255,.9); box-shadow: 0 4px 14px rgba(15,23,42,.06);
+      }
+      .day-num { font-size: 20px; font-weight: 800; line-height: 1; }
+      .day-wd { font-size: 11px; font-weight: 600; color: #64748b; margin-top: 3px; }
+      .day-cards { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+      .entry { border-radius: 16px; padding: 14px 16px; }
+      .entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+      .entry-type { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #64748b; }
+      .entry-type [data-icon] { color: #0f766e; }
+      .entry-time { font-size: 12px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; padding: 7px 12px; font-size: 13px; color: #334155; background: rgba(255,255,255,.75); border: 1px solid rgba(15,23,42,.05); }
+      .chip b { font-weight: 700; color: #0f172a; }
+      .chip-k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+      .chip-sleep { background: #f0f9ff; }
+      .chip.lvl-1 { background: #fef2f2; } .chip.lvl-1 b { color: #b91c1c; }
+      .chip.lvl-2 { background: #fff7ed; } .chip.lvl-2 b { color: #c2410c; }
+      .chip.lvl-3 { background: #f0f9ff; } .chip.lvl-3 b { color: #0369a1; }
+      .chip.lvl-4 { background: #f0fdf4; } .chip.lvl-4 b { color: #15803d; }
+
+      .score-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+      .score { display: flex; flex-direction: column; gap: 6px; }
+      .score-k { font-size: 12px; color: #64748b; }
+      .score b { font-size: 14px; color: #0f172a; }
+      .bar { height: 6px; border-radius: 99px; background: rgba(15,23,42,.07); overflow: hidden; }
+      .bar i { display: block; height: 100%; border-radius: 99px; }
+
+      .sev { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+      .sev-minimal { background: #ecfdf5; color: #047857; }
+      .sev-mild { background: #fffbeb; color: #b45309; }
+      .sev-moderate { background: #fff7ed; color: #c2410c; }
+      .sev-severe { background: #fff1f2; color: #be123c; }
+
+      .empty-filter { border-radius: 16px; padding: 28px; text-align: center; color: #64748b; font-size: 14px; }
+      .is-hidden { display: none !important; }
+
+      @media (max-width: 900px) { .stats-strip { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+      @media (max-width: 560px) {
+        .day-row { grid-template-columns: 52px 1fr; gap: 10px; }
+        .day-date { width: 52px; height: 52px; }
+        .day-row::before { inset-inline-start: 25px; top: 52px; }
+        .score-grid { grid-template-columns: 1fr; }
+      }
+
+      html[lang="ur"] .month-title, html[lang="ur"] .chip-k { letter-spacing: 0; }
+      html[lang="ur"] .stat-lbl, html[lang="ur"] .entry-type, html[lang="ur"] .score-k { line-height: 1.8; }
+    </style>
+
+</head>
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
+
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="page flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+      <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+        <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+            <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+          </span>
+          <span class="side-label">Empath AI</span>
+        </a>
+        <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+      </div>
+
+      <nav class="flex flex-col gap-1" aria-label="Main">
+        <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-i18n-extra="dashboard">Dashboard</span></a>
+        <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-i18n-extra="letsChat">Let's Chat</span></a>
+        <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-i18n-extra="weeklyAssessment">Weekly Self Assessment</span></a>
+        <a class="side-link active" href="/wellness" aria-current="page"><span data-icon="wellness"></span><span class="side-label" data-i18n-extra="wellnessProgress">Wellness Progress</span></a>
+        <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-i18n-extra="wordsOfHope">Words of Hope</span></a>
+        <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-i18n-extra="quranicCorner">Quranic Comfort Corner</span></a>
+      </nav>
+
+      <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+        <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-i18n-extra="logout">Logout</span></a>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="min-w-0 flex-1">
+
+    <!-- NAVBAR -->
+    <nav class="topbar sticky top-3 z-40 flex items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
+        <div class="nav-left flex min-w-0 items-center gap-3">
+            <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+            <a class="idp-badge flex min-w-0 items-center gap-2.5 lg:hidden" href="/dashboard">
+                <div class="idp-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+                    <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+                </div>
+                <div class="brand-text hidden min-w-0 flex-col min-[400px]:flex">
+                    <span class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</span>
+                    <span class="brand-sub truncate text-[11px] text-slate-500" id="brandSub">IDP Mental Health</span>
+                </div>
+            </a>
+            <div class="nav-divider hidden h-7 w-px bg-slate-900/10 sm:block lg:hidden"></div>
+            <span class="nav-page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" id="navPageLabel">Wellness Progress</span>
+        </div>
+        <div class="nav-right flex shrink-0 items-center gap-2">
+            <a href="/dashboard" class="nav-btn-green" id="dashboardBtn">Dashboard</a>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="main mx-auto w-full max-w-5xl px-1 pb-8 pt-6 md:px-2 md:pt-10">
+
+        <!-- HEADER -->
+        <div class="page-header anim-up mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
+            <div class="min-w-0">
+                <h1 class="wellness-title text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[36px]" id="pageTitle">Your Wellness History</h1>
+                <p class="wellness-subtitle mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" id="pageSubtitle">Every check-in from your chats and every weekly assessment, day by day — newest first.</p>
+            </div>
+            <a href="/wellness" class="history-btn" id="historyBtn">← Back to Wellness Progress</a>
+        </div>
+
+        {% if has_data %}
+
+        <!-- STATS STRIP -->
+        <div class="stats-strip anim-up-2 mb-5">
+            <div class="stat">
+                <span class="stat-ic bg-teal-600/10 text-teal-700"><span data-icon="wellness"></span></span>
+                <div><div class="stat-val">{{ stats.days_tracked }}</div><div class="stat-lbl" data-i18n="daysTracked">days tracked</div></div>
+            </div>
+            <div class="stat">
+                <span class="stat-ic bg-sky-600/10 text-sky-700"><span data-icon="chat"></span></span>
+                <div><div class="stat-val">{{ stats.chat_entries }}</div><div class="stat-lbl" data-i18n="chatEntries">chat check-ins</div></div>
+            </div>
+            <div class="stat">
+                <span class="stat-ic bg-cyan-600/10 text-cyan-700"><span data-icon="assessment"></span></span>
+                <div><div class="stat-val">{{ stats.assessments }}</div><div class="stat-lbl" data-i18n="assessmentsLbl">weekly assessments</div></div>
+            </div>
+            <div class="stat">
+                <span class="stat-ic bg-emerald-600/10 text-emerald-700"><span data-icon="hope"></span></span>
+                <div><div class="stat-val stat-date" dir="ltr">{{ stats.first_date }}</div><div class="stat-lbl" data-i18n="firstRecord">first record</div></div>
+            </div>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="filter-row anim-up-2 mb-5" role="tablist">
+            <button type="button" class="filter-chip active" data-filter="all" data-i18n="fAll">All</button>
+            <button type="button" class="filter-chip" data-filter="sleep" data-i18n="fSleep">Sleep</button>
+            <button type="button" class="filter-chip" data-filter="mood" data-i18n="fMood">Mood</button>
+            <button type="button" class="filter-chip" data-filter="energy" data-i18n="fEnergy">Energy</button>
+            <button type="button" class="filter-chip" data-filter="assessment" data-i18n="fAssessment">Assessments</button>
+        </div>
+
+        <!-- TIMELINE -->
+        <div class="anim-up-3" id="timeline">
+            {% for month in timeline %}
+            <section class="month-block" data-month="{{ month.key }}">
+                <h2 class="month-title" data-month-label="{{ month.key }}">{{ month.label }}</h2>
+                <div class="month-line">
+                    {% for day in month.days %}
+                    <div class="day-row" data-has="{{ day.has|join(' ') }}">
+                        <div class="day-date" dir="ltr">
+                            <span class="day-num">{{ day.day }}</span>
+                            <span class="day-wd" data-weekday="{{ day.weekday }}">{{ day.weekday_label }}</span>
+                        </div>
+                        <div class="day-cards">
+                            {% for e in day.entries %}
+                            {% if e.type == 'chat' %}
+                            <div class="entry glass" data-kind="chat" data-has="{{ e.has|join(' ') }}">
+                                <div class="entry-head">
+                                    <span class="entry-type"><span class="block h-4 w-4" data-icon="chat"></span><span data-i18n="fromChat">From chat</span></span>
+                                    {% if e.time %}<span class="entry-time" dir="ltr">{{ e.time }}</span>{% endif %}
+                                </div>
+                                <div class="chips">
+                                    {% if e.sleep %}<span class="chip chip-sleep" data-has-chip="sleep"><span class="chip-k" data-i18n="fSleep">Sleep</span> <b dir="ltr">{{ e.sleep }}</b> <span data-i18n="hrs">hrs</span></span>{% endif %}
+                                    {% if e.mood %}<span class="chip chip-mood lvl-{{ e.mood_level }}" data-has-chip="mood"><span class="chip-k" data-i18n="fMood">Mood</span> <b class="tr-mood">{{ e.mood }}</b></span>{% endif %}
+                                    {% if e.energy %}<span class="chip chip-energy lvl-{{ e.energy_level }}" data-has-chip="energy"><span class="chip-k" data-i18n="fEnergy">Energy</span> <b class="tr-energy">{{ e.energy }}</b></span>{% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="entry glass entry-assess" data-kind="assessment" data-has="assessment">
+                                <div class="entry-head">
+                                    <span class="entry-type"><span class="block h-4 w-4" data-icon="assessment"></span><span data-i18n="weeklyAssessment">Weekly assessment</span></span>
+                                    <span class="sev sev-{{ e.severity|lower }} tr-sev">{{ e.severity }}</span>
+                                </div>
+                                <div class="score-grid">
+                                    <div class="score"><span class="score-k" data-i18n="phq">PHQ-9 Depression</span><div class="bar"><i style="width: {{ e.phq10 * 10 }}%; background:#6366f1"></i></div><b dir="ltr">{{ e.phq10 }}/10</b></div>
+                                    <div class="score"><span class="score-k" data-i18n="gad">GAD-7 Anxiety</span><div class="bar"><i style="width: {{ e.gad10 * 10 }}%; background:#0ea5e9"></i></div><b dir="ltr">{{ e.gad10 }}/10</b></div>
+                                    <div class="score"><span class="score-k" data-i18n="who">WHO-5 Wellbeing</span><div class="bar"><i style="width: {{ e.who10 * 10 }}%; background:#0f766e"></i></div><b dir="ltr">{{ e.who10 }}/10</b></div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endfor %}
+            <div class="empty-filter glass is-hidden" id="emptyFilter" data-i18n="noFilterResults">No records of this type yet.</div>
+        </div>
+
+        {% else %}
+
+        <div class="empty-box anim-up-2">
+            <span class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80 bg-teal-600/10 text-teal-700">
+                <span class="block h-7 w-7" data-icon="wellness"></span>
+            </span>
+            <p id="emptyMessage">No wellness history yet. Start chatting or complete a self-assessment to build your history.</p>
+        </div>
+
+        {% endif %}
+
+
+    <!-- HELPLINE FOOTER -->
+   <div class="helpline-footer">
+    <span class="block h-4 w-4 shrink-0 text-teal-700" data-icon="phone"></span>
+    <span id="helplineLabel">🆘 Crisis helplines always available:</span>
+    <span>
+        <strong dir="ltr">1122</strong>
+        <span id="emergencyLabel">Emergency</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">0311-7786264</strong>
+        <span id="umangLabel">Umang</span>
+        &nbsp;|&nbsp;
+        <strong dir="ltr">051-2890505</strong>
+        <span id="rozanLabel">Rozan</span>
+    </span>
+</div>
+
+    </div>
+    </div>
+
+</div>
+
+
+<script>
+const savedLang = (
+    localStorage.getItem('empathLanguage') ||
+    localStorage.getItem('language') ||
+    localStorage.getItem('selectedLanguage') ||
+    localStorage.getItem('appLanguage') ||
+    {{ session.get('language', 'en')|tojson }} ||
+    'en'
+).toLowerCase().trim();
+const isUrdu = savedLang === 'ur' || savedLang === 'urdu' || savedLang.startsWith('ur-');
+const lang = isUrdu ? 'ur' : 'en';
+
+const H = {
+    en: {
+        brandSub:'IDP Mental Health', page:'Wellness History', dashboard:'Dashboard',
+        title:"{name}'s Wellness History", titleNoName:'Your Wellness History',
+        subtitle:'Every check-in from your chats and every weekly assessment, day by day — newest first.',
+        back:'← Back to Wellness Progress',
+        daysTracked:'days tracked', chatEntries:'chat check-ins', assessmentsLbl:'weekly assessments', firstRecord:'first record',
+        fAll:'All', fSleep:'Sleep', fMood:'Mood', fEnergy:'Energy', fAssessment:'Assessments',
+        fromChat:'From chat', weeklyAssessment:'Weekly assessment', hrs:'hrs',
+        phq:'PHQ-9 Depression', gad:'GAD-7 Anxiety', who:'WHO-5 Wellbeing',
+        noFilterResults:'No records of this type yet.',
+        emptyMessage:'No wellness history yet. Start chatting or complete a self-assessment to build your history.',
+        helpline:'🆘 Crisis helplines always available:', emergency:'Emergency', umang:'Umang', rozan:'Rozan',
+        mood:{'very low':'Very Low','low':'Low','anxious':'Anxious','okay':'Okay','good':'Good','better':'Better'},
+        energy:{'very low':'Very Low','low':'Low','medium':'Medium','high':'High'},
+        sev:{minimal:'Minimal',mild:'Mild',moderate:'Moderate',severe:'Severe'},
+        months:['January','February','March','April','May','June','July','August','September','October','November','December'],
+        weekdays:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+    },
+    ur: {
+        brandSub:'آئی ڈی پی ذہنی صحت', page:'صحت کی تاریخ', dashboard:'ڈیش بورڈ',
+        title:'{name} کی صحت کی تاریخ', titleNoName:'آپ کی صحت کی تاریخ',
+        subtitle:'آپ کی گفتگو کا ہر اندراج اور ہر ہفتہ وار جائزہ، دن بہ دن — نئے سے پرانے کی طرف۔',
+        back:'صحت کی پیش رفت پر واپس جائیں →',
+        daysTracked:'دن ریکارڈ ہوئے', chatEntries:'گفتگو کے اندراجات', assessmentsLbl:'ہفتہ وار جائزے', firstRecord:'پہلا ریکارڈ',
+        fAll:'سب', fSleep:'نیند', fMood:'موڈ', fEnergy:'توانائی', fAssessment:'جائزے',
+        fromChat:'گفتگو سے', weeklyAssessment:'ہفتہ وار جائزہ', hrs:'گھنٹے',
+        phq:'PHQ-9 ڈپریشن', gad:'GAD-7 بے چینی', who:'WHO-5 ذہنی بہبود',
+        noFilterResults:'اس قسم کا کوئی ریکارڈ ابھی موجود نہیں۔',
+        emptyMessage:'ابھی کوئی تاریخ موجود نہیں۔ گفتگو شروع کریں یا خود جائزہ مکمل کریں۔',
+        helpline:'🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:', emergency:'ایمرجنسی', umang:'اُمنگ', rozan:'روزن',
+        mood:{'very low':'بہت کم','low':'کم','anxious':'پریشان','okay':'ٹھیک','good':'اچھا','better':'بہتر'},
+        energy:{'very low':'بہت کم','low':'کم','medium':'درمیانی','high':'زیادہ'},
+        sev:{minimal:'کم سے کم',mild:'ہلکی',moderate:'درمیانی',severe:'شدید'},
+        months:['جنوری','فروری','مارچ','اپریل','مئی','جون','جولائی','اگست','ستمبر','اکتوبر','نومبر','دسمبر'],
+        weekdays:['پیر','منگل','بدھ','جمعرات','جمعہ','ہفتہ','اتوار']
+    }
+}[lang];
+
+document.documentElement.lang = lang;
+document.documentElement.dir = isUrdu ? 'rtl' : 'ltr';
+
+const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+setText('brandSub', H.brandSub);
+setText('navPageLabel', H.page);
+setText('dashboardBtn', H.dashboard);
+setText('pageSubtitle', H.subtitle);
+setText('historyBtn', H.back);
+setText('helplineLabel', H.helpline);
+setText('emergencyLabel', H.emergency);
+setText('umangLabel', H.umang);
+setText('rozanLabel', H.rozan);
+setText('emptyMessage', H.emptyMessage);
+
+const userName = {{ session.get('name', '')|tojson }};
+const userNameUrdu = {{ user_name_urdu|default('', true)|tojson }};
+const displayName = isUrdu ? (userNameUrdu || userName) : userName;
+setText('pageTitle', displayName && displayName !== 'Your' ? H.title.replace('{name}', displayName) : H.titleNoName);
+
+document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (typeof H[k] === 'string') el.textContent = H[k];
+});
+
+// Month headings ("2026-11" -> "November 2026") and weekdays
+document.querySelectorAll('[data-month-label]').forEach(el => {
+    const [y, m] = el.getAttribute('data-month-label').split('-');
+    el.textContent = `${H.months[parseInt(m, 10) - 1]} ${y}`;
+});
+document.querySelectorAll('[data-weekday]').forEach(el => {
+    el.textContent = H.weekdays[parseInt(el.getAttribute('data-weekday'), 10)] || el.textContent;
+});
+
+const norm = v => String(v || '').trim().toLowerCase().replace(/_/g, ' ');
+document.querySelectorAll('.tr-mood').forEach(el => { el.textContent = H.mood[norm(el.textContent)] || el.textContent; });
+document.querySelectorAll('.tr-energy').forEach(el => { el.textContent = H.energy[norm(el.textContent)] || el.textContent; });
+document.querySelectorAll('.tr-sev').forEach(el => { el.textContent = H.sev[norm(el.textContent)] || el.textContent; });
+
+// ---- Filters ----
+function applyFilter(filter) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === filter));
+    let anyVisible = false;
+
+    document.querySelectorAll('.month-block').forEach(month => {
+        let monthVisible = false;
+        month.querySelectorAll('.day-row').forEach(day => {
+            let dayVisible = false;
+            day.querySelectorAll('.entry').forEach(entry => {
+                const has = (entry.dataset.has || '').split(' ');
+                const show = filter === 'all' || has.includes(filter);
+                entry.classList.toggle('is-hidden', !show);
+                // inside a chat card, only show the chip that matches the filter
+                entry.querySelectorAll('[data-has-chip]').forEach(chip => {
+                    chip.classList.toggle('is-hidden', filter !== 'all' && chip.dataset.hasChip !== filter);
+                });
+                if (show) dayVisible = true;
+            });
+            day.classList.toggle('is-hidden', !dayVisible);
+            if (dayVisible) monthVisible = true;
+        });
+        month.classList.toggle('is-hidden', !monthVisible);
+        if (monthVisible) anyVisible = true;
+    });
+
+    const empty = document.getElementById('emptyFilter');
+    if (empty) empty.classList.toggle('is-hidden', anyVisible);
+}
+
+document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => applyFilter(chip.dataset.filter));
+});
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", logout: "لاگ آؤٹ" }
+  };
+
+  const t = SIDEBAR_TEXT[root.lang === "ur" ? "ur" : "en"];
+  document.querySelectorAll("[data-i18n-extra]").forEach(function (el) {
+    const key = el.getAttribute("data-i18n-extra");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  function setCollapsed(collapsed) {
+    root.classList.toggle("sidebar-collapsed", collapsed);
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e) {}
+    // let the charts resize to the new width
+    setTimeout(function () { window.dispatchEvent(new Event("resize")); }, 280);
+  }
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    setCollapsed(!root.classList.contains("sidebar-collapsed"));
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
+</script>
+
+</body>
+</html>
