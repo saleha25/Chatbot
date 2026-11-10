@@ -517,6 +517,15 @@ def _early_safety_response_if_needed(user_message):
             except Exception as e:
                 print("Words of Hope mood update (crisis) error:", e)
 
+            # ...and of the Wellness page: a crisis message is a very low mood
+            # (plus any sleep / energy the user mentioned in it).
+            try:
+                if session.get("user_id"):
+                    info = save_wellbeing_if_mentioned(session["user_id"], user_message, mood_if_missing="very_low")
+                    print("Wellness detected (crisis):", info)
+            except Exception as e:
+                print("Wellbeing save (crisis) error:", e)
+
             try:
                 response = build_crisis_response(user_message, session.get("name", ""))
             except Exception as e:
@@ -763,6 +772,16 @@ def chat():
             save_chat_message(session["user_id"], "assistant", response)
         return jsonify({"response": response, "type": "crisis", "stage": session.get("stage")})
 
+    # Deep hopelessness ("nothing will ever get better", "I give up") is a warning sign:
+    # reflect it, gently ask about thoughts of suicide, share the helpline once,
+    # and stay in safety mode for the next few messages.
+    if is_hopeless_message(user_message):
+        response = get_hopelessness_check_response(session.get("name", ""), user_message)
+        add_to_history("assistant", response)
+        if session.get("user_id"):
+            save_chat_message(session["user_id"], "assistant", response)
+        return jsonify({"response": response, "type": "crisis", "stage": session.get("stage")})
+
     response = ""
 
     if stage == STAGE_NAME:
@@ -850,7 +869,10 @@ def chat():
         session["stage"] = STAGE_LISTEN
 
         # ── Self-assessment follow-up questions (max 3, at turns 1 / 4 / 8) ──
-        if session.get("sa_followup_needed") and session.get("sa_followup_count", 0) < 3:
+        # (never glued onto a recipe / step-by-step answer)
+        if _is_practical_request(user_message):
+            pass
+        elif session.get("sa_followup_needed") and session.get("sa_followup_count", 0) < 3:
             sa_listen_turns = session.get("sa_listen_turns", 0) + 1
             session["sa_listen_turns"] = sa_listen_turns
             trigger_turns = [1, 4, 8]
@@ -1134,6 +1156,7 @@ from .responses import (  # noqa: E402
     build_local_fallback_response,
     generate_natural_chat_response,
     get_response,
+    _is_practical_request,
 )
 from .safety import (  # noqa: E402
     build_crisis_response,
@@ -1144,6 +1167,8 @@ from .safety import (  # noqa: E402
     get_crisis_followup_response,
     get_crisis_support_message,
     run_safety_checks,
+    get_hopelessness_check_response,
+    is_hopeless_message,
 )
 from .text_utils import (  # noqa: E402
     is_positive_message,

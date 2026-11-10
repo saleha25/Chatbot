@@ -335,15 +335,91 @@ def _detect_words_of_hope_mood(user_message, wellbeing_info=None, emotion=None):
     # Use existing ML emotion as fallback
     return _words_of_hope_mood(emotion)
 
+# Quotes from data/quotes.json that are safe to show when someone is in crisis.
+# Reviewed one by one: they speak of mercy, belonging and rising again,
+# never of death, sin, punishment, tests or "hardship makes you strong".
+CRISIS_SAFE_QUOTE_IDS = [
+    "hope_hadith_001",      # Allah's mercy divided into 100 parts
+    "hope_hadith_002",      # "I am with him when he remembers Me"
+    "homesick_hadith_003",  # "You are the Companion on the journey"
+    "lonely_hadith_001",    # believers are like one body
+    "lonely_hadith_002",    # like a building whose parts support one another
+    "sad_hadith_002",       # the plant bends in the wind and rises again
+    "lonely_001",           # Ubuntu: a person is a person through other people
+    "sad_004",              # Helen Keller: the world is full of the overcoming of suffering
+    "hope_010",             # Iqbal: there are still more skies before you
+]
+CRISIS_CATEGORY = {"en": "You are not alone", "ur": "آپ اکیلے نہیں"}
+CRISIS_UNSAFE_WORDS = [
+    "death", "die", "dying", "dead", "kill", "grave", "sin", "punish", "hell", "fear",
+    "test", "trial", "break", "fight", "sacrifice", "blood", "war", "enemy", "repent",
+]
+
+
+def _crisis_safe_quotes(language):
+    try:
+        with open(os.path.join(DATA_PATH, "quotes.json"), "r", encoding="utf-8") as f:
+            all_quotes = json.load(f)
+        all_quotes = [q for q in all_quotes if isinstance(q, dict)
+                      and q.get("translations", {}).get("en", {}).get("quote")]
+        by_id = {str(q.get("id", "")).strip(): q for q in all_quotes}
+        pool = [by_id[i] for i in CRISIS_SAFE_QUOTE_IDS if i in by_id]
+
+        # Backup: if some of the hand-picked ids are missing from this quotes.json,
+        # take gentle hope / belonging quotes that avoid risky words.
+        if len(pool) < 3:
+            for q in all_quotes:
+                if q in pool or not set(q.get("moods", [])) & {"hope", "lonely", "homesick"}:
+                    continue
+                text = " ".join(
+                    str(q.get("translations", {}).get("en", {}).get(k, "")) for k in ("quote", "title")
+                ).lower()
+                if any(w in text for w in CRISIS_UNSAFE_WORDS):
+                    continue
+                pool.append(q)
+        print(f"WORDS OF HOPE (crisis-safe): {len(pool)} quotes available")
+
+        hadiths = [q for q in pool if str(q.get("type", "")).lower() == "hadith"]
+        others = [q for q in pool if str(q.get("type", "")).lower() != "hadith"]
+        selected = []
+        if hadiths:
+            selected.append(random.choice(hadiths))
+        selected += random.sample(others, min(3 - len(selected), len(others)))
+        if len(selected) < 3:
+            rest = [q for q in hadiths if q not in selected]
+            selected += random.sample(rest, min(3 - len(selected), len(rest)))
+
+        category = CRISIS_CATEGORY[language]
+        output = []
+        for item in selected:
+            tr = item.get("translations", {}).get(language) or item.get("translations", {}).get("en", {})
+            output.append({
+                "id": item.get("id", ""),
+                "quote": tr.get("quote", ""),
+                "person": tr.get("person", ""),
+                "title": tr.get("title") or tr.get("source", ""),
+                "category": category,
+                "type": str(item.get("type", "international")).lower(),
+                "source_url": item.get("source_url", ""),
+                "translation_note": tr.get("translation_note", ""),
+            })
+        return jsonify({"quotes": output, "language": language, "mood": "hope",
+                        "category": category, "status": "ok", "crisis_support": True})
+    except Exception:
+        app.logger.exception("Words of Hope crisis quotes error")
+        return jsonify({"quotes": [], "language": language, "mood": "support", "status": "safety_hold"})
+
+
 @app.route("/api/quotes", methods=["GET"])
 @login_required
 def get_quotes():
     language = str(request.args.get("language") or session.get("language") or "en").strip().lower()
     language = "ur" if language in ("ur", "urdu") else "en"
 
-    # Keep the existing safety flow authoritative.
+    # During a crisis, show only hand-picked gentle quotes (connection, mercy,
+    # "you are not alone"). Nothing about death, sin, testing or "be strong".
     if session.get("crisis_active") or session.get("crisis_level") in ("crisis", "emergency"):
-        return jsonify({"quotes": [], "language": language, "mood": "support", "status": "safety_hold"})
+        return _crisis_safe_quotes(language)
 
     # 1) mood from the current chat session
     # 2) mood saved in the DB from the last chat (the /app page clears the session)

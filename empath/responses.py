@@ -285,9 +285,10 @@ YOUR STYLE:
 10. Do not sound clinical, preachy, or overly polished.
 11. Support first, assessment later.
 12. Never provide self-harm information.
-13. If crisis is present, mention Umang: 0311-7786264.
+13. Do not add helpline names or phone numbers yourself; the app adds them once per chat when needed.
 14. Strict rule: do not introduce sleep, sleeping hours, night rest, or energy unless the user explicitly mentions sleep, tiredness, rest, fatigue, or energy first.
 15. If this is a returning user, you may gently notice patterns over time, but do not sound technical.
+16. If the user says they see or hear things others may not (dead people, voices, someone watching them), do NOT confirm it, call it comforting, assume they are "loved ones", or explain it as "your mental state". Stay calm and non-judgmental, and gently ask whether it happens while awake or in dreams, whether it frightens them, and whether they feel safe right now.
 16. If faith fits naturally, add only one soft line. Keep it brief and natural.
 17. SAFETY NET: the user may write in English, Urdu script or Roman Urdu. If the current message shows ANY sign of suicidal thoughts, a wish to die, or self-harm, in any language or spelling, reply with exactly {SAFETY_CHECK_TOKEN} and nothing else.
 18. Never describe a wish to die as "natural" or "normal".
@@ -733,6 +734,59 @@ def build_dataset_guidance_context(user_message, role="default", emotion="unknow
         parts.append(f"ML emotion signal: {emotion}. Treat this as a hint, not a label to repeat to the user.")
 
     return "\n".join(parts) if parts else "No strong dataset signal; rely on the user's exact words and saved memory."
+# ─────────────────────────────────────────────
+# PRACTICAL REQUESTS (recipe, step by step, how to...)
+# Normal replies are kept short on purpose. When the user asks for practical
+# information, the reply may be longer so it is never cut off half-way.
+# ─────────────────────────────────────────────
+PRACTICAL_REQUEST_RE = re.compile(
+    r"\b(recipe|recipes|step by step|step-by-step|how (do|can|to) (i |you )?(make|cook|bake|prepare|do|write|apply|use|fix)"
+    r"|ingredients|instructions|procedure|method|tips for|list of|explain how)\b"
+    r"|\b(tarkeeb|tarkib|recipe|step by step|kaise (banta|banate|banaun|banayen|banaoon|karun|karte)|kaise bana"
+    r"|bana(ne)? ka tareeqa|tareeqa batao|tarika batao|tareeka|steps batao|ajza)\b"
+    r"|ترکیب|ریسیپی|طریقہ بتا|کیسے بنا|بنانے کا طریقہ|مرحلہ وار|اسٹیپ|اجزاء",
+    re.IGNORECASE,
+)
+
+
+def _is_practical_request(user_message):
+    return bool(PRACTICAL_REQUEST_RE.search(user_message or ""))
+
+
+PRACTICAL_MODE_RULES = """
+
+PRACTICAL REQUEST MODE (overrides the length rules above):
+- The user asked for practical information (for example a recipe or step-by-step instructions).
+- Give the COMPLETE answer. Every step must be finished. Never stop half-way.
+- Start with one short friendly line, then the ingredients / things needed, then numbered steps.
+- Use plain text only: no **bold**, no # headings, no tables. Write lists as simple lines ("- " or "1.").
+- Keep each step short and clear. Usually 6 to 10 steps are enough.
+- No follow-up question is needed. At most one short friendly line at the very end.
+"""
+
+
+def _strip_markdown(text):
+    """The chat shows plain text, so remove **bold**, __bold__ and # headings."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text or "")
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    text = re.sub(r"(?m)^\s{0,3}#{1,6}\s*", "", text)
+    return text.replace("**", "")
+
+
+def _trim_cut_off_reply(text, language):
+    """If the model still ran out of space, end at the last complete line instead of mid-sentence."""
+    text = (text or "").rstrip()
+    if not text or text[-1] in ".!?؟۔)\"'":
+        return text
+    lines = text.split("\n")
+    while lines and lines[-1].strip() and lines[-1].strip()[-1] not in ".!?؟۔):":
+        lines.pop()
+    trimmed = "\n".join(lines).rstrip() or text
+    note = ("اگر آپ چاہیں تو میں باقی مراحل بھی بتا دوں۔" if language == "ur"
+            else "Tell me if you'd like the remaining steps too.")
+    return f"{trimmed}\n\n{note}"
+
+
 def generate_natural_chat_response(user_message, sess, emotion="unknown", wellbeing_info=None):
     """Generate a warm, contextual reply for normal chat.
 
@@ -952,6 +1006,10 @@ or memory contains English or Roman Urdu, your response must remain entirely in 
 """
                 system_prompt += "\n\n" + URDU_STYLE_RULES + "\n\n" + URDU_EXAMPLES
 
+            practical = _is_practical_request(user_message)
+            if practical:
+                system_prompt += PRACTICAL_MODE_RULES
+
             user_prompt = f"""
 User/session context:
 {user_context}
@@ -987,10 +1045,15 @@ Write the next Empath AI reply now.
                 ],
                 # Lower temperature in Urdu: better grammar and rule-following
                 temperature=0.6 if selected_language == "ur" else 0.7,
-                max_tokens=260 if selected_language == "ur" else 220,
+                # Practical answers (recipes, steps) need room to finish
+                max_tokens=(1100 if selected_language == "ur" else 800) if practical
+                else (260 if selected_language == "ur" else 220),
             )
 
             response = result.choices[0].message.content.strip()
+            if getattr(result.choices[0], "finish_reason", "") == "length":
+                print("Reply hit the length limit; trimming to the last complete line.")
+                response = _trim_cut_off_reply(response, selected_language)
 
             # -------------------------------------------------
             # LLM SAFETY NET: the model spotted suicidal / self-harm signs
@@ -1034,7 +1097,7 @@ Include exactly one natural follow-up question in English.
                         }
                     ],
                     temperature=0.5,
-                    max_tokens=220,
+                    max_tokens=800 if practical else 220,
                 )
 
                 response = retry_result.choices[0].message.content.strip()
@@ -1083,7 +1146,7 @@ Do not use English sentences or Roman Urdu.
                         }
                     ],
                     temperature=0.5,
-                    max_tokens=260,
+                    max_tokens=1100 if practical else 260,
                 )
 
                 response = retry_result.choices[0].message.content.strip()
@@ -1102,6 +1165,12 @@ Do not use English sentences or Roman Urdu.
                         "میں آپ کی بات سن رہی ہوں، اور سمجھنا چاہتی ہوں کہ آپ اس وقت "
                         "کیسا محسوس کر رہے ہیں۔ آپ جتنا چاہیں، اتنا بتا سکتے ہیں۔"
                     )
+
+            response = _strip_markdown(response)
+
+            # Practical answers: keep the full answer, no extra follow-up question
+            if practical:
+                return response
 
             # Fix repeated Urdu mistakes by code (no extra API call)
             if selected_language == "ur":

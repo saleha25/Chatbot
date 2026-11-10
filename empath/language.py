@@ -358,6 +358,11 @@ def _umang_reminder(language):
     )
 
 
+_CONTINUATION_START_RE = (
+    r"^(جیسے کہ|جیسے|مثلاً|مثال کے طور پر|یا پھر|یا |like |such as|for example|e\.g\.|or |maybe like)"
+)
+
+
 def _remove_extra_questions(text):
     """Keep max one natural follow-up question.
 
@@ -376,6 +381,12 @@ def _remove_extra_questions(text):
             items.append([p_index, ""])
             continue
         for sentence in re.split(r"(?<=[.!?؟۔])\s+", paragraph):
+            # "…tried something? Like deep breathing?" -> the second part only makes
+            # sense together with the first, so keep them as ONE sentence.
+            if (items and items[-1][0] == p_index and items[-1][1]
+                    and re.match(_CONTINUATION_START_RE, sentence.strip())):
+                items[-1][1] = items[-1][1] + " " + sentence
+                continue
             items.append([p_index, sentence])
 
     question_indexes = [

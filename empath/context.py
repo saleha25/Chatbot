@@ -236,258 +236,257 @@ def get_idp_context_line(role, hardships):
 
 # ─────────────────────────────────────────────
 # WELLBEING EXTRACTION: SLEEP / MOOD / ENERGY
+# Reads sleep hours, mood and energy from what the user writes
+# (English, Urdu script and Roman Urdu). Rules:
+#  - whole-word matching (so "rest of the family" is not sleep, "downtown" is not sad)
+#  - negation aware ("not good" = low mood, "not tired" = nothing saved)
+#  - sleep hours only when sleep is actually talked about ("walked 3 hours" is not sleep)
+#  - hopeless / suicidal statements count as very low mood
 # ─────────────────────────────────────────────
 
-MOOD_KEYWORDS = {
-    "very_low": [
-        "very sad", "depressed", "hopeless", "broken", "empty",
-        "i want to cry", "i feel dead", "nothing matters",
-        "بہت اداس ہوں", "بہت زیادہ اداس", "بہت مایوس ہوں",
-        "دل بہت اداس ہے", "بہت زیادہ پریشان ہوں"
-    ],
-    "low": [
-        "sad", "down", "not okay", "not fine", "upset",
-        "feeling bad", "low mood", "mood is low",
-        "my mood is low", "mood is bad", "my mood is bad",
-        "not a good day", "bad day", "my day was bad",
-        "a difficult day", "rough day",
-        "آج میرا دن اچھا نہیں گزرا",
-        "میرا دن اچھا نہیں گزرا",
-        "آج کا دن اچھا نہیں تھا",
-        "آج دن اچھا نہیں گزرا",
-        "آج اچھا محسوس نہیں کر رہا",
-        "آج اچھا محسوس نہیں کر رہی",
-        "دل اداس ہے", "میں اداس ہوں", "اداس ہوں",
-        "پریشان ہوں", "طبیعت اچھی نہیں",
-        "دل نہیں لگ رہا", "موڈ خراب ہے",
-        "میرا موڈ خراب ہے", "اچھا محسوس نہیں ہو رہا",
-        "اچھا محسوس نہیں ہو رہی", "برا دن تھا",
-        "دن برا گزرا", "دل پریشان ہے"
-    ],
-    "anxious": [
-        "anxious", "worried", "scared", "fear", "panic",
-        "ghabrahat", "bechain",
-        "گھبراہٹ", "بے چین ہوں", "بے چینی",
-        "فکر ہو رہی ہے", "بہت فکر ہے", "ڈر لگ رہا ہے",
-        "خوف محسوس ہو رہا ہے", "پریشانی ہو رہی ہے"
-    ],
-    "okay": [
-        "okay", "fine", "normal", "manageable",
-        "ٹھیک ہوں", "میں ٹھیک ہوں", "معمول کے مطابق"
-    ],
-    "good": [
-        "better", "good", "calm", "relaxed", "peaceful",
-        "اچھا محسوس کر رہا ہوں", "اچھا محسوس کر رہی ہوں",
-        "آج دن اچھا تھا", "میرا دن اچھا گزرا",
-        "بہتر محسوس کر رہا ہوں", "بہتر محسوس کر رہی ہوں",
-        "خوش ہوں", "پرسکون ہوں"
-    ]
-}
+_URDU_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+_NEGATION_RE = r"(?:not|no|never|isn'?t|aren'?t|wasn'?t|don'?t|doesn'?t|didn'?t|can'?t|nahi|nahin|nai|na)"
 
 
-ENERGY_KEYWORDS = {
-    "very_low": [
-        "no energy", "completely tired", "dead tired",
-        "exhausted", "drained", "can't move",
-        "بالکل توانائی نہیں", "بہت زیادہ تھکا ہوا",
-        "بہت زیادہ تھکی ہوئی", "انتہائی تھکا ہوا",
-        "انتہائی تھکی ہوئی", "بالکل نڈھال"
-    ],
-
-    "low": [
-        "tired", "weak", "fatigue", "low energy",
-        "thaka hua", "thaki hui", "energy is low",
-        "my energy is low", "energy is bad", "my energy is bad",
-        "اتنی تھکن ہوتی ہے", "کچھ کرنے کا دل نہیں کرتا",
-        "میں بہت تھکی ہوئی ہوں", "میں بہت تھکا ہوا ہوں",
-        "ذہنی تھکن ہے", "جسم میں کمزوری محسوس ہو رہی ہے",
-        "جسمانی تھکن محسوس ہو رہی ہے", "کسی کام میں دل نہیں لگتا",
-        "انرجی کم ہے", "میری انرجی کم ہے",
-        "توانائی کم ہے", "میری توانائی کم ہے"
-    ],
-
-    "medium": [
-        "normal", "normal energy", "energy is normal",
-        "my energy is normal", "energy level is normal",
-        "energy is okay", "energy is fine",
-        "انرجی ٹھیک ہے", "انرجی بھی ٹھیک ہے",
-        "میری انرجی ٹھیک ہے", "توانائی معمول کے مطابق ہے",
-        "میری توانائی ٹھیک ہے", "انرجی نارمل ہے"
-    ],
-
-    "high": [
-        "energetic", "active", "full energy", "motivated",
-        "energy is good", "my energy is good",
-        "energy level is good", "energy level is high",
-        "انرجی اچھی ہے", "میری انرجی اچھی ہے",
-        "توانائی اچھی ہے", "میری توانائی اچھی ہے",
-        "پُرجوش ہوں", "بہت چاق و چوبند ہوں"
-    ]
-}
+def _wb_normalize(text):
+    t = (text or "").translate(_URDU_DIGITS).lower()
+    t = t.replace("’", "'").replace("‘", "'")
+    return re.sub(r"\s+", " ", t)
 
 
+def _has(patterns, t):
+    return any(re.search(p, t) for p in patterns)
 
-SLEEP_KEYWORDS = [
-    "sleep", "slept", "sleeping", "bed", "insomnia",
-    "night", "awake", "rest", "neend", "nend",
-    "نیند", "سویا", "سوئی", "سونا", "رات کو جاگتا",
-    "رات کو جاگتی", "نیند نہیں آئی", "نیند نہیں آتی",
-    "سو نہیں سکا", "سو نہیں سکی", "نیند پوری نہیں ہوئی"
+
+def _negated(word_re, t):
+    """True if the word appears right after a negation: 'not (feeling) good', 'nahi khush'."""
+    return bool(
+        re.search(rf"\b{_NEGATION_RE}\b(?:\s+\w+){{0,2}}?\s+{word_re}", t)
+        or re.search(rf"{word_re}\s+(?:\w+\s+){{0,1}}(?:nahi|nahin|nai)\b", t)  # Roman Urdu: "khush nahi"
+    )
+
+
+# ---------- MOOD ----------
+MOOD_VERY_LOW = [
+    # hopeless / despair
+    r"\bhopeless", r"\bno hope\b", r"\blost (all )?hope\b", r"\bnothing (is going to|will|ever) (get|be) better",
+    r"\bnever (going to )?get better", r"\bwon'?t get better", r"\bwhat'?s the point\b", r"\bno point\b",
+    r"\bnothing matters\b", r"\bgive up\b", r"\bgiving up\b", r"\bcan'?t go on\b", r"\bcan'?t take (it|this) anymore\b",
+    r"\bdepressed\b", r"\bvery sad\b", r"\bso sad\b", r"\breally sad\b", r"\bextremely sad\b", r"\bbroken\b",
+    r"\bempty inside\b", r"\bi feel (dead|empty|numb)\b", r"\bworthless\b", r"\bmiserable\b",
+    r"\bmood is (very|really|so|extremely|too) (bad|low|down)\b", r"\b(terrible|awful|horrible|worst) (mood|day|feeling)\b",
+    r"\b(mood|feel|feeling|i'?m|i am) (is )?(terrible|awful|horrible)\b", r"\bmood (bohat|bohot|bahut) (kharab|bura)\b",
+    r"موڈ بہت خراب", r"بہت برا محسوس",
+    # suicidal
+    r"\bkill (my ?self|me)\b", r"\bwant(ed)? to die\b", r"\bend(ing)? my life\b", r"\bsuicid",
+    r"\bdon'?t want to (live|be alive)\b", r"\bbetter off dead\b", r"\bend it all\b",
+    # Roman Urdu
+    r"\b(bohat|bohot|bahut|bht|boht) (zyada )?(udaas|udas|mayoos|mayus|pareshan)\b", r"\bkoi (umeed|umid|ummeed)\b.*\bnahi",
+    r"\b(umeed|umid) khatam\b", r"\bkuch (theek|thik|behtar) nahi? hoga\b", r"\bmarna chaht", r"\bkhud ?kushi\b",
+    r"\bjeena nahi? chaht", r"\bjeene ka (koi )?(faida|fayda|dil) nahi",
+    # Urdu
+    r"بہت اداس", r"بہت زیادہ اداس", r"بہت مایوس", r"کوئی امید نہیں", r"امید ختم", r"کچھ ٹھیک نہیں ہوگا",
+    r"کچھ بہتر نہیں ہوگا", r"خودکشی", r"مرنا چاہت", r"جینے کا دل نہیں", r"جینے کا کوئی فائدہ نہیں", r"ٹوٹ گئی ہوں",
+    r"ٹوٹ گیا ہوں", r"بہت زیادہ پریشان",
+]
+MOOD_ANXIOUS = [
+    r"\banxious\b", r"\banxiety\b", r"\bworried\b", r"\bworry(ing)?\b", r"\bscared\b", r"\bafraid\b", r"\bpanic",
+    r"\bnervous\b", r"\bfrightened\b", r"\bterrified\b", r"\bon edge\b", r"\bstressed\b",
+    r"\bghabrahat\b", r"\bghabra (raha|rahi|gaya|gayi)", r"\bbechain\b", r"\bdar lag", r"\bfikar\b", r"\btension\b",
+    r"گھبراہٹ", r"بے چین", r"بے چینی", r"فکر ہو رہی", r"بہت فکر", r"ڈر لگ", r"خوف", r"ٹینشن",
+]
+MOOD_LOW = [
+    r"\bsad\b", r"\bunhappy\b", r"\bupset\b", r"\bfeeling down\b", r"\bfeel down\b", r"\blow mood\b", r"\bmood is (low|bad)\b",
+    r"\bmood is (bad|low|down|off|not great)\b", r"\b(feel|feeling|felt) (bad|low|down|off)\b", r"\bnot in a good mood\b",
+    r"\bbad mood\b", r"\bmood (kharab|off|bura|theek nahi)\b", r"\bbura (lag|mehsoos)", r"موڈ (خراب|ٹھیک نہیں|اچھا نہیں)", r"برا محسوس",
+    r"\bbad day\b", r"\brough day\b", r"\bdifficult day\b", r"\bhard day\b", r"\blonely\b", r"\balone\b", r"\bcrying\b",
+    r"\bcried\b", r"\bangry\b", r"\bfrustrated\b", r"\bhurt\b", r"\bheartbroken\b", r"\bmiss (my )?(home|family)\b",
+    r"\bhomesick\b", r"\bdisappointed\b",
+    r"\budaas\b", r"\budas\b", r"\bmayoos\b", r"\bdil nahi lag", r"\bro (raha|rahi)\b", r"\brona aa", r"\bghussa\b",
+    r"\bakela\b", r"\bakeli\b", r"\bdukh\b", r"\bdukhi\b", r"\bmood (kharab|off)\b", r"\bbura din\b", r"\bpareshan\b",
+    r"اداس", r"مایوس", r"دل نہیں لگ", r"موڈ خراب", r"برا دن", r"دن برا", r"دن اچھا نہیں", r"اچھا محسوس نہیں",
+    r"طبیعت اچھی نہیں", r"پریشان", r"غصہ", r"اکیلا", r"اکیلی", r"تنہا", r"دکھی", r"رونا آ",
+]
+_POSITIVE_WORDS = r"(good|great|happy|better|fine|okay|ok|well|calm|relaxed|peaceful|khush|theek|thik|acha|achha|behtar)"
+MOOD_GOOD = [
+    r"\bhappy\b", r"\bglad\b", r"\bgreat\b", r"\bwonderful\b", r"\bcalm\b(?! down)", r"\brelaxed\b", r"\bpeaceful\b",
+    r"\bexcited\b", r"\bgrateful\b", r"\bthankful\b", r"\bproud\b", r"\bjoy\b",
+    r"\b(feel|feeling|felt|am|i'?m) (much |a (little|bit) |so |really )?(better|good|great)\b", r"\bgood day\b", r"\bgreat day\b",
+    r"\bmood is (good|great|nice|better|happy|amazing)\b", r"\bgood mood\b", r"\bmood (acha|achha|accha|behtar)\b",
+    r"موڈ (اچھا|بہتر)",
+    r"\bkhush\b", r"\bbehtar (mehsoos|lag)", r"\bacha (lag|mehsoos)", r"\bachha (lag|mehsoos)", r"\bsukoon\b", r"\balhamdulillah\b",
+    r"خوش", r"بہتر محسوس", r"اچھا محسوس کر رہ", r"دن اچھا (تھا|گزرا)", r"پرسکون", r"سکون", r"الحمدللہ",
+]
+MOOD_OKAY = [
+    r"\b(i'?m|i am|feel|feeling) (okay|ok|fine|alright|all right)\b", r"\bnot (too )?bad\b", r"\bso-so\b",
+    r"\b(theek|thik) (hoon|hun|hu|hai)\b", r"ٹھیک ہوں", r"ٹھیک ہے", r"معمول کے مطابق",
+    r"\bmood is (okay|ok|fine|alright|normal)\b", r"\bmood (theek|thik|normal) (hai|he)\b", r"موڈ (ٹھیک|نارمل)",
 ]
 
 
-def extract_sleep_hours(text):
-    t = text.lower()
-
-    # English numeric sleep statements
-    patterns = [
-        r"(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)\s*(?:of sleep|sleep)?",
-        r"slept\s*(?:for\s*)?(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
-        r"sleep(?:ing)?\s*(?:for\s*)?(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
-        r"only slept\s*(\d+(?:\.\d+)?)",
-        r"i slept\s*(\d+(?:\.\d+)?)",
-        r"i sleep only\s*(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)?",
-        r"just\s*(\d+(?:\.\d+)?)\s*(?:hours|hour|hrs|hr)"
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, t)
-        if match:
-            try:
-                hours = float(match.group(1))
-                if 0 <= hours <= 24:
-                    return hours
-            except (ValueError, IndexError):
-                pass
-
-    # English number words
-    word_number_map = {
-        "one": 1, "two": 2, "three": 3, "four": 4,
-        "five": 5, "six": 6, "seven": 7, "eight": 8,
-        "nine": 9, "ten": 10, "eleven": 11, "twelve": 12
-    }
-
-    for word, num in word_number_map.items():
-        if (
-            re.search(rf"(slept|sleep|sleeping).{{0,10}}\b{word}\b", t)
-            or re.search(rf"\b{word}\b.{{0,10}}(hours|hour|hrs|hr)", t)
-        ):
-            return float(num)
-
-    # Urdu numerals: ۰۱۲۳۴۵۶۷۸۹
-    urdu_digits = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
-    normalized = text.translate(urdu_digits)
-
-    # Example: میں نے ۵ گھنٹے نیند لی
-    urdu_patterns = [
-        r"(\d+(?:\.\d+)?)\s*(?:گھنٹے|گھنٹہ|گھنٹوں)",
-        r"(?:نیند|سویا|سوئی).{0,20}?(\d+(?:\.\d+)?)\s*(?:گھنٹے|گھنٹہ|گھنٹوں)",
-    ]
-
-    for pattern in urdu_patterns:
-        match = re.search(pattern, normalized)
-        if match:
-            try:
-                hours = float(match.group(1))
-                if 0 <= hours <= 24:
-                    return hours
-            except (ValueError, IndexError):
-                pass
-
-    # Urdu number words, only when sleep is mentioned
-    urdu_word_numbers = {
-        "ایک": 1, "دو": 2, "تین": 3, "چار": 4,
-        "پانچ": 5, "چھ": 6, "سات": 7, "آٹھ": 8,
-        "نو": 9, "دس": 10, "گیارہ": 11, "بارہ": 12
-    }
-
-    if any(word in normalized for word in SLEEP_KEYWORDS):
-        for word, num in urdu_word_numbers.items():
-            if word in normalized and any(
-                unit in normalized for unit in ["گھنٹے", "گھنٹہ", "گھنٹوں"]
-            ):
-                return float(num)
-
-    return None
-
-
 def extract_mood(text):
-    t = text.lower()
-
-    # Check stronger moods first
-    for label in ["very_low", "anxious", "low", "good", "okay"]:
-        for keyword in MOOD_KEYWORDS[label]:
-            if keyword in t:
-                return label
-
+    t = _wb_normalize(text)
+    if _has(MOOD_VERY_LOW, t):
+        return "very_low"
+    if _has(MOOD_ANXIOUS, t) and not _negated(r"(anxious|worried|scared|afraid|nervous|stressed)", t):
+        return "anxious"
+    # "not good", "not happy", "khush nahi" -> low mood
+    if _negated(_POSITIVE_WORDS, t) and not re.search(r"\bnot (too )?bad\b", t):
+        return "low"
+    if _has(MOOD_LOW, t) and not _negated(r"(sad|upset|lonely|alone|angry|udaas|udas|pareshan)", t):
+        return "low"
+    if _has(MOOD_GOOD, t):
+        return "good"
+    if _has(MOOD_OKAY, t):
+        return "okay"
     return None
+
+
+# ---------- ENERGY ----------
+ENERGY_VERY_LOW = [
+    r"\bexhausted\b", r"\bdrained\b", r"\bno energy\b", r"\bzero energy\b", r"\bburnt? out\b", r"\bdead tired\b",
+    r"\bcompletely tired\b", r"\bcan'?t (even )?(move|get out of bed)\b",
+    r"\b(bilkul|koi) (energy|taqat|himmat) nahi", r"\bnidhal\b", r"\b(bohat|bohot|bahut) zyada thak",
+    r"بالکل توانائی نہیں", r"بہت زیادہ تھک", r"انتہائی تھک", r"نڈھال", r"بالکل ہمت نہیں",
+]
+ENERGY_LOW = [
+    r"\btired\b", r"\bweak\b", r"\bfatigue", r"\blow energy\b", r"\benergy is (low|bad)\b", r"\bsleepy\b", r"\blazy\b",
+    r"\bno motivation\b", r"\bunmotivated\b",
+    r"\bthak (gaya|gayi|gai|gya|gyi)\b", r"\bthaka\b", r"\bthaki\b", r"\bthakan\b", r"\bthakawat\b", r"\bkamzori\b",
+    r"\bhimmat nahi", r"\benergy nahi", r"\bkuch karne ka dil nahi",
+    r"تھکا", r"تھکی", r"تھکن", r"تھکاوٹ", r"کمزوری", r"انرجی کم", r"توانائی کم", r"کچھ کرنے کا دل نہیں", r"ہمت نہیں",
+]
+ENERGY_MEDIUM = [
+    r"\benergy (is |feels )?(normal|okay|ok|fine|alright)\b", r"\bnormal energy\b",
+    r"انرجی (ٹھیک|نارمل)", r"توانائی (ٹھیک|معمول)",
+]
+ENERGY_HIGH = [
+    r"\benergetic\b", r"\bfull of energy\b", r"\blots of energy\b", r"\bmotivated\b", r"\brefreshed\b", r"\bfresh\b",
+    r"\benergy is (good|high|great)\b", r"\bactive\b",
+    r"\b(bohat|bohot) energy\b", r"\btaza dam\b", r"انرجی اچھی", r"توانائی اچھی", r"تازہ دم", r"چاق و چوبند", r"پُرجوش",
+]
 
 
 def extract_energy(text):
-    t = text.lower()
-
-    for label in ["very_low", "low", "medium", "high"]:
-        for keyword in ENERGY_KEYWORDS[label]:
-            if keyword in t:
-                return label
-
+    t = _wb_normalize(text)
+    if _negated(r"(tired|exhausted|weak|thaka|thaki)", t) or re.search(r"\b(thak|thaka|thaki)\w*\s+nahi", t):
+        return None  # "not tired" says nothing reliable about energy
+    if _has(ENERGY_VERY_LOW, t):
+        return "very_low"
+    if _has(ENERGY_LOW, t):
+        return "low"
+    if _has(ENERGY_HIGH, t) and not _negated(r"(energetic|motivated|active|fresh)", t):
+        return "high"
+    if _has(ENERGY_MEDIUM, t):
+        return "medium"
     return None
 
 
+# ---------- SLEEP ----------
+SLEEP_WORDS_RE = (
+    r"(\bsleep\w*|\bslept\b|\binsomnia\b|\bnap\b|\bnightmares?\b|\bawake\b|\bneend\b|\bnind\b|\bnend\b|\bsoya\b|\bsoyi\b"
+    r"|\bsoi\b|\bso (nahi|nai) (paa?ya|paa?yi|saka|saki|sakta|sakti)\b|\bjaag\w*|نیند|سویا|سوئی|سو نہیں|جاگ)"
+)
+_NUM_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12,
+    "ek": 1, "do": 2, "teen": 3, "char": 4, "chaar": 4, "paanch": 5, "panch": 5, "chhe": 6, "che": 6,
+    "saat": 7, "sat": 7, "aath": 8, "aat": 8, "nau": 9, "das": 10,
+    "ایک": 1, "دو": 2, "تین": 3, "چار": 4, "پانچ": 5, "چھ": 6, "سات": 7, "آٹھ": 8, "نو": 9, "دس": 10,
+    "گیارہ": 11, "بارہ": 12,
+}
+_HOURS_RE = r"(?:hours?|hrs?|ghant(?:e|ay|a|on|ey)|گھنٹے|گھنٹہ|گھنٹوں)"
+_NUM_RE = r"(\d+(?:\.\d+)?|" + "|".join(sorted(map(re.escape, _NUM_WORDS), key=len, reverse=True)) + r")"
+
+
+def _to_hours(value):
+    try:
+        return float(value)
+    except ValueError:
+        return float(_NUM_WORDS.get(value, -1))
+
+
+def extract_sleep_hours(text):
+    t = _wb_normalize(text)
+    if not re.search(SLEEP_WORDS_RE, t):
+        return None  # hours that are not about sleep ("walked 3 hours") are ignored
+
+    # "couldn't sleep at all", "no sleep", "didn't sleep", "neend bilkul nahi aayi"
+    if re.search(r"\b(couldn'?t|could not|didn'?t|did not|can'?t) sleep at all\b|\bno sleep\b|\bnot slept\b"
+                 r"|\bawake (all|the whole) night\b|\bneend bilkul nahi\b|\b(saari|sari|puri|poori) raat jaag"
+                 r"|\b(raat bhar|saari raat|sari raat|puri raat|poori raat) (neend|nind) (nahi|nai)\b"
+                 r"|بالکل نیند نہیں|ساری رات جاگ|رات بھر نیند نہیں|ساری رات نیند نہیں|پوری رات نیند نہیں", t):
+        return 0.0
+
+    # Look at each sentence that talks about sleep, and take a number of hours from it
+    for sentence in re.split(r"[.!?؟۔\n]+", t):
+        if not re.search(SLEEP_WORDS_RE, sentence):
+            continue
+        sleep_spots = [m.start() for m in re.finditer(SLEEP_WORDS_RE, sentence)]
+        best = None
+        # "worked 10 hours and slept 5 hours" -> take the number closest to a sleep word
+        for m in re.finditer(rf"(?<![\w.]){_NUM_RE}\s*(?:-|to|or|se)?\s*(?:\d+\s*)?{_HOURS_RE}", sentence):
+            hours = _to_hours(m.group(1))
+            if not 0 <= hours <= 24:
+                continue
+            distance = min(abs(m.start() - p) for p in sleep_spots)
+            if best is None or distance < best[0]:
+                best = (distance, hours)
+        if best:
+            return best[1]
+    return None
+
+
+# ---------- COMBINED ----------
+_MOOD_HINT_RE = r"\b(mood|feel|feeling|felt|sad|happy|down|hopeless|depressed|anxious|upset|udaas|khush|pareshan)\b|موڈ|اداس|خوش|پریشان|مایوس|محسوس"
+_ENERGY_HINT_RE = r"\b(energy|tired|exhausted|drained|fatigue|weak|thak\w*|kamzori|himmat)\b|توانائی|انرجی|تھک|کمزوری|نڈھال|ہمت"
+
+
 def extract_wellbeing_info(text):
+    t = _wb_normalize(text)
     sleep_hours = extract_sleep_hours(text)
     mood = extract_mood(text)
     energy = extract_energy(text)
 
-    text_l = text.lower()
-
-    mentioned_sleep = (
-        sleep_hours is not None
-        or any(word in text_l for word in SLEEP_KEYWORDS)
-    )
-
-    mentioned_mood = (
-        mood is not None
-        or any(word in text_l for word in [
-            "mood", "sad", "down", "depressed", "okay", "fine",
-            "hopeless", "anxious", "worst", "not feeling well",
-            "not good", "دن", "اداس", "پریشان", "خوش",
-            "موڈ", "مایوس", "گھبراہٹ", "پرسکون"
-        ])
-    )
-
-    mentioned_energy = (
-        energy is not None
-        or any(word in text_l for word in [
-            "energy", "tired", "exhausted", "drained", "fatigue",
-            "weak", "توانائی", "تھکا", "تھکی", "تھکن",
-            "کمزوری", "نڈھال"
-        ])
-    )
+    mentioned_sleep = sleep_hours is not None or bool(re.search(SLEEP_WORDS_RE, t))
+    mentioned_mood = mood is not None or bool(re.search(_MOOD_HINT_RE, t))
+    mentioned_energy = energy is not None or bool(re.search(_ENERGY_HINT_RE, t))
 
     return {
-        "sleep_hours": sleep_hours if mentioned_sleep else None,
-        "mood": mood if mentioned_mood else None,
-        "energy": energy if mentioned_energy else None,
+        "sleep_hours": sleep_hours,
+        "mood": mood,
+        "energy": energy,
         "mentioned_sleep": mentioned_sleep,
         "mentioned_mood": mentioned_mood,
         "mentioned_energy": mentioned_energy,
-        "has_any": any([
-            mentioned_sleep,
-            mentioned_mood,
-            mentioned_energy
-        ])
+        "has_any": any([mentioned_sleep, mentioned_mood, mentioned_energy]),
+        # True only when there is an actual value worth saving on the Wellness page
+        "has_values": any(v is not None for v in (sleep_hours, mood, energy)),
     }
 
 
-def save_wellbeing_if_mentioned(user_id, user_message):
+def save_wellbeing_if_mentioned(user_id, user_message, mood_if_missing=None):
+    """Save sleep / mood / energy from this message into today's wellbeing log.
+
+    mood_if_missing: used for crisis messages, which always mean a very low mood
+    even when the wording is not in our keyword lists.
+    """
     if not user_id:
         return None
 
     extracted = extract_wellbeing_info(user_message)
+    if mood_if_missing and not extracted.get("mood"):
+        extracted["mood"] = mood_if_missing
+        extracted["mentioned_mood"] = True
+        extracted["has_any"] = True
+        extracted["has_values"] = True
 
-    if not extracted["has_any"]:
+    # Save only when we actually found a value (sleep hours, mood or energy).
+    if not extracted.get("has_values"):
         return None
+
+    # Local (Pakistan) time, so the Wellness page shows the right day and time
+    now_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     db = get_db()
     cursor = db.cursor()
@@ -495,10 +494,10 @@ def save_wellbeing_if_mentioned(user_id, user_message):
     cursor.execute("""
         SELECT * FROM wellbeing_logs
         WHERE user_id = ?
-        AND date(log_date) = date('now')
+        AND date(log_date) = date(?)
         ORDER BY id DESC
         LIMIT 1
-    """, (user_id,))
+    """, (user_id, now_local))
 
     today_log = cursor.fetchone()
 
@@ -527,23 +526,24 @@ def save_wellbeing_if_mentioned(user_id, user_message):
 
         cursor.execute("""
             UPDATE wellbeing_logs
-            SET sleep_hours = ?, mood = ?, energy = ?, source_text = ?
+            SET sleep_hours = ?, mood = ?, energy = ?, source_text = ?, log_date = ?
             WHERE id = ?
         """, (
-            sleep, mood, energy, new_source, today_log["id"]
+            sleep, mood, energy, new_source, now_local, today_log["id"]
         ))
 
     else:
         cursor.execute("""
             INSERT INTO wellbeing_logs
-                (user_id, sleep_hours, mood, energy, source_text)
-            VALUES (?, ?, ?, ?, ?)
+                (user_id, sleep_hours, mood, energy, source_text, log_date)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             user_id,
             extracted["sleep_hours"],
             extracted["mood"],
             extracted["energy"],
-            user_message
+            user_message,
+            now_local
         ))
 
     db.commit()
