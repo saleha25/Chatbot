@@ -27,10 +27,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for, send_file
 from openai import OpenAI
-from gnuhealth_connector import (
-     create_mygnuhealth_profile,
-    update_mygnuhealth_tracker,
-)
+
 from quranic_corner_service import get_category_verses
 from .core import (
     app,
@@ -442,9 +439,17 @@ def api_quranic_corner_verses():
         print("SELECTED CATEGORY:", category)
         print("CATEGORY CONTENT ENTRIES:", len(category_content))
 
+        verse_refs = {
+            v.get("id"): v.get("references")
+            for v in content_data.get("verses", [])
+        }
+
         for verse in verses:
             verse_id = verse.get("id")
             extra_content = category_content.get(verse_id, {})
+
+            if not verse.get("references"):
+                verse["references"] = verse_refs.get(verse_id)
 
             print("SELECTED VERSE:", verse_id)
             print("MATCHED CONTENT:", bool(extra_content))

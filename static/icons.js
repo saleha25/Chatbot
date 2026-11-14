@@ -202,9 +202,48 @@
     });
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () { window.renderEmpathIcons(); });
-  } else {
+  /* -------------------------------------------------------
+     SIDEBAR: make sure every page shows the newer links
+     (Calm Corner, My Wellbeing Report). Pages that already have
+     them are left alone, so nothing is added twice.
+     ------------------------------------------------------- */
+  var EXTRA_LINKS = [
+    { href: "/calm_corner", icon: "calm",   en: "Calm Corner",         ur: "سکون کا گوشہ" },
+    { href: "/report",      icon: "report", en: "My Wellbeing Report", ur: "میری ذہنی صحت کی رپورٹ" }
+  ];
+
+  function addSidebarLinks() {
+    var nav = document.querySelector('#sidebar nav[aria-label="Main"]') || document.querySelector("#sidebar nav");
+    if (!nav) return;
+    var lang = "en";
+    try { lang = (localStorage.getItem("empathLanguage") || "en").toLowerCase().indexOf("ur") === 0 ? "ur" : "en"; } catch (e) {}
+    var path = window.location.pathname.replace(/\/+$/, "") || "/";
+
+    EXTRA_LINKS.forEach(function (item) {
+      if (nav.querySelector('a[href="' + item.href + '"]')) return;   // page already has it
+      var a = document.createElement("a");
+      a.className = "side-link" + (path === item.href ? " active" : "");
+      a.href = item.href;
+      if (path === item.href) a.setAttribute("aria-current", "page");
+      var icon = document.createElement("span");
+      icon.setAttribute("data-icon", item.icon);
+      var label = document.createElement("span");
+      label.className = "side-label";
+      label.textContent = item[lang];
+      a.appendChild(icon);
+      a.appendChild(label);
+      nav.appendChild(a);
+    });
+  }
+
+  function start() {
+    addSidebarLinks();
     window.renderEmpathIcons();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
   }
 })();

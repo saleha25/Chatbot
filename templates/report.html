@@ -254,6 +254,25 @@
   .sheet .ai-tag { display: inline-block; font-size: 10px; font-weight: 700; color: var(--teal); background: var(--teal-50); border: 1px solid var(--teal-100); padding: 1px 6px; border-radius: 6px; margin-inline-start: 6px; vertical-align: middle; }
   .sheet .empty { color: var(--muted); font-style: italic; font-size: 12px; }
 
+  /* ---------- Urdu report (right to left) ---------- */
+  .sheet .k-max { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  .sheet[dir="rtl"] { font-family: 'Noto Sans Arabic', 'Inter', sans-serif; }
+  .sheet[dir="rtl"] * { letter-spacing: 0 !important; text-transform: none !important; }
+  .sheet[dir="rtl"] .rep-meta { text-align: left; }
+  .sheet[dir="rtl"] table.data th, .sheet[dir="rtl"] table.data td { text-align: right; }
+  .sheet[dir="rtl"] .theme-row .pct { text-align: left; }
+  .sheet[dir="rtl"] p.body, .sheet[dir="rtl"] .sec-note, .sheet[dir="rtl"] li,
+  .sheet[dir="rtl"] .disclaimer, .sheet[dir="rtl"] .status p, .sheet[dir="rtl"] .kpi .k-sub { line-height: 2; }
+  .sheet[dir="rtl"] .rep-title, .sheet[dir="rtl"] .sec-title, .sheet[dir="rtl"] h3, .sheet[dir="rtl"] h4 { line-height: 1.8; }
+  .sheet[dir="rtl"] .kpi .k-value { text-align: right; }
+  .sheet[dir="rtl"] .risk-item .ex { unicode-bidi: plaintext; }
+  /* bullets drawn by hand so they sit on the right side in the PDF too */
+  .sheet[dir="rtl"] ul.clean, .sheet[dir="rtl"] ol.recs { list-style: none; padding: 0 !important; counter-reset: rec; }
+  .sheet[dir="rtl"] ul.clean li::before { content: "•"; color: var(--brand, #0f766e); font-weight: 700; margin-left: 8px; }
+  .sheet[dir="rtl"] ol.recs li { counter-increment: rec; }
+  .sheet[dir="rtl"] ol.recs li::before { content: counter(rec) "."; font-weight: 700; margin-left: 8px; }
+  .sheet[dir="rtl"] .legend, .sheet[dir="rtl"] p, .sheet[dir="rtl"] li { text-align: right !important; }
+
   /* ---------- print (Print button) ---------- */
   @page {
     size: A4; margin: 12mm 12mm 16mm;
@@ -373,10 +392,10 @@
             <div class="flex flex-wrap items-center gap-3">
                 <span class="text-[13px] font-semibold text-slate-600" data-t="periodLabel">Report period</span>
                 <div class="seg" aria-label="Report period">
-                    <a href="?period=7" class="{{ 'on' if period == '7' }}" data-t="p7">7 days</a>
-                    <a href="?period=30" class="{{ 'on' if period == '30' }}" data-t="p30">30 days</a>
-                    <a href="?period=90" class="{{ 'on' if period == '90' }}" data-t="p90">90 days</a>
-                    <a href="?period=all" class="{{ 'on' if period == 'all' }}" data-t="pall">All time</a>
+                    <a href="?period=7&lang={{ rlang }}" class="{{ 'on' if period == '7' }}" data-t="p7">7 days</a>
+                    <a href="?period=30&lang={{ rlang }}" class="{{ 'on' if period == '30' }}" data-t="p30">30 days</a>
+                    <a href="?period=90&lang={{ rlang }}" class="{{ 'on' if period == '90' }}" data-t="p90">90 days</a>
+                    <a href="?period=all&lang={{ rlang }}" class="{{ 'on' if period == 'all' }}" data-t="pall">All time</a>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -386,119 +405,119 @@
         </div>
 
         <div class="anim-up-3">
-<article class="sheet" id="reportSheet">
+<article class="sheet" id="reportSheet" dir="{{ 'rtl' if rlang == 'ur' else 'ltr' }}" lang="{{ rlang }}">
 
   <header class="rep-head">
     <div class="brand">
       <div class="brand-mark"><svg width="22" height="22" viewBox="0 0 18 18" fill="#ffffff" aria-hidden="true"><circle cx="9" cy="7" r="4"/><rect x="7" y="11" width="4" height="5" rx="1"/></svg></div>
       <div>
         <div class="brand-name">Empath AI</div>
-        <div class="brand-sub">Mental Health Support for Internally Displaced People · Pakistan</div>
+        <div class="brand-sub">{{ T.brand_sub }}</div>
       </div>
     </div>
     <div class="rep-meta">
-      <div>Report ID: <b>{{ report_id }}</b></div>
-      <div>Printed on: <b>{{ printed_on }}</b> (PKT)</div>
-      <div>Prepared for: <b>Doctor / Counsellor / Case worker</b></div>
+      <div>{{ T.report_id }}: <b dir="ltr">{{ report_id }}</b></div>
+      <div>{{ T.printed_on }}: <b>{{ printed_on }}</b> {{ T.pkt }}</div>
+      <div>{{ T.prepared_for }}: <b>{{ T.prepared_for_value }}</b></div>
     </div>
   </header>
 
-  <h1 class="rep-title">Mental Wellbeing Progress Report</h1>
-  <div class="rep-period">Reporting period: <b>{{ period_label }}</b></div>
-  <span class="confidential">CONFIDENTIAL · FOR PROFESSIONAL USE</span>
+  <h1 class="rep-title">{{ T.title }}</h1>
+  <div class="rep-period">{{ T.period }}: <b>{{ period_label }}</b></div>
+  <span class="confidential">{{ T.confidential }}</span>
 
   <div class="status st-{{ status.key }}">
     <span class="dot"></span>
     <div>
-      <h3>Overall status: {{ status.label }}</h3>
-      <p>Based on: {{ status.reasons | join('; ') }}.</p>
+      <h3>{{ T.overall_status }}: {{ status.label }}</h3>
+      <p>{{ T.based_on }}: {{ status.reasons | join(T.sep) }}{{ T.stop }}</p>
     </div>
   </div>
 
   <!-- 1. CLIENT INFORMATION -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">1</span>Client Information</h2>
+    <h2 class="sec-title"><span class="sec-num">1</span>{{ T.s1 }}</h2>
     {% set p = d.profile %}
     <dl class="info-grid">
-      <div><dt>Full name</dt><dd>{{ p.full_name or '—' }}</dd></div>
-      <div><dt>Name (Urdu)</dt><dd class="urdu" dir="rtl">{{ p.urdu_name or '—' }}</dd></div>
-      <div><dt>Age</dt><dd>{{ (p.age ~ ' years') if p.age else '—' }}</dd></div>
-      <div><dt>Date of birth</dt><dd>{{ p.dob }}</dd></div>
-      <div><dt>Profession / role</dt><dd>{{ p.profession }}</dd></div>
-      <div><dt>Email</dt><dd>{{ p.email or '—' }}</dd></div>
-      <div><dt>Current living situation</dt><dd>{{ p.living_place }}</dd></div>
-      <div><dt>Displacement cause</dt><dd>{{ p.displacement }}</dd></div>
-      <div><dt>Member since</dt><dd>{{ p.member_since }}</dd></div>
-      <div><dt>Last active</dt><dd>{{ p.last_active }}</dd></div>
+      <div><dt>{{ T.full_name }}</dt><dd>{{ p.full_name or '—' }}</dd></div>
+      <div><dt>{{ T.urdu_name }}</dt><dd class="urdu" dir="rtl">{{ p.urdu_name or '—' }}</dd></div>
+      <div><dt>{{ T.age }}</dt><dd>{{ (p.age ~ ' ' ~ T.years) if p.age else '—' }}</dd></div>
+      <div><dt>{{ T.dob }}</dt><dd>{{ p.dob }}</dd></div>
+      <div><dt>{{ T.profession }}</dt><dd>{{ p.profession }}</dd></div>
+      <div><dt>{{ T.email }}</dt><dd dir="ltr" style="text-align:start">{{ p.email or '—' }}</dd></div>
+      <div><dt>{{ T.living }}</dt><dd>{{ p.living_place }}</dd></div>
+      <div><dt>{{ T.displacement }}</dt><dd>{{ p.displacement }}</dd></div>
+      <div><dt>{{ T.member_since }}</dt><dd>{{ p.member_since }}</dd></div>
+      <div><dt>{{ T.last_active }}</dt><dd>{{ p.last_active }}</dd></div>
       {% for label, value in p.extra %}
       <div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>
       {% endfor %}
       {% if p.extra|length is odd %}<div><dt></dt><dd></dd></div>{% endif %}
     </dl>
     {% if p.hardships %}
-    <p class="body" style="margin-top:8px"><b>Reported hardships:</b> {{ p.hardships | join(', ') }}.</p>
+    <p class="body" style="margin-top:8px"><b>{{ T.hardships }}:</b> {{ p.hardships | join('، ' if rlang == 'ur' else ', ') }}{{ T.stop }}</p>
     {% endif %}
   </section>
 
   <!-- 2. EXECUTIVE SUMMARY -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">2</span>Executive Summary {% if n.ai %}<span class="ai-tag">AI-ASSISTED</span>{% endif %}</h2>
+    <h2 class="sec-title"><span class="sec-num">2</span>{{ T.s2 }} {% if n.ai %}<span class="ai-tag">{{ T.ai_tag }}</span>{% endif %}</h2>
     <p class="body">{{ n.executive_summary }}</p>
   </section>
 
   <!-- 3. KEY INDICATORS -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">3</span>Key Indicators</h2>
+    <h2 class="sec-title"><span class="sec-num">3</span>{{ T.s3 }}</h2>
     {% set L = d.latest %}
     <div class="kpis">
       <div class="kpi">
-        <div class="k-label">Depression (PHQ-9)</div>
-        <div class="k-value">{{ L.phq if L else '—' }}<span style="font-size:12px;color:#94a3b8;font-weight:600"> / 27</span></div>
-        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.phq_level }}">{{ L.phq_band }}</span>{% else %}No assessment in period{% endif %}</div>
+        <div class="k-label">{{ T.phq_label }}</div>
+        <div class="k-value" dir="ltr">{{ L.phq if L else '—' }}<span class="k-max"> / 27</span></div>
+        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.phq_level }}">{{ L.phq_band }}</span>{% else %}{{ T.no_assessment }}{% endif %}</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Anxiety (GAD-7)</div>
-        <div class="k-value">{{ L.gad if L else '—' }}<span style="font-size:12px;color:#94a3b8;font-weight:600"> / 21</span></div>
-        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.gad_level }}">{{ L.gad_band }}</span>{% else %}No assessment in period{% endif %}</div>
+        <div class="k-label">{{ T.gad_label }}</div>
+        <div class="k-value" dir="ltr">{{ L.gad if L else '—' }}<span class="k-max"> / 21</span></div>
+        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.gad_level }}">{{ L.gad_band }}</span>{% else %}{{ T.no_assessment }}{% endif %}</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Wellbeing (WHO-5)</div>
-        <div class="k-value">{{ L.who if L else '—' }}<span style="font-size:12px;color:#94a3b8;font-weight:600"> / 25</span></div>
-        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.who_level }}">{{ L.who_band }}</span>{% else %}No assessment in period{% endif %}</div>
+        <div class="k-label">{{ T.who_label }}</div>
+        <div class="k-value" dir="ltr">{{ L.who if L else '—' }}<span class="k-max"> / 25</span></div>
+        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.who_level }}">{{ L.who_band }}</span>{% else %}{{ T.no_assessment }}{% endif %}</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Average sleep</div>
-        <div class="k-value">{{ ('%g' % d.wb.avg_sleep) ~ ' h' if d.wb.avg_sleep is not none else '—' }}</div>
-        <div class="k-sub">{% if d.wb.sleep_count %}{{ d.wb.short_sleep_nights }} of {{ d.wb.sleep_count }} records under 6 hours{% else %}Not reported{% endif %}</div>
+        <div class="k-label">{{ T.avg_sleep }}</div>
+        <div class="k-value">{{ ('%g' % d.wb.avg_sleep) ~ ' ' ~ T.hours_short if d.wb.avg_sleep is not none else '—' }}</div>
+        <div class="k-sub">{% if d.wb.sleep_count %}{{ T.under6.replace('{a}', d.wb.short_sleep_nights|string).replace('{b}', d.wb.sleep_count|string) }}{% else %}{{ T.not_reported }}{% endif %}</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Most frequent mood</div>
+        <div class="k-label">{{ T.top_mood }}</div>
         <div class="k-value" style="font-size:17px">{{ d.wb.top_mood or '—' }}</div>
-        <div class="k-sub">{% if d.wb.low_mood_share is not none %}Low or anxious in {{ d.wb.low_mood_share }}% of entries{% else %}Not reported{% endif %}</div>
+        <div class="k-sub">{% if d.wb.low_mood_share is not none %}{{ T.low_share.replace('{p}', d.wb.low_mood_share|string) }}{% else %}{{ T.not_reported }}{% endif %}</div>
       </div>
       <div class="kpi">
-        <div class="k-label">Engagement</div>
-        <div class="k-value" style="font-size:17px">{{ d.chat.active_days }} day{{ '' if d.chat.active_days == 1 else 's' }}</div>
-        <div class="k-sub">{{ d.chat.user_messages }} messages · {{ d.assessments|length }} assessment{{ '' if d.assessments|length == 1 else 's' }}</div>
+        <div class="k-label">{{ T.engagement }}</div>
+        <div class="k-value" style="font-size:17px">{{ d.chat.active_days }} {{ T.days_one if d.chat.active_days == 1 else T.days_many }}</div>
+        <div class="k-sub">{{ T.msgs_assess.replace('{m}', d.chat.user_messages|string).replace('{a}', d.assessments|length|string) }}</div>
       </div>
     </div>
   </section>
 
   <!-- 4. STANDARDISED ASSESSMENTS -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">4</span>Standardised Screening Results</h2>
-    <p class="sec-note">PHQ-9 (depression, 0–27, lower is better) · GAD-7 (anxiety, 0–21, lower is better) · WHO-5 (wellbeing, 0–25, higher is better). Change is compared with the previous assessment.</p>
+    <h2 class="sec-title"><span class="sec-num">4</span>{{ T.s4 }}</h2>
+    <p class="sec-note">{{ T.s4_note }}</p>
     {% if d.assessments %}
     <div class="tbl-wrap">
       <table class="data">
-        <thead><tr><th>Date</th><th>PHQ-9</th><th>GAD-7</th><th>WHO-5</th><th>Overall severity</th></tr></thead>
+        <thead><tr><th>{{ T.date }}</th><th>PHQ-9</th><th>GAD-7</th><th>WHO-5</th><th>{{ T.severity }}</th></tr></thead>
         <tbody>
         {% for a in d.assessments|reverse %}
           <tr>
             <td><b>{{ a.date }}</b></td>
-            <td>{{ a.phq }} <span class="badge lv-{{ a.phq_level }}">{{ a.phq_band }}</span><br><span class="chg {{ a.phq_change.dir }}">{{ a.phq_change.text }}</span></td>
-            <td>{{ a.gad }} <span class="badge lv-{{ a.gad_level }}">{{ a.gad_band }}</span><br><span class="chg {{ a.gad_change.dir }}">{{ a.gad_change.text }}</span></td>
-            <td>{{ a.who }} <span class="badge lv-{{ a.who_level }}">{{ a.who_band }}</span><br><span class="chg {{ a.who_change.dir }}">{{ a.who_change.text }}</span></td>
+            <td>{{ a.phq }} <span class="badge lv-{{ a.phq_level }}">{{ a.phq_band }}</span><br><span class="chg {{ a.phq_change.dir }}" dir="ltr">{{ a.phq_change.text }}</span></td>
+            <td>{{ a.gad }} <span class="badge lv-{{ a.gad_level }}">{{ a.gad_band }}</span><br><span class="chg {{ a.gad_change.dir }}" dir="ltr">{{ a.gad_change.text }}</span></td>
+            <td>{{ a.who }} <span class="badge lv-{{ a.who_level }}">{{ a.who_band }}</span><br><span class="chg {{ a.who_change.dir }}" dir="ltr">{{ a.who_change.text }}</span></td>
             <td>{{ a.severity }}</td>
           </tr>
         {% endfor %}
@@ -507,51 +526,51 @@
     </div>
     {% if d.assessments|length > 1 %}
     <div class="charts" style="margin-top:12px">
-      <div class="chart-box wide"><h4>Screening scores over time</h4><div class="cv"><canvas id="chAssess"></canvas></div></div>
+      <div class="chart-box wide"><h4>{{ T.scores_chart }}</h4><div class="cv"><canvas id="chAssess"></canvas></div></div>
     </div>
     {% endif %}
     {% else %}
-    <p class="empty">No self-assessment was completed in this period.</p>
+    <p class="empty">{{ T.no_assessments }}</p>
     {% endif %}
   </section>
 
   <!-- 5. DAILY WELLBEING -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">5</span>Daily Wellbeing (from conversations)</h2>
-    <p class="sec-note">Sleep, mood and energy are read automatically from what the client writes in chat. {{ d.wb.entries }} daily record{{ '' if d.wb.entries == 1 else 's' }} in this period.</p>
+    <h2 class="sec-title"><span class="sec-num">5</span>{{ T.s5 }}</h2>
+    <p class="sec-note">{{ T.s5_note.replace('{n}', d.wb.entries|string) }}</p>
     {% if d.wellbeing %}
     <div class="charts">
-      <div class="chart-box"><h4>Sleep (hours)</h4><div class="cv"><canvas id="chSleep"></canvas></div></div>
-      <div class="chart-box"><h4>Mood and energy</h4><div class="cv"><canvas id="chMood"></canvas></div></div>
+      <div class="chart-box"><h4>{{ T.sleep_chart }}</h4><div class="cv"><canvas id="chSleep"></canvas></div></div>
+      <div class="chart-box"><h4>{{ T.mood_chart }}</h4><div class="cv"><canvas id="chMood"></canvas></div></div>
     </div>
     <div class="two-col" style="margin-top:12px">
       <div class="panel">
-        <h4>Mood distribution</h4>
-        {% for name, count in d.wb.mood_counts %}<div class="theme-row"><span>{{ name }}</span><div class="bar"><span style="width: {{ (100 * count / d.wb.mood_counts[0][1])|round|int }}%"></span></div><span class="pct">{{ count }}</span></div>{% else %}<p class="empty">Not reported.</p>{% endfor %}
+        <h4>{{ T.mood_dist }}</h4>
+        {% for name, count in d.wb.mood_counts %}<div class="theme-row"><span>{{ name }}</span><div class="bar"><span style="width: {{ (100 * count / d.wb.mood_counts[0][1])|round|int }}%"></span></div><span class="pct">{{ count }}</span></div>{% else %}<p class="empty">{{ T.not_reported_dot }}</p>{% endfor %}
       </div>
       <div class="panel">
-        <h4>Energy distribution</h4>
-        {% for name, count in d.wb.energy_counts %}<div class="theme-row"><span>{{ name }}</span><div class="bar"><span style="width: {{ (100 * count / d.wb.energy_counts[0][1])|round|int }}%"></span></div><span class="pct">{{ count }}</span></div>{% else %}<p class="empty">Not reported.</p>{% endfor %}
+        <h4>{{ T.energy_dist }}</h4>
+        {% for name, count in d.wb.energy_counts %}<div class="theme-row"><span>{{ name }}</span><div class="bar"><span style="width: {{ (100 * count / d.wb.energy_counts[0][1])|round|int }}%"></span></div><span class="pct">{{ count }}</span></div>{% else %}<p class="empty">{{ T.not_reported_dot }}</p>{% endfor %}
       </div>
     </div>
     {% else %}
-    <p class="empty">No sleep, mood or energy information was shared in this period.</p>
+    <p class="empty">{{ T.no_wellbeing }}</p>
     {% endif %}
   </section>
 
   <!-- 6. CONVERSATION ANALYSIS -->
   <section class="section allow-break">
     <div class="keep">
-    <h2 class="sec-title"><span class="sec-num">6</span>Conversation Analysis {% if n.ai %}<span class="ai-tag">AI-ASSISTED</span>{% endif %}</h2>
+    <h2 class="sec-title"><span class="sec-num">6</span>{{ T.s6 }} {% if n.ai %}<span class="ai-tag">{{ T.ai_tag }}</span>{% endif %}</h2>
     {% if d.chat.user_messages %}
     <div class="tbl-wrap" style="margin-bottom:12px">
       <table class="data">
-        <thead><tr><th>Messages from client</th><th>Active days</th><th>First / last</th><th>Avg. length</th><th>Language</th><th>Usual time</th></tr></thead>
+        <thead><tr><th>{{ T.c_msgs }}</th><th>{{ T.c_days }}</th><th>{{ T.c_first }}</th><th>{{ T.c_len }}</th><th>{{ T.c_lang }}</th><th>{{ T.c_time }}</th></tr></thead>
         <tbody><tr>
           <td><b>{{ d.chat.user_messages }}</b></td>
           <td><b>{{ d.chat.active_days }}</b></td>
           <td>{{ d.chat.first }} – {{ d.chat.last }}</td>
-          <td>{{ d.chat.avg_words }} words</td>
+          <td>{{ d.chat.avg_words }} {{ T.words }}</td>
           <td>{{ d.chat.language }}</td>
           <td>{{ d.chat.time_of_day }}</td>
         </tr></tbody>
@@ -561,70 +580,68 @@
 
     <div class="two-col keep">
       <div class="panel">
-        <h4>Main themes in the client's messages</h4>
+        <h4>{{ T.themes }}</h4>
         {% for t in d.chat.themes %}
-        <div class="theme-row"><span>{{ t.name }}</span><div class="bar"><span style="width: {{ t.pct if t.pct > 4 else 4 }}%"></span></div><span class="pct">{{ t.pct }}%</span></div>
-        {% else %}<p class="empty">No clear themes detected.</p>{% endfor %}
-        <div class="legend">% = share of the client's messages that mention the theme</div>
+        <div class="theme-row"><span>{{ t.name }}</span><div class="bar"><span style="width: {{ t.pct if t.pct > 4 else 4 }}%"></span></div><span class="pct" dir="ltr">{{ t.pct }}%</span></div>
+        {% else %}<p class="empty">{{ T.no_themes }}</p>{% endfor %}
+        <div class="legend"><span>{{ T.themes_legend }}</span></div>
       </div>
       <div class="panel">
-        <h4>Presenting concerns</h4>
+        <h4>{{ T.concerns }}</h4>
         <ul class="clean">{% for x in n.presenting_concerns %}<li>{{ x }}</li>{% endfor %}</ul>
       </div>
     </div>
 
     <div class="panel" style="margin-top:12px">
-      <h4>Emotional themes</h4>
+      <h4>{{ T.emotional }}</h4>
       <p class="body">{{ n.emotional_themes }}</p>
     </div>
 
     <div class="two-col" style="margin-top:12px">
-      <div class="panel"><h4>Life stressors</h4><ul class="clean">{% for x in n.stressors %}<li>{{ x }}</li>{% endfor %}</ul></div>
-      <div class="panel"><h4>Strengths and coping</h4><ul class="clean">{% for x in n.strengths %}<li>{{ x }}</li>{% endfor %}</ul></div>
+      <div class="panel"><h4>{{ T.stressors }}</h4><ul class="clean">{% for x in n.stressors %}<li>{{ x }}</li>{% endfor %}</ul></div>
+      <div class="panel"><h4>{{ T.strengths }}</h4><ul class="clean">{% for x in n.strengths %}<li>{{ x }}</li>{% endfor %}</ul></div>
     </div>
 
     <div class="panel" style="margin-top:12px">
-      <h4>Progress during the period</h4>
+      <h4>{{ T.progress }}</h4>
       <p class="body">{{ n.progress }}</p>
     </div>
     {% else %}
-    <p class="empty">The client did not use the chat in this period.</p>
+    <p class="empty">{{ T.no_chat }}</p>
     </div>
     {% endif %}
   </section>
 
   <!-- 7. RISK AND SAFETY -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">7</span>Risk and Safety</h2>
+    <h2 class="sec-title"><span class="sec-num">7</span>{{ T.s7 }}</h2>
     <div class="risk-box {{ '' if d.chat.risk_count else 'ok' }}">
       <p class="body" style="margin-bottom:6px"><b>{{ n.risk_assessment }}</b></p>
       {% if d.chat.risk_count %}
-      <p class="body" style="font-size:12px;color:#7f1d1d">{{ d.chat.risk_count }} message{{ '' if d.chat.risk_count == 1 else 's' }} with possible suicidal thoughts or self-harm. Most recent:</p>
+      <p class="body" style="font-size:12px;color:#7f1d1d">{{ T.risk_count.replace('{n}', d.chat.risk_count|string) }}</p>
       {% for r in d.chat.risk_events|reverse %}
       <div class="risk-item"><span class="when">{{ r.date }}</span> — <span class="ex">“{{ r.excerpt }}”</span></div>
       {% endfor %}
       {% endif %}
     </div>
-    <p class="sec-note" style="margin-top:8px">Emergency contacts shared with the client: Rescue 1122 · Umang 0311-7786264 · Rozan 051-2890505.</p>
+    <p class="sec-note" style="margin-top:8px">{{ T.emergency }}</p>
   </section>
 
   <!-- 8. RECOMMENDATIONS -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">8</span>Recommendations</h2>
+    <h2 class="sec-title"><span class="sec-num">8</span>{{ T.s8 }}</h2>
     <ol class="recs">{% for x in n.recommendations %}<li>{{ x }}</li>{% endfor %}</ol>
   </section>
 
   <div class="sign">
-    <div>Reviewed by (name, signature)</div>
-    <div>Date of review</div>
+    <div>{{ T.reviewed_by }}</div>
+    <div>{{ T.review_date }}</div>
   </div>
 
   <div class="disclaimer">
-    <b>Important:</b> This report was generated automatically by Empath AI from the client's own self-assessments and conversations.
-    It is a screening and monitoring summary, <b>not a medical diagnosis</b>. PHQ-9, GAD-7 and WHO-5 are validated screening tools;
-    scores should be interpreted by a qualified professional together with a clinical interview.
-    {% if n.ai %}Sections marked “AI-assisted” were written with the help of a language model and should be verified.{% endif %}
-    Report {{ report_id }} · printed {{ printed_on }} (Pakistan Standard Time).
+    <b>{{ T.important }}</b> {{ T.disclaimer|safe }}
+    {% if n.ai %}{{ T.disclaimer_ai }}{% endif %}
+    {{ T.footer_line.replace('{id}', report_id).replace('{d}', printed_on) }}
   </div>
 </article>
         </div>
@@ -652,7 +669,9 @@
 (function () {
   if (!window.Chart) return;
   const C = {{ charts|tojson }};
-  Chart.defaults.font.family = "Inter, sans-serif";
+  const RT = {{ T|tojson }};
+  const RTL = {{ (rlang == 'ur')|tojson }};
+  Chart.defaults.font.family = RTL ? "'Noto Sans Arabic', Inter, sans-serif" : "Inter, sans-serif";
   Chart.defaults.font.size = 10;
   Chart.defaults.color = "#64748b";
   Chart.defaults.animation = false;            // so the PDF never captures a half-drawn chart
@@ -672,12 +691,12 @@
   }
 
   if (el("chMood")) {
-    const names = { 1: "Very low", 2: "Low", 3: "Okay / Medium", 4: "Good / High" };
+    const names = { 1: RT.lv1, 2: RT.lv2, 3: RT.lv3, 4: RT.lv4 };
     new Chart(el("chMood"), {
       type: "line",
       data: { labels: C.wb_labels, datasets: [
-        { label: "Mood", data: C.mood, borderColor: "#0f766e", backgroundColor: "#0f766e", tension: .35, spanGaps: true, pointRadius: 3 },
-        { label: "Energy", data: C.energy, borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: .35, spanGaps: true, pointRadius: 3, borderDash: [4, 3] }
+        { label: RT.chart_mood, data: C.mood, borderColor: "#0f766e", backgroundColor: "#0f766e", tension: .35, spanGaps: true, pointRadius: 3 },
+        { label: RT.chart_energy, data: C.energy, borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: .35, spanGaps: true, pointRadius: 3, borderDash: [4, 3] }
       ]},
       options: {
         plugins: { legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10 } } },
@@ -690,9 +709,9 @@
     new Chart(el("chAssess"), {
       type: "line",
       data: { labels: C.as_labels, datasets: [
-        { label: "PHQ-9 (depression)", data: C.phq, borderColor: "#dc2626", backgroundColor: "#dc2626", tension: .3, pointRadius: 3 },
-        { label: "GAD-7 (anxiety)", data: C.gad, borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: .3, pointRadius: 3 },
-        { label: "WHO-5 (wellbeing)", data: C.who, borderColor: "#0f766e", backgroundColor: "#0f766e", tension: .3, pointRadius: 3 }
+        { label: RT.chart_phq, data: C.phq, borderColor: "#dc2626", backgroundColor: "#dc2626", tension: .3, pointRadius: 3 },
+        { label: RT.chart_gad, data: C.gad, borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: .3, pointRadius: 3 },
+        { label: RT.chart_who, data: C.who, borderColor: "#0f766e", backgroundColor: "#0f766e", tension: .3, pointRadius: 3 }
       ]},
       options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10 } } },
                  scales: { y: { beginAtZero: true, suggestedMax: 27, grid }, x: { grid: { display: false } } } }
@@ -703,7 +722,7 @@
 
 <script>
 /* =========================================================
-   LANGUAGE for the app parts (the report itself stays in English)
+   LANGUAGE — the report follows the app language (English app → English report, Urdu app → Urdu report)
    ========================================================= */
 const savedLang = (
     localStorage.getItem('empathLanguage') || localStorage.getItem('language') ||
@@ -711,6 +730,12 @@ const savedLang = (
     {{ session.get('language', 'en')|tojson }} || 'en'
 ).toLowerCase().trim();
 const LANG = (savedLang === 'ur' || savedLang === 'urdu' || savedLang.startsWith('ur-')) ? 'ur' : 'en';
+// if the report was made in the other language, reload it once in the app's language
+if (LANG !== {{ rlang|tojson }}) {
+  const u = new URL(window.location.href);
+  u.searchParams.set('lang', LANG);
+  window.location.replace(u.toString());
+}
 document.documentElement.lang = LANG;
 document.documentElement.dir = LANG === 'ur' ? 'rtl' : 'ltr';
 
@@ -721,7 +746,7 @@ const T = {
         print:'Print', download:'Download PDF', preparing:'Preparing your PDF…', failed:'Could not create the PDF. Opening the print window instead.',
         helpline:'🆘 Crisis helplines always available:', emergency:'Emergency', umang:'Umang', rozan:'Rozan' },
   ur: { brandSub:'آئی ڈی پی ذہنی صحت', page:'میری ذہنی صحت کی رپورٹ', dashboard:'ڈیش بورڈ', title:'میری ذہنی صحت کی رپورٹ',
-        subtitle:'آپ کی پیش رفت کا پیشہ ورانہ خلاصہ، جسے آپ ڈاؤن لوڈ کر کے ڈاکٹر، کونسلر یا این جی او کو دکھا سکتے ہیں۔ رپورٹ انگریزی میں ہے۔',
+        subtitle:'آپ کی پیش رفت کا پیشہ ورانہ خلاصہ، جسے آپ ڈاؤن لوڈ کر کے ڈاکٹر، کونسلر یا این جی او کو دکھا سکتے ہیں۔',
         periodLabel:'رپورٹ کا عرصہ', p7:'۷ دن', p30:'۳۰ دن', p90:'۹۰ دن', pall:'تمام ریکارڈ',
         print:'پرنٹ', download:'PDF ڈاؤن لوڈ کریں', preparing:'آپ کی PDF تیار ہو رہی ہے…', failed:'PDF نہیں بن سکی۔ اس کے بجائے پرنٹ ونڈو کھل رہی ہے۔',
         helpline:'🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:', emergency:'ایمرجنسی', umang:'اُمنگ', rozan:'روزن' }
@@ -730,7 +755,7 @@ document.querySelectorAll('[data-t]').forEach(el => {
   const v = T[el.getAttribute('data-t')];
   if (typeof v === 'string') el.textContent = v;
 });
-document.querySelectorAll('.sheet').forEach(el => el.setAttribute('dir', 'ltr'));   // report is always left-to-right
+// the report sheet sets its own direction (English: left-to-right, Urdu: right-to-left)
 
 /* =========================================================
    DOWNLOAD PDF — one click, the file downloads straight away
@@ -740,6 +765,29 @@ const REPORT_ID = {{ report_id|tojson }};
 
 function waitFrames(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Urdu PDF fix: the PDF library draws each word separately and, in right-to-left text,
+// it puts the space on the wrong side, so words run together. Giving every word its own
+// <span> (spaces left outside) keeps the spacing exactly as it looks on screen.
+function splitUrduWords(doc) {
+  const root = doc.querySelector('.sheet[dir="rtl"]');
+  if (!root) return;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) {
+    const t = walker.currentNode;
+    if (t.nodeValue.trim() && /\s/.test(t.nodeValue.trim()) && !t.parentElement.closest('script,style,canvas')) nodes.push(t);
+  }
+  nodes.forEach(t => {
+    const frag = doc.createDocumentFragment();
+    t.nodeValue.split(/(\s+)/).forEach(part => {
+      if (!part) return;
+      if (/^\s+$/.test(part)) { frag.appendChild(doc.createTextNode(part)); return; }
+      const sp = doc.createElement('span'); sp.textContent = part; frag.appendChild(sp);
+    });
+    t.parentNode.replaceChild(frag, t);
+  });
+}
+
 document.getElementById('downloadBtn').addEventListener('click', async () => {
   const btn = document.getElementById('downloadBtn');
   const sheet = document.getElementById('reportSheet');
@@ -747,6 +795,7 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
 
   btn.disabled = true;
   document.getElementById('pdfOverlay').classList.add('show');
+  splitUrduWords(document);                   // Urdu only: keep word spacing in the PDF
   sheet.classList.add('pdf-mode');            // exact A4 width
   window.dispatchEvent(new Event('resize'));
   await waitFrames(450);                      // let the charts redraw at the new width

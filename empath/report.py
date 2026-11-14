@@ -86,6 +86,59 @@ HARDSHIP_LABELS = {
 
 
 # ─────────────────────────────────────────────
+# URDU VERSION OF THE REPORT
+# Labels that come from the data (bands, roles, themes...) are written in
+# English inside the code and translated here when the report is in Urdu.
+# ─────────────────────────────────────────────
+URDU_MONTHS = ["جنوری", "فروری", "مارچ", "اپریل", "مئی", "جون",
+               "جولائی", "اگست", "ستمبر", "اکتوبر", "نومبر", "دسمبر"]
+
+UR = {
+    # roles / professions
+    "Student": "طالب علم", "Homemaker": "گھریلو خاتون", "Parent / caregiver": "والدین / نگہداشت کرنے والے",
+    "Currently unemployed": "فی الحال بے روزگار", "Daily-wage worker": "دیہاڑی دار مزدور",
+    "Elderly / retired": "بزرگ / ریٹائرڈ", "Employed (government / private)": "ملازم (سرکاری / نجی)",
+    "Not specified": "درج نہیں", "Not stated": "نہیں بتایا گیا", "Yes": "جی ہاں",
+    # displacement
+    "Floods": "سیلاب", "Conflict / insecurity": "تنازع / بدامنی", "Earthquake": "زلزلہ",
+    "Eviction / loss of housing": "بے دخلی / گھر کا چھن جانا", "Fire": "آگ",
+    "Displacement (cause not specified)": "نقل مکانی (وجہ درج نہیں)",
+    # hardships
+    "Loss of home": "گھر کا چھن جانا", "Camp / temporary shelter conditions": "کیمپ / عارضی رہائش کے حالات",
+    "Family responsibilities": "خاندانی ذمہ داریاں", "Loss of income / work": "آمدنی / کام کا چھن جانا",
+    "Disrupted education": "تعلیم میں رکاوٹ", "Safety concerns": "تحفظ کے خدشات",
+    "Longing for former life": "پرانی زندگی کی یاد",
+    # emotional themes
+    "Sadness / low mood": "اداسی / کم موڈ", "Anxiety / worry": "بے چینی / فکر",
+    "Sleep difficulties": "نیند کے مسائل", "Grief and loss": "غم اور نقصان",
+    "Loneliness / isolation": "تنہائی", "Anger / frustration": "غصہ / جھنجھلاہٹ",
+    "Fatigue / low energy": "تھکن / کم توانائی",
+    # bands
+    "Minimal": "بہت کم", "Mild": "ہلکا", "Moderate": "درمیانہ", "Moderately severe": "کافی شدید",
+    "Severe": "شدید", "Very low wellbeing": "بہت کم فلاح", "Low wellbeing": "کم فلاح",
+    "Moderate wellbeing": "درمیانی فلاح", "Good wellbeing": "اچھی فلاح",
+    "Mild Depression": "ہلکا ڈپریشن", "Moderate Depression": "درمیانہ ڈپریشن", "Severe Depression": "شدید ڈپریشن",
+    "Minimal Depression": "بہت کم ڈپریشن",
+    # mood / energy
+    "Very low": "بہت کم", "Low": "کم", "Anxious": "بے چین", "Okay": "ٹھیک", "Good": "اچھا",
+    "Medium": "درمیانہ", "High": "زیادہ",
+    # chat stats
+    "Morning (5am–12pm)": "صبح (۵ سے ۱۲ بجے)", "Afternoon (12–5pm)": "دوپہر (۱۲ سے ۵ بجے)",
+    "Evening (5–10pm)": "شام (۵ سے ۱۰ بجے)", "Late night (10pm–5am)": "رات گئے (۱۰ سے ۵ بجے)",
+    "Mostly Urdu": "زیادہ تر اردو", "Mostly English / Roman Urdu": "زیادہ تر انگریزی / رومن اردو",
+    "Urdu and English": "اردو اور انگریزی",
+    "No change": "کوئی تبدیلی نہیں",
+}
+
+
+def tx(text, lang):
+    """Translate a known label to Urdu when the report is in Urdu."""
+    if lang != "ur" or text is None:
+        return text
+    return UR.get(text, text)
+
+
+# ─────────────────────────────────────────────
 # Small helpers
 # ─────────────────────────────────────────────
 def _row_get(row, key, default=None):
@@ -116,8 +169,29 @@ def _utc_to_pk(dt):
     return dt + timedelta(hours=5) if dt else None
 
 
-def _fmt_date(dt):
-    return dt.strftime("%d %b %Y") if dt else "—"
+def _fmt_date(dt, lang="en"):
+    if not dt:
+        return "—"
+    if lang == "ur":
+        return f"{dt.day} {URDU_MONTHS[dt.month - 1]} {dt.year}"
+    return dt.strftime("%d %b %Y")
+
+
+def _fmt_short(dt, lang="en"):
+    if not dt:
+        return ""
+    if lang == "ur":
+        return f"{dt.day} {URDU_MONTHS[dt.month - 1]}"
+    return dt.strftime("%d %b")
+
+
+def _fmt_datetime(dt, lang="en"):
+    if not dt:
+        return "—"
+    if lang == "ur":
+        ampm = "صبح" if dt.hour < 12 else "شام"
+        return f"{_fmt_date(dt, lang)}، {dt.strftime('%I:%M')} {ampm}"
+    return dt.strftime("%d %b %Y, %I:%M %p")
 
 
 def _age_from_dob(dob_text):
@@ -182,12 +256,12 @@ def _band_level(band):
     return 0
 
 
-def _change(curr, prev, higher_is_better=False):
+def _change(curr, prev, higher_is_better=False, lang="en"):
     if curr is None or prev is None:
         return {"text": "—", "dir": "none"}
     diff = curr - prev
     if diff == 0:
-        return {"text": "No change", "dir": "same"}
+        return {"text": tx("No change", lang), "dir": "same"}
     better = (diff > 0) if higher_is_better else (diff < 0)
     sign = "+" if diff > 0 else "−"
     return {"text": f"{sign}{abs(diff)}", "dir": "better" if better else "worse"}
@@ -205,7 +279,7 @@ def _count_hits(text, words):
 # ─────────────────────────────────────────────
 # Data collection
 # ─────────────────────────────────────────────
-def _collect(account_id, days):
+def _collect(account_id, days, lang="en"):
     db = get_db()
     now_pk = datetime.now(PK_TZ).replace(tzinfo=None)
     since_pk = (now_pk - timedelta(days=days)) if days else None
@@ -225,6 +299,7 @@ def _collect(account_id, days):
             break
     if not profession:
         profession = ROLE_LABELS.get(role, role.replace("_", " ").title())
+    profession = tx(profession, lang)
 
     living_place = _row_get(user, "living_place", "") or _row_get(memory, "living_place", "")
     extra_fields = []
@@ -256,14 +331,15 @@ def _collect(account_id, days):
             prev_phq, prev_gad, prev_who = _row_get(p, "phq9_total"), _row_get(p, "gad7_total"), _row_get(p, "who5_total")
         dt = _utc_to_pk(_parse_dt(_row_get(r, "assessment_date")))
         assessments.append({
-            "date": _fmt_date(dt),
+            "date": _fmt_date(dt, lang),
             "phq": phq, "gad": gad, "who": who,
-            "phq_band": _phq_band(phq), "gad_band": _gad_band(gad), "who_band": _who_band(who),
+            "phq_band": tx(_phq_band(phq), lang), "gad_band": tx(_gad_band(gad), lang), "who_band": tx(_who_band(who), lang),
+            "phq_band_en": _phq_band(phq), "gad_band_en": _gad_band(gad), "who_band_en": _who_band(who),
             "phq_level": _band_level(_phq_band(phq)), "gad_level": _band_level(_gad_band(gad)),
             "who_level": _band_level(_who_band(who)),
-            "phq_change": _change(phq, prev_phq), "gad_change": _change(gad, prev_gad),
-            "who_change": _change(who, prev_who, higher_is_better=True),
-            "severity": _row_get(r, "severity", "—"),
+            "phq_change": _change(phq, prev_phq, lang=lang), "gad_change": _change(gad, prev_gad, lang=lang),
+            "who_change": _change(who, prev_who, higher_is_better=True, lang=lang),
+            "severity": tx(_row_get(r, "severity", "—"), lang),
         })
     latest_assessment = assessments[-1] if assessments else None
     first_assessment = assessments[0] if assessments else None
@@ -279,7 +355,8 @@ def _collect(account_id, days):
                 items = json.loads(raw) if isinstance(raw, str) and raw.strip().startswith("[") else str(raw).split(",")
             except ValueError:
                 items = str(raw).split(",")
-            hardships = [HARDSHIP_LABELS.get(str(x).strip(), str(x).strip().replace("_", " ").title()) for x in items if str(x).strip()]
+            hardships = [tx(HARDSHIP_LABELS.get(str(x).strip(), str(x).strip().replace("_", " ").title()), lang)
+                         for x in items if str(x).strip()]
 
     # ---------- wellbeing logs ----------
     wb_rows = db.execute(
@@ -296,7 +373,7 @@ def _collect(account_id, days):
         if sleep is None and not mood and not energy:
             continue
         wellbeing.append({
-            "date": dt.strftime("%d %b") if dt else "",
+            "date": _fmt_short(dt, lang),
             "sleep": float(sleep) if sleep is not None else None,
             "mood": mood, "energy": energy,
             "mood_score": MOOD_SCORE.get(mood), "energy_score": ENERGY_SCORE.get(energy),
@@ -305,8 +382,8 @@ def _collect(account_id, days):
     sleeps = [w["sleep"] for w in wellbeing if w["sleep"] is not None]
     moods = [w["mood"] for w in wellbeing if w["mood"]]
     energies = [w["energy"] for w in wellbeing if w["energy"]]
-    mood_counts = Counter(MOOD_LABEL.get(m, m.title()) for m in moods)
-    energy_counts = Counter(ENERGY_LABEL.get(e, e.title()) for e in energies)
+    mood_counts = Counter(tx(MOOD_LABEL.get(m, m.title()), lang) for m in moods)
+    energy_counts = Counter(tx(ENERGY_LABEL.get(e, e.title()), lang) for e in energies)
     wb_summary = {
         "entries": len(wellbeing),
         "avg_sleep": round(sum(sleeps) / len(sleeps), 1) if sleeps else None,
@@ -354,18 +431,18 @@ def _collect(account_id, days):
         for theme, words in EMOTION_THEMES.items():
             n = sum(1 for m in user_msgs if _count_hits(m["text"], words))
             if n:
-                themes.append({"name": theme, "count": n, "pct": round(100 * n / len(user_msgs))})
+                themes.append({"name": tx(theme, lang), "count": n, "pct": round(100 * n / len(user_msgs))})
         for key, words in IDP_HARDSHIP_KEYWORDS.items():
             n = sum(1 for m in user_msgs if _count_hits(m["text"], words))
             if n:
-                themes.append({"name": HARDSHIP_LABELS.get(key, key.replace("_", " ").title()), "count": n,
+                themes.append({"name": tx(HARDSHIP_LABELS.get(key, key.replace("_", " ").title()), lang), "count": n,
                                "pct": round(100 * n / len(user_msgs))})
         themes.sort(key=lambda t: t["count"], reverse=True)
         themes = themes[:8]
 
     risk_msgs = [m for m in user_msgs if _RISK_RE.search(m["text"])]
     risk_events = [{
-        "date": m["dt"].strftime("%d %b %Y, %I:%M %p") if m["dt"] else "—",
+        "date": _fmt_datetime(m["dt"], lang),
         "excerpt": (m["text"][:110] + "…") if len(m["text"]) > 110 else m["text"],
     } for m in risk_msgs[-5:]]
     risk_mem = (_row_get(memory, "risk_pattern", "") or "").strip()
@@ -374,13 +451,13 @@ def _collect(account_id, days):
         "user_messages": len(user_msgs),
         "total_messages": len(chat_rows),
         "active_days": len(active_days),
-        "first": _fmt_date(user_msgs[0]["dt"]) if user_msgs else "—",
-        "last": _fmt_date(user_msgs[-1]["dt"]) if user_msgs else "—",
+        "first": _fmt_date(user_msgs[0]["dt"], lang) if user_msgs else "—",
+        "last": _fmt_date(user_msgs[-1]["dt"], lang) if user_msgs else "—",
         "avg_words": round(sum(len(m["text"].split()) for m in user_msgs) / len(user_msgs)) if user_msgs else 0,
-        "language": ("Mostly Urdu" if urdu_count > len(user_msgs) * 0.6 else
-                     "Mostly English / Roman Urdu" if urdu_count < len(user_msgs) * 0.4 else
-                     "Urdu and English") if user_msgs else "—",
-        "time_of_day": time_buckets.most_common(1)[0][0] if time_buckets else "—",
+        "language": tx(("Mostly Urdu" if urdu_count > len(user_msgs) * 0.6 else
+                        "Mostly English / Roman Urdu" if urdu_count < len(user_msgs) * 0.4 else
+                        "Urdu and English"), lang) if user_msgs else "—",
+        "time_of_day": tx(time_buckets.most_common(1)[0][0], lang) if time_buckets else "—",
         "themes": themes,
         "risk_count": len(risk_msgs),
         "risk_events": risk_events,
@@ -397,16 +474,18 @@ def _collect(account_id, days):
         "full_name": _row_get(account, "full_name", session.get("name", "")),
         "urdu_name": _row_get(account, "urdu_name", ""),
         "email": _row_get(account, "email", ""),
-        "dob": _fmt_date(_parse_dt(_row_get(account, "dob"))),
+        "dob": _fmt_date(_parse_dt(_row_get(account, "dob")), lang),
         "age": _age_from_dob(_row_get(account, "dob")),
         "profession": profession,
-        "living_place": (living_place or "").strip().title() or "Not specified",
-        "displaced": "Yes" if (_row_get(memory, "is_displaced") or displacement) else "Not stated",
-        "displacement": displacement or "Not specified",
+        "living_place": (living_place or "").strip().title() or tx("Not specified", lang),
+        "displaced": tx("Yes" if (_row_get(memory, "is_displaced") or displacement) else "Not stated", lang),
+        "displacement": tx(displacement or "Not specified", lang),
+        "displacement_known": bool(displacement),
+        "profession_known": profession != tx("Not specified", lang),
         "hardships": hardships,
         "stressors": [str(s) for s in stressors][:6],
-        "member_since": _fmt_date(created),
-        "last_active": _fmt_date(last_seen),
+        "member_since": _fmt_date(created, lang),
+        "last_active": _fmt_date(last_seen, lang),
         "extra": extra_fields,
     }
 
@@ -429,6 +508,7 @@ def _collect(account_id, days):
         "fingerprint": fingerprint,
         "now_pk": now_pk,
         "since_pk": since_pk,
+        "lang": lang,
     }
 
 
@@ -436,39 +516,50 @@ def _collect(account_id, days):
 # Overall status (rule based, so it is consistent and explainable)
 # ─────────────────────────────────────────────
 def _overall_status(data):
+    ur = data.get("lang") == "ur"
     latest = data["latest"] or {}
     phq, gad, who = latest.get("phq"), latest.get("gad"), latest.get("who")
+    wb, chat = data["wb"], data["chat"]
+
+    def R(en, urdu):
+        return urdu if ur else en
+
     reasons = []
-    if data["chat"]["risk_count"]:
-        reasons.append(f'{data["chat"]["risk_count"]} message(s) with signs of suicidal thoughts or self-harm in this period')
+    if chat["risk_count"]:
+        reasons.append(R(f'{chat["risk_count"]} message(s) with signs of suicidal thoughts or self-harm in this period',
+                         f'اس عرصے میں {chat["risk_count"]} پیغام(ات) میں خودکشی یا خود کو نقصان پہنچانے کے آثار'))
     if phq is not None and phq >= 20:
-        reasons.append(f"PHQ-9 score of {phq} (severe range)")
+        reasons.append(R(f"PHQ-9 score of {phq} (severe range)", f"PHQ-9 اسکور {phq} (شدید درجہ)"))
     if reasons:
-        return {"key": "urgent", "label": "Urgent attention recommended", "reasons": reasons}
+        return {"key": "urgent", "label": R("Urgent attention recommended", "فوری توجہ کی ضرورت ہے"), "reasons": reasons}
 
     if phq is not None and phq >= 15:
-        reasons.append(f"PHQ-9 score of {phq} (moderately severe)")
+        reasons.append(R(f"PHQ-9 score of {phq} (moderately severe)", f"PHQ-9 اسکور {phq} (کافی شدید)"))
     if gad is not None and gad >= 15:
-        reasons.append(f"GAD-7 score of {gad} (severe anxiety range)")
+        reasons.append(R(f"GAD-7 score of {gad} (severe anxiety range)", f"GAD-7 اسکور {gad} (شدید بے چینی)"))
     if who is not None and who <= 7:
-        reasons.append(f"WHO-5 score of {who} (very low wellbeing)")
+        reasons.append(R(f"WHO-5 score of {who} (very low wellbeing)", f"WHO-5 اسکور {who} (بہت کم فلاح)"))
     if reasons:
-        return {"key": "attention", "label": "Needs professional attention", "reasons": reasons}
+        return {"key": "attention", "label": R("Needs professional attention", "ماہر کی توجہ درکار ہے"), "reasons": reasons}
 
     if phq is not None and phq >= 10:
-        reasons.append(f"PHQ-9 score of {phq} (moderate)")
+        reasons.append(R(f"PHQ-9 score of {phq} (moderate)", f"PHQ-9 اسکور {phq} (درمیانہ)"))
     if gad is not None and gad >= 10:
-        reasons.append(f"GAD-7 score of {gad} (moderate)")
-    if (data["wb"]["low_mood_share"] or 0) >= 50:
-        reasons.append(f'low or anxious mood in {data["wb"]["low_mood_share"]}% of daily entries')
-    if data["wb"]["avg_sleep"] is not None and data["wb"]["avg_sleep"] < 5:
-        reasons.append(f'average sleep of {data["wb"]["avg_sleep"]:g} hours')
+        reasons.append(R(f"GAD-7 score of {gad} (moderate)", f"GAD-7 اسکور {gad} (درمیانہ)"))
+    if (wb["low_mood_share"] or 0) >= 50:
+        reasons.append(R(f'low or anxious mood in {wb["low_mood_share"]}% of daily entries',
+                         f'{wb["low_mood_share"]}% روزانہ اندراجات میں کم یا بے چین موڈ'))
+    if wb["avg_sleep"] is not None and wb["avg_sleep"] < 5:
+        reasons.append(R(f'average sleep of {wb["avg_sleep"]:g} hours', f'اوسط نیند {wb["avg_sleep"]:g} گھنٹے'))
     if reasons:
-        return {"key": "monitor", "label": "Monitor closely", "reasons": reasons}
+        return {"key": "monitor", "label": R("Monitor closely", "قریبی نگرانی کریں"), "reasons": reasons}
 
-    if not data["latest"] and not data["wellbeing"] and not data["chat"]["user_messages"]:
-        return {"key": "nodata", "label": "Not enough data yet", "reasons": ["no assessments, wellbeing entries or conversations in this period"]}
-    return {"key": "stable", "label": "Stable", "reasons": ["no high-risk indicators in this period"]}
+    if not data["latest"] and not data["wellbeing"] and not chat["user_messages"]:
+        return {"key": "nodata", "label": R("Not enough data yet", "ابھی کافی معلومات نہیں"),
+                "reasons": [R("no assessments, wellbeing entries or conversations in this period",
+                              "اس عرصے میں کوئی جائزہ، فلاح کا اندراج یا گفتگو نہیں")]}
+    return {"key": "stable", "label": R("Stable", "مستحکم"),
+            "reasons": [R("no high-risk indicators in this period", "اس عرصے میں کوئی خطرے کی علامت نہیں")]}
 
 
 # ─────────────────────────────────────────────
@@ -495,7 +586,15 @@ Return ONLY JSON with these keys:
 }"""
 
 
+URDU_INSTRUCTION = """
+LANGUAGE: Write ALL the JSON values in clear, simple, respectful Pakistani Urdu (Urdu script), suitable for
+the client and their family to read. Keep the JSON keys in English. Keep test names (PHQ-9, GAD-7, WHO-5)
+and numbers as they are. Do not use Roman Urdu."""
+
+
 def _fallback_narrative(data, status):
+    if data.get("lang") == "ur":
+        return _fallback_narrative_ur(data, status)
     p, wb, chat, latest = data["profile"], data["wb"], data["chat"], data["latest"]
     parts = [f'The client is a {p["age"]}-year-old' if p["age"] else "The client is an adult",
              f'{p["profession"].lower()}' if p["profession"] != "Not specified" else "individual"]
@@ -526,8 +625,43 @@ def _fallback_narrative(data, status):
     }
 
 
+def _fallback_narrative_ur(data, status):
+    p, wb, chat, latest = data["profile"], data["wb"], data["chat"], data["latest"]
+    who = f'{p["age"]} سالہ' if p["age"] else "بالغ"
+    summary = f"یہ رپورٹ ایک {who} فرد کے بارے میں ہے"
+    if p.get("profession_known"):
+        summary += f" ({p['profession']})"
+    if p.get("displacement_known"):
+        summary += f" جو {p['displacement']} کی وجہ سے بے گھر ہوئے"
+    summary += "۔"
+    if latest:
+        summary += (f' حالیہ جائزے کے مطابق ڈپریشن کی علامات {latest["phq_band"]} (PHQ-9: {latest["phq"]})، '
+                    f'بے چینی {latest["gad_band"]} (GAD-7: {latest["gad"]}) اور مجموعی فلاح {latest["who_band"]} (WHO-5: {latest["who"]}) ہے۔')
+    if wb["avg_sleep"] is not None:
+        summary += f' اوسط نیند {wb["avg_sleep"]:g} گھنٹے رہی۔'
+    summary += f' مجموعی حالت: {status["label"]}۔'
+    return {
+        "executive_summary": summary,
+        "presenting_concerns": [t["name"] for t in chat["themes"][:4]] or ["اس عرصے میں گفتگو کی کافی معلومات نہیں"],
+        "emotional_themes": ("گفتگو میں زیادہ تر " + "، ".join(t["name"] for t in chat["themes"][:3]) + " کا ذکر آیا۔")
+        if chat["themes"] else "جذباتی موضوعات بیان کرنے کے لیے گفتگو کی کافی معلومات نہیں۔",
+        "stressors": p["hardships"] or p["stressors"] or ["اس عرصے میں درج نہیں"],
+        "strengths": ["مدد کی سروس سے مسلسل رابطے میں ہیں"] + (["معیاری خود تشخیصی جائزے مکمل کیے"] if latest else []),
+        "risk_assessment": ("پیغامات میں خودکشی یا خود کو نقصان پہنچانے کے خیالات کے آثار ملے۔ براہِ راست حفاظتی جائزہ تجویز کیا جاتا ہے۔"
+                            if chat["risk_count"] else "اس عرصے میں خودکشی یا خود کو نقصان پہنچانے کے خیالات کے کوئی آثار نہیں ملے۔"),
+        "progress": "وقت کے ساتھ تبدیلی دیکھنے کے لیے اس رپورٹ کے جدول اور گراف دیکھیں۔",
+        "recommendations": [
+            "اس رپورٹ پر کسی ماہر کے ساتھ آمنے سامنے بیٹھ کر بات کریں۔",
+            "تبدیلی جاننے کے لیے ہر ہفتے خود تشخیصی جائزہ جاری رکھیں۔",
+            "جہاں تک ممکن ہو باقاعدہ نیند اور روزمرہ کا معمول رکھیں۔",
+            "فوری مدد کے لیے اُمنگ (0311-7786264) اور 1122 سے رابطہ کریں۔",
+        ],
+        "ai": False,
+    }
+
+
 def _ai_narrative(data, status, period_label):
-    key = (data["user_id"], period_label, data["fingerprint"])
+    key = (data["user_id"], period_label, data["fingerprint"], data.get("lang", "en"))
     if key in _AI_CACHE:
         return _AI_CACHE[key]
     if not os.environ.get("OPENAI_API_KEY") or (not data["user_texts"] and not data["assessments"] and not data["wellbeing"]):
@@ -566,9 +700,11 @@ def _ai_narrative(data, status, period_label):
     try:
         result = client.chat.completions.create(
             model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "system", "content": REPORT_PROMPT}, {"role": "user", "content": content}],
+            messages=[{"role": "system",
+                       "content": REPORT_PROMPT + (URDU_INSTRUCTION if data.get("lang") == "ur" else "")},
+                      {"role": "user", "content": content}],
             temperature=0.3,
-            max_tokens=1100,
+            max_tokens=1100 if data.get("lang") != "ur" else 1800,
             response_format={"type": "json_object"},
         )
         out = json.loads(result.choices[0].message.content or "{}")
@@ -592,6 +728,103 @@ def _ai_narrative(data, status, period_label):
 
 
 # ─────────────────────────────────────────────
+# Fixed words on the report, in English and Urdu
+# ─────────────────────────────────────────────
+REPORT_TEXT = {
+    "en": dict(
+        brand_sub="Mental Health Support for Internally Displaced People · Pakistan",
+        report_id="Report ID", printed_on="Printed on", pkt="(PKT)", prepared_for="Prepared for",
+        prepared_for_value="Doctor / Counsellor / Case worker",
+        title="Mental Wellbeing Progress Report", period="Reporting period",
+        confidential="CONFIDENTIAL · FOR PROFESSIONAL USE",
+        overall_status="Overall status", based_on="Based on", sep="; ", stop=".",
+        s1="Client Information", full_name="Full name", urdu_name="Name (Urdu)", age="Age", years="years",
+        dob="Date of birth", profession="Profession / role", email="Email", living="Current living situation",
+        displacement="Displacement cause", member_since="Member since", last_active="Last active",
+        hardships="Reported hardships",
+        s2="Executive Summary", ai_tag="AI-ASSISTED",
+        s3="Key Indicators", phq_label="Depression (PHQ-9)", gad_label="Anxiety (GAD-7)", who_label="Wellbeing (WHO-5)",
+        no_assessment="No assessment in period", avg_sleep="Average sleep", hours_short="h",
+        under6="{a} of {b} records under 6 hours", not_reported="Not reported",
+        top_mood="Most frequent mood", low_share="Low or anxious in {p}% of entries",
+        engagement="Engagement", days_one="day", days_many="days",
+        msgs_assess="{m} messages · {a} assessments",
+        s4="Standardised Screening Results",
+        s4_note="PHQ-9 (depression, 0–27, lower is better) · GAD-7 (anxiety, 0–21, lower is better) · WHO-5 (wellbeing, 0–25, higher is better). Change is compared with the previous assessment.",
+        date="Date", severity="Overall severity", scores_chart="Screening scores over time",
+        no_assessments="No self-assessment was completed in this period.",
+        s5="Daily Wellbeing (from conversations)",
+        s5_note="Sleep, mood and energy are read automatically from what the client writes in chat. {n} daily records in this period.",
+        sleep_chart="Sleep (hours)", mood_chart="Mood and energy", mood_dist="Mood distribution",
+        energy_dist="Energy distribution", not_reported_dot="Not reported.",
+        no_wellbeing="No sleep, mood or energy information was shared in this period.",
+        s6="Conversation Analysis", c_msgs="Messages from client", c_days="Active days", c_first="First / last",
+        c_len="Avg. length", c_lang="Language", c_time="Usual time", words="words",
+        themes="Main themes in the client's messages", no_themes="No clear themes detected.",
+        themes_legend="% = share of the client's messages that mention the theme",
+        concerns="Presenting concerns", emotional="Emotional themes", stressors="Life stressors",
+        strengths="Strengths and coping", progress="Progress during the period",
+        no_chat="The client did not use the chat in this period.",
+        s7="Risk and Safety", risk_count="{n} message(s) with possible suicidal thoughts or self-harm. Most recent:",
+        emergency="Emergency contacts shared with the client: Rescue 1122 · Umang 0311-7786264 · Rozan 051-2890505.",
+        s8="Recommendations", reviewed_by="Reviewed by (name, signature)", review_date="Date of review",
+        important="Important:",
+        disclaimer="This report was generated automatically by Empath AI from the client's own self-assessments and conversations. It is a screening and monitoring summary, <b>not a medical diagnosis</b>. PHQ-9, GAD-7 and WHO-5 are validated screening tools; scores should be interpreted by a qualified professional together with a clinical interview.",
+        disclaimer_ai="Sections marked “AI-assisted” were written with the help of a language model and should be verified.",
+        footer_line="Report {id} · printed {d} (Pakistan Standard Time).",
+        chart_mood="Mood", chart_energy="Energy", chart_phq="PHQ-9 (depression)", chart_gad="GAD-7 (anxiety)",
+        chart_who="WHO-5 (wellbeing)", lv1="Very low", lv2="Low", lv3="Okay / Medium", lv4="Good / High",
+        page="Page", of="of", confidential_short="Confidential",
+    ),
+    "ur": dict(
+        brand_sub="اندرونِ ملک بے گھر افراد کے لیے ذہنی صحت کی مدد · پاکستان",
+        report_id="رپورٹ نمبر", printed_on="پرنٹ کی تاریخ", pkt="(پاکستانی وقت)", prepared_for="کس کے لیے",
+        prepared_for_value="ڈاکٹر / کونسلر / کیس ورکر",
+        title="ذہنی فلاح و بہبود کی پیش رفت رپورٹ", period="رپورٹ کا عرصہ",
+        confidential="خفیہ · صرف ماہرین کے لیے",
+        overall_status="مجموعی حالت", based_on="بنیاد", sep="؛ ", stop="۔",
+        s1="ذاتی معلومات", full_name="پورا نام", urdu_name="نام (اردو)", age="عمر", years="سال",
+        dob="تاریخِ پیدائش", profession="پیشہ / کردار", email="ای میل", living="موجودہ رہائش",
+        displacement="بے گھر ہونے کی وجہ", member_since="رکنیت کی تاریخ", last_active="آخری بار فعال",
+        hardships="بتائی گئی مشکلات",
+        s2="خلاصہ", ai_tag="اے آئی کی مدد سے",
+        s3="اہم اشارے", phq_label="ڈپریشن (PHQ-9)", gad_label="بے چینی (GAD-7)", who_label="فلاح (WHO-5)",
+        no_assessment="اس عرصے میں کوئی جائزہ نہیں", avg_sleep="اوسط نیند", hours_short="گھنٹے",
+        under6="{b} میں سے {a} اندراجات میں نیند ۶ گھنٹے سے کم", not_reported="درج نہیں",
+        top_mood="سب سے عام موڈ", low_share="{p}% اندراجات میں کم یا بے چین",
+        engagement="شمولیت", days_one="دن", days_many="دن",
+        msgs_assess="{m} پیغامات · {a} جائزے",
+        s4="معیاری جائزوں کے نتائج",
+        s4_note="PHQ-9 (ڈپریشن، ۰ سے ۲۷، کم بہتر ہے) · GAD-7 (بے چینی، ۰ سے ۲۱، کم بہتر ہے) · WHO-5 (فلاح، ۰ سے ۲۵، زیادہ بہتر ہے)۔ تبدیلی کا موازنہ پچھلے جائزے سے کیا گیا ہے۔",
+        date="تاریخ", severity="مجموعی شدت", scores_chart="وقت کے ساتھ جائزوں کے اسکور",
+        no_assessments="اس عرصے میں کوئی خود تشخیصی جائزہ مکمل نہیں ہوا۔",
+        s5="روزانہ کی فلاح (گفتگو سے)",
+        s5_note="نیند، موڈ اور توانائی گفتگو میں لکھی گئی باتوں سے خودکار طور پر لی گئی ہیں۔ اس عرصے میں {n} روزانہ اندراجات۔",
+        sleep_chart="نیند (گھنٹے)", mood_chart="موڈ اور توانائی", mood_dist="موڈ کی تقسیم",
+        energy_dist="توانائی کی تقسیم", not_reported_dot="درج نہیں۔",
+        no_wellbeing="اس عرصے میں نیند، موڈ یا توانائی کے بارے میں کوئی معلومات نہیں دی گئیں۔",
+        s6="گفتگو کا تجزیہ", c_msgs="پیغامات کی تعداد", c_days="فعال دن", c_first="پہلی / آخری",
+        c_len="اوسط لمبائی", c_lang="زبان", c_time="عام وقت", words="الفاظ",
+        themes="پیغامات کے اہم موضوعات", no_themes="کوئی واضح موضوع نہیں ملا۔",
+        themes_legend="% = پیغامات کا وہ حصہ جن میں اس موضوع کا ذکر آیا",
+        concerns="اہم مسائل", emotional="جذباتی موضوعات", stressors="زندگی کے دباؤ",
+        strengths="خوبیاں اور مقابلے کی صلاحیت", progress="اس عرصے میں پیش رفت",
+        no_chat="اس عرصے میں گفتگو استعمال نہیں کی گئی۔",
+        s7="خطرہ اور حفاظت", risk_count="{n} پیغام(ات) میں خودکشی یا خود کو نقصان پہنچانے کے ممکنہ خیالات۔ حالیہ:",
+        emergency="ہنگامی رابطے: ریسکیو 1122 · اُمنگ 0311-7786264 · روزن 051-2890505۔",
+        s8="سفارشات", reviewed_by="جائزہ لینے والا (نام، دستخط)", review_date="جائزے کی تاریخ",
+        important="اہم:",
+        disclaimer="یہ رپورٹ ایمپاتھ اے آئی نے صارف کے اپنے جائزوں اور گفتگو سے خودکار طور پر تیار کی ہے۔ یہ اسکریننگ اور نگرانی کا خلاصہ ہے، <b>طبی تشخیص نہیں</b>۔ PHQ-9، GAD-7 اور WHO-5 مستند اسکریننگ ٹولز ہیں؛ ان کے اسکورز کی تشریح کسی مستند ماہر کو بالمشافہ ملاقات کے ساتھ کرنی چاہیے۔",
+        disclaimer_ai="\"اے آئی کی مدد سے\" والے حصے ایک لینگویج ماڈل کی مدد سے لکھے گئے ہیں اور ان کی تصدیق ضروری ہے۔",
+        footer_line="رپورٹ {id} · پرنٹ {d} (پاکستانی وقت)۔",
+        chart_mood="موڈ", chart_energy="توانائی", chart_phq="PHQ-9 (ڈپریشن)", chart_gad="GAD-7 (بے چینی)",
+        chart_who="WHO-5 (فلاح)", lv1="بہت کم", lv2="کم", lv3="ٹھیک / درمیانہ", lv4="اچھا / زیادہ",
+        page="صفحہ", of="از", confidential_short="خفیہ",
+    ),
+}
+
+
+# ─────────────────────────────────────────────
 # Route
 # ─────────────────────────────────────────────
 @app.route("/report")
@@ -602,11 +835,19 @@ def wellbeing_report():
         period = "30"
     days = REPORT_PERIODS[period]
 
-    data = _collect(session.get("account_id"), days)
+    # Report language: ?lang=ur / ?lang=en, otherwise the app language
+    lang = request.args.get("lang") or session.get("language") or "en"
+    lang = "ur" if str(lang).lower().startswith("ur") else "en"
+
+    data = _collect(session.get("account_id"), days, lang)
     status = _overall_status(data)
     now_pk = data["now_pk"]
-    period_label = (f'{_fmt_date(data["since_pk"])} – {_fmt_date(now_pk)} (last {days} days)'
-                    if days else f'All records up to {_fmt_date(now_pk)}')
+    if lang == "ur":
+        period_label = (f'{_fmt_date(data["since_pk"], lang)} – {_fmt_date(now_pk, lang)} (پچھلے {days} دن)'
+                        if days else f'{_fmt_date(now_pk, lang)} تک کا تمام ریکارڈ')
+    else:
+        period_label = (f'{_fmt_date(data["since_pk"])} – {_fmt_date(now_pk)} (last {days} days)'
+                        if days else f'All records up to {_fmt_date(now_pk)}')
     narrative = _ai_narrative(data, status, period_label)
 
     report_id = f'EAI-{now_pk.strftime("%Y%m%d")}-{(data["user_id"] or 0):04d}'
@@ -631,9 +872,11 @@ def wellbeing_report():
         charts=charts,
         period=period,
         period_label=period_label,
-        printed_on=now_pk.strftime("%d %B %Y, %I:%M %p"),
+        printed_on=_fmt_datetime(now_pk, lang) if lang == "ur" else now_pk.strftime("%d %B %Y, %I:%M %p"),
+        rlang=lang,
+        T=REPORT_TEXT[lang],
         report_id=report_id,
-        file_name=f'Empath_AI_Report_{safe_name}_{now_pk.strftime("%Y-%m-%d")}',
+        file_name=f'Empath_AI_Report_{safe_name}_{now_pk.strftime("%Y-%m-%d")}' + ("_Urdu" if lang == "ur" else ""),
     )
 
 

@@ -27,10 +27,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for, send_file
 from openai import OpenAI
-from gnuhealth_connector import (
-     create_mygnuhealth_profile,
-    update_mygnuhealth_tracker,
-)
 from quranic_corner_service import get_category_verses
 from .core import (
     app,
@@ -651,25 +647,6 @@ def chat():
     if wellbeing_info:
         print("Wellness detected:", wellbeing_info)
 
-        user = get_user_by_id(session["user_id"])
-        gnuhealth_id = user["gnuhealth_id"] if user else None
-
-        
-        if gnuhealth_id:
-            # Save wellness directly to this user's local MyGNUHealth profile.
-            tracker_result = update_mygnuhealth_tracker(
-                gnuhealth_id,
-                wellbeing_info.get("sleep_hours"),
-                wellbeing_info.get("mood"),
-                wellbeing_info.get("energy")
-            )
-
-            print("MyGNUHealth tracker result:", tracker_result)
-
-        else:
-            print("No MyGNUHealth profile ID linked to this user.")
-
-            
     # Learn compact user profile from this message, not the full chat.
     if session.get("user_id"):
         try:

@@ -27,10 +27,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from flask import Flask, request, jsonify, render_template, session, g, redirect, url_for, send_file
 from openai import OpenAI
-from gnuhealth_connector import (
-     create_mygnuhealth_profile,
-    update_mygnuhealth_tracker,
-)
 from quranic_corner_service import get_category_verses
 from .core import (
     app,
@@ -151,7 +147,6 @@ def init_db():
     for col_sql in [
         "ALTER TABLE users ADD COLUMN account_id INTEGER UNIQUE",
         "ALTER TABLE users ADD COLUMN living_place TEXT DEFAULT ''",
-            "ALTER TABLE users ADD COLUMN gnuhealth_id TEXT",
         "ALTER TABLE assessments ADD COLUMN advice_given TEXT",
         "ALTER TABLE assessments ADD COLUMN prev_phq9 INTEGER",
         "ALTER TABLE assessments ADD COLUMN prev_gad7 INTEGER",
@@ -342,49 +337,6 @@ def get_user_by_account_id(account_id):
     cursor.execute("SELECT * FROM users WHERE account_id = ? LIMIT 1", (account_id,))
     return cursor.fetchone()
 
-
-
-def set_gnuhealth_id(user_id, gnuhealth_id):
-    """Safely link a local Empath AI user to their MyGNUHealth profile ID."""
-    if not user_id or not gnuhealth_id:
-        return False
-
-    db = get_db()
-    cursor = db.cursor()
-
-    cursor.execute(
-        "SELECT gnuhealth_id FROM users WHERE id = ?",
-        (user_id,)
-    )
-    row = cursor.fetchone()
-
-    if not row:
-        return False
-
-    current_id = row["gnuhealth_id"]
-
-    # Allow an empty link or the same existing link.
-    if current_id and current_id != gnuhealth_id:
-        app.logger.error(
-            "Refusing to replace existing GNU Health ID for user %s",
-            user_id
-        )
-        return False
-
-    if current_id == gnuhealth_id:
-        return True
-
-    cursor.execute(
-        """
-        UPDATE users
-        SET gnuhealth_id = ?
-        WHERE id = ?
-          AND (gnuhealth_id IS NULL OR gnuhealth_id = '')
-        """,
-        (gnuhealth_id, user_id)
-    )
-    db.commit()
-    return cursor.rowcount == 1
 
 
 def get_or_create_user_for_account(account_id, account_name):

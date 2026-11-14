@@ -180,6 +180,30 @@
   .ayah-result h4.section-heading::before,
   .ayah-result h4.section-heading::after { display: none; }
 
+  /* ===== Source references ===== */
+  .ref-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .ref-row .ayah-result-reference { margin-bottom: 0; }
+  .ref-link {
+    display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px;
+    font-size: 12px; font-weight: 600; color: #0f766e; background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(15,118,110,0.18); text-decoration: none; transition: background .2s, border-color .2s;
+  }
+  .ref-link:hover { background: #fff; border-color: rgba(15,118,110,0.4); }
+  .ref-link svg { width: 12px; height: 12px; }
+  .sources-section .src-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px dashed rgba(15,118,110,0.18); }
+  .src-item:first-of-type { border-top: 0; padding-top: 0; }
+  .src-label { flex: 0 0 auto; min-width: 92px; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
+  html[lang="ur"] .src-label { text-transform: none; font-size: 13px; }
+  .src-body { flex: 1 1 auto; font-size: 14px; color: #0f172a; line-height: 1.7; }
+  .src-body a { color: #0f766e; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(15,118,110,0.25); }
+  .src-body a:hover { border-bottom-color: #0f766e; }
+  .src-body ul { margin: 0; padding: 0; list-style: none; }
+  .src-body li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 3px 0; }
+  .src-lang { font-size: 10.5px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 6px; padding: 1px 6px; }
+  .based-on { margin-top: 8px; font-size: 12.5px; font-weight: 600; color: #0f766e; }
+  .src-note { margin-top: 10px; font-size: 12px; line-height: 1.7; color: #64748b; }
+  html[lang="ur"] .src-note { line-height: 2; }
+
   /* Ayah art panel */
   .ayah-art { background: linear-gradient(150deg, #0f172a 0%, #12343f 50%, #0f766e 100%); }
   .ayah-art::before {
@@ -300,6 +324,8 @@
     <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-sidebar-label="wellnessProgress">Wellness Progress</span></a>
     <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-sidebar-label="wordsOfHope">Words of Hope</span></a>
     <a class="side-link active" href="/quranic_corner" aria-current="page"><span data-icon="quran"></span><span class="side-label" data-sidebar-label="quranicCorner">Quranic Comfort Corner</span></a>
+    <a class="side-link" href="/calm_corner"><span data-icon="calm"></span><span class="side-label" data-sidebar-label="calmCorner">Calm Corner</span></a>
+    <a class="side-link" href="/report"><span data-icon="report"></span><span class="side-label" data-sidebar-label="myReport">My Report</span></a>
   </nav>
 
   <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
@@ -538,7 +564,10 @@ const translations = {
         selected: "You selected ", count: "Show Ayat:", loading: "Loading Quranic guidance...",
         translation: "Translation", clickHint: "Click an Ayah to read its explanation and reflection.", tafseer: "Tafseer", story: "Quranic context / story", lesson: "A lesson from the Quran", heartMessage: "A message for your heart", reflectionQuestion: "A moment to reflect", unavailable: "This information is not available yet.", noVerses: "No Ayat are available in this category yet.",
         tafseerSoon: "A verse-specific explanation for this Ayah is being prepared and checked. For now, please read the translation and the reflection below.",
-        error: "Unable to load Quranic guidance. Please try again.", retry: "Please try again."
+        error: "Unable to load Quranic guidance. Please try again.", retry: "Please try again.",
+        readQuran: "Read on Quran.com", basedOn: "Based on:", translationRef: "Translation", translationSource: "Saheeh International (English) · Arabic text: Mushaf Hafs, via Quranpedia", sources: "Sources & references", ayahRef: "Ayah", tafsirRef: "Tafsir",
+        explainNote: "This explanation is written in simple words for Empath AI and is based on mainstream tafsir. For the full explanation, please read the tafsir linked under “Sources & references”.",
+        sourcesNote: "The Arabic text and translation are shown from the Quran. The short explanation and lesson were written for this app in simple words; they are not quotations from the tafsir books listed above."
     },
     ur: {
         dashboard: "ڈیش بورڈ", brandSub: "آئی ڈی پی ذہنی صحت", navTitle: "قرآنی سکون کا گوشہ",
@@ -555,7 +584,10 @@ const translations = {
         selected: "آپ نے منتخب کیا: ", count: "آیات کی تعداد:", loading: "قرآنی رہنمائی لوڈ ہو رہی ہے...",
         translation: "ترجمہ", clickHint: "تفسیر اور غور و فکر پڑھنے کے لیے آیت پر کلک کریں۔", tafseer: "تفسیر", story: "قرآنی پس منظر / واقعہ", lesson: "قرآن سے ایک سبق", heartMessage: "آپ کے دل کے لیے ایک پیغام", reflectionQuestion: "غور و فکر کا ایک لمحہ", unavailable: "یہ معلومات فی الحال دستیاب نہیں ہیں۔", noVerses: "اس کیٹیگری میں ابھی آیات دستیاب نہیں ہیں۔",
         tafseerSoon: "اس آیت کی الگ تفسیر تیار اور جانچی جا رہی ہے۔ فی الحال اوپر دیا گیا ترجمہ اور نیچے دیا گیا غور و فکر پڑھیں۔",
-        error: "قرآنی رہنمائی حاصل نہیں ہو سکی۔ دوبارہ کوشش کریں۔", retry: "براہ کرم دوبارہ کوشش کریں۔"
+        error: "قرآنی رہنمائی حاصل نہیں ہو سکی۔ دوبارہ کوشش کریں۔", retry: "براہ کرم دوبارہ کوشش کریں۔",
+        readQuran: "Quran.com پر پڑھیں", basedOn: "ماخذ:", translationRef: "ترجمہ", translationSource: "مولانا محمد جوناگڑھی (اردو) · عربی متن: مصحف حفص، بذریعہ قرآن پیڈیا", sources: "ماخذ اور حوالہ جات", ayahRef: "آیت", tafsirRef: "تفسیر",
+        explainNote: "یہ وضاحت ایمپاتھ اے آئی کے لیے آسان الفاظ میں لکھی گئی ہے اور معروف تفاسیر پر مبنی ہے۔ مکمل تفسیر کے لیے نیچے \"ماخذ اور حوالہ جات\" میں دی گئی تفاسیر پڑھیں۔",
+        sourcesNote: "عربی متن اور ترجمہ قرآنِ مجید سے پیش کیا گیا ہے۔ مختصر وضاحت اور سبق اس ایپ کے لیے آسان الفاظ میں لکھے گئے ہیں؛ یہ اوپر دی گئی تفاسیر سے براہِ راست اقتباس نہیں ہیں۔"
     }
 };
 const t = translations[language];
@@ -585,6 +617,112 @@ function setMessage(message, className = "ayah-placeholder") {
 }
 
 
+/* =========================
+   SOURCE REFERENCES
+   Uses verse.references from data/quranic_comfort_content.json.
+   If they are missing, the same links are built from the surah and ayah numbers.
+========================= */
+const EXTERNAL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+const BOOK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5c4-2 7-1 9 1v15c-2-2-5-3-9-1z"/><path d="M21 5c-4-2-7-1-9 1v15c2-2 5-3 9-1z"/></svg>';
+
+function getReferences(verse) {
+    const s = verse.surah_number, a = verse.ayah_number;
+    const r = verse.references || {};
+    return {
+        ayahText: (isUrdu ? r.ayah_ur : r.ayah_en) ||
+            (isUrdu ? `سورۃ ${verse.surah_name} (${s})، آیت ${a}` : `Surah ${verse.surah_name} (${s}), Ayah ${a} · Quran ${s}:${a}`),
+        quranLink: r.quran_link || `https://quran.com/${s}:${a}`,
+        tafsirs: Array.isArray(r.tafsir_sources) && r.tafsir_sources.length ? r.tafsir_sources : [
+            { name_en: "Tafsir Ibn Kathir (English, abridged)", name_ur: "تفسیر ابن کثیر (انگریزی، مختصر)", lang: "en",
+              url: `https://quran.com/${s}:${a}/tafsirs/en-tafisr-ibn-kathir` },
+            { name_en: "Ma'ariful Qur'an, Mufti Muhammad Shafi (English)", name_ur: "معارف القرآن، مفتی محمد شفیعؒ (انگریزی)", lang: "en",
+              url: `https://quran.com/${s}:${a}/tafsirs/en-tafsir-maarif-ul-quran` },
+            { name_en: "Tafseer Ibn-e-Kaseer (Urdu)", name_ur: "تفسیر ابنِ کثیر (اردو)", lang: "ur",
+              url: `https://surahquran.com/tafsir-Urdu-aya-${a}-sora-${s}.html` }
+        ]
+    };
+}
+
+function makeLink(href, label, className) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    if (className) link.className = className;
+    const text = document.createElement("span");
+    text.textContent = label;
+    link.appendChild(text);
+    if (className === "ref-link") link.insertAdjacentHTML("beforeend", EXTERNAL_ICON);
+    link.addEventListener("click", (event) => event.stopPropagation());   // do not open the popup
+    link.addEventListener("keydown", (event) => event.stopPropagation());
+    return link;
+}
+
+function addSourcesSection(container, verse) {
+    const refs = getReferences(verse);
+    const box = document.createElement("section");
+    box.className = "ayah-detail-section sources-section";
+
+    const title = document.createElement("h3");
+    title.textContent = t.sources;
+    box.appendChild(title);
+
+    // Ayah reference
+    const ayahRow = document.createElement("div");
+    ayahRow.className = "src-item";
+    const ayahLabel = document.createElement("div");
+    ayahLabel.className = "src-label";
+    ayahLabel.textContent = t.ayahRef;
+    const ayahBody = document.createElement("div");
+    ayahBody.className = "src-body";
+    const ayahText = document.createElement("div");
+    ayahText.textContent = refs.ayahText;
+    ayahBody.append(ayahText, makeLink(refs.quranLink, t.readQuran + " ↗"));
+    ayahRow.append(ayahLabel, ayahBody);
+    box.appendChild(ayahRow);
+
+    // Translation source (from quranic_corner_service.py via the Quranpedia API)
+    const trRow = document.createElement("div");
+    trRow.className = "src-item";
+    const trLabel = document.createElement("div");
+    trLabel.className = "src-label";
+    trLabel.textContent = t.translationRef;
+    const trBody = document.createElement("div");
+    trBody.className = "src-body";
+    trBody.textContent = t.translationSource;
+    trRow.append(trLabel, trBody);
+    box.appendChild(trRow);
+
+    // Tafsir references
+    const tafRow = document.createElement("div");
+    tafRow.className = "src-item";
+    const tafLabel = document.createElement("div");
+    tafLabel.className = "src-label";
+    tafLabel.textContent = t.tafsirRef;
+    const tafBody = document.createElement("div");
+    tafBody.className = "src-body";
+    const list = document.createElement("ul");
+    refs.tafsirs.forEach((src) => {
+        const item = document.createElement("li");
+        item.appendChild(makeLink(src.url, (isUrdu ? src.name_ur : src.name_en) + " ↗"));
+        const lang = document.createElement("span");
+        lang.className = "src-lang";
+        lang.textContent = src.lang === "ur" ? (isUrdu ? "اردو" : "Urdu") : (isUrdu ? "انگریزی" : "English");
+        item.appendChild(lang);
+        list.appendChild(item);
+    });
+    tafBody.appendChild(list);
+    tafRow.append(tafLabel, tafBody);
+    box.appendChild(tafRow);
+
+    const note = document.createElement("div");
+    note.className = "src-note";
+    note.textContent = t.sourcesNote;
+    box.appendChild(note);
+
+    container.appendChild(box);
+}
+
 function addDetailSection(container, heading, value) {
     const section = document.createElement("section");
     section.className = "ayah-detail-section";
@@ -601,25 +739,30 @@ function openAyahDetails(verse) {
     const sections = document.getElementById("ayahDetailSections");
     document.getElementById("ayahDetailTitle").textContent =
         isUrdu ? "آیت کی وضاحت اور غور و فکر" : "Understanding and reflecting on this Ayah";
-    document.getElementById("ayahDetailReference").textContent =
-        `${verse.surah_name} (${verse.surah_number}:${verse.ayah_number})`;
+    document.getElementById("ayahDetailReference").textContent = getReferences(verse).ayahText;
     sections.replaceChildren();
 console.log("QURANIC VERSE DATA:", verse);
    const details = isUrdu ? [
     [t.tafseer || "تفسیر", verse.tafseer_ur],
     [t.lesson || "قرآن سے ایک خوبصورت سبق", verse.beautiful_lesson_ur],
-    [t.heartMessage || "آج کا پیغام", verse.heart_message_ur],
-    [t.reflectionQuestion || "آج کا مختصر سا غور و فکر", verse.reflection_question_ur]
+    [t.heartMessage || "آج کا پیغام", verse.heart_message_ur]
 ] : [
     [t.tafseer || "Tafseer", verse.tafseer_en],
     [t.lesson || "A Beautiful Lesson from the Quran", verse.beautiful_lesson_en],
-    [t.heartMessage || "Today's Message", verse.heart_message_en],
-    [t.reflectionQuestion || "A Moment to Reflect", verse.reflection_question_en]
+    [t.heartMessage || "Today's Message", verse.heart_message_en]
 ];
     let hasContent = false;
     details.forEach(([heading, value], index) => {
         if (typeof value === "string" && value.trim()) {
             addDetailSection(sections, heading, value);
+            const based = isUrdu ? verse.tafseer_sources_ur : verse.tafseer_sources_en;
+            if (index === 0 && Array.isArray(based) && based.length) {
+                // Which tafsir books this explanation was summarised from
+                const line = document.createElement("div");
+                line.className = "based-on";
+                line.textContent = `${t.basedOn} ${based.join(isUrdu ? "، " : ", ")} (${verse.surah_number}:${verse.ayah_number})`;
+                sections.lastElementChild.appendChild(line);
+            }
             hasContent = true;
         } else if (index === 0 && verse.tafseer_pending) {
             // Tafseer for this Ayah is still being written: say so instead of hiding it
@@ -632,6 +775,8 @@ console.log("QURANIC VERSE DATA:", verse);
         addDetailSection(sections, isUrdu ? "وضاحت" : "Further explanation",
             t.unavailable);
     }
+
+    addSourcesSection(sections, verse);
 
     modal.classList.add("show");
     document.body.style.overflow = "hidden";
@@ -662,9 +807,13 @@ function renderVerses(verses) {
         article.setAttribute("role", "button");
         article.setAttribute("aria-label", t.clickHint);
 
+        const refs = getReferences(verse);
         const reference = document.createElement("div");
-        reference.className = "ayah-result-reference";
-        reference.textContent = `${verse.surah_name} (${verse.surah_number}:${verse.ayah_number})`;
+        reference.className = "ref-row";
+        const chip = document.createElement("span");
+        chip.className = "ayah-result-reference";
+        chip.textContent = refs.ayahText;
+        reference.append(chip, makeLink(refs.quranLink, t.readQuran, "ref-link"));
 
         const arabic = document.createElement("div");
         arabic.className = "ayah-result-arabic";
@@ -772,10 +921,10 @@ document.getElementById("ayahCount").addEventListener("change", () => {
   const SIDEBAR_TEXT = {
     en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
           wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
-          quranicCorner: "Quranic Comfort Corner", logout: "Logout" },
+          quranicCorner: "Quranic Comfort Corner", calmCorner: "Calm Corner", myReport: "My Report", logout: "Logout" },
     ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
           wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
-          quranicCorner: "قرآنی سکون کا گوشہ", logout: "لاگ آؤٹ" }
+          quranicCorner: "قرآنی سکون کا گوشہ", calmCorner: "سکون کا گوشہ", myReport: "میری رپورٹ", logout: "لاگ آؤٹ" }
   };
 
   const t = SIDEBAR_TEXT[root.lang === "ur" ? "ur" : "en"];
