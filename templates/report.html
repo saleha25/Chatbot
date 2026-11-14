@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+    <title>Wellbeing Report — Empath AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+    </script>
+
+    <!-- ===== ICONS (separate file) ===== -->
+    <script src="/static/icons.js"></script>
+
+    <!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+              urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer components {
+        .glass {
+          @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+                 shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
+        }
+
+        /* ---------- Sidebar ---------- */
+        .side-link {
+          @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+                 hover:bg-white/60 hover:text-slate-900;
+        }
+        .side-link [data-icon], .side-link .side-svg { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+        .side-link:hover [data-icon], .side-link:hover .side-svg { @apply text-teal-700; }
+        .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+        .side-link.active [data-icon], .side-link.active .side-svg { @apply text-teal-700; }
+
+        .icon-btn {
+          @apply relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/60
+                 text-slate-700 transition hover:bg-white hover:text-teal-700;
+        }
+        .icon-btn [data-icon] { @apply h-5 w-5; }
+
+        /* ---------- Top bar ---------- */
+        .nav-btn-green {
+          @apply inline-flex items-center rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
+        }
+
+        /* ---------- Report page ---------- */
+        .ctrl-card { @apply glass mb-5 flex flex-col gap-3 rounded-2xl p-4 md:flex-row md:items-center md:justify-between; }
+        .seg { @apply inline-flex overflow-hidden rounded-xl border border-white/80 bg-white/70; }
+        .seg a { @apply px-3.5 py-2 text-[13px] font-semibold text-slate-500 transition hover:text-teal-800; }
+        .seg a.on { @apply bg-teal-700 text-white hover:text-white; }
+        .btn-main {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800 disabled:cursor-wait disabled:opacity-70;
+        }
+        .btn-soft {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/80 bg-white/70 px-4 py-2.5 text-sm font-semibold
+                 text-slate-700 transition hover:bg-white hover:text-teal-800;
+        }
+        .btn-main [data-icon], .btn-soft [data-icon] { @apply block h-4 w-4; }
+
+        .helpline-footer {
+          @apply glass mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl px-4 py-3 text-center text-[12.5px] text-slate-500;
+        }
+        .helpline-footer strong { @apply whitespace-nowrap font-semibold text-slate-900; }
+      }
+    </style>
+    <style>
+      @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      .anim-up   { animation: fadeUp .5s ease both; }
+      .anim-up-2 { animation: fadeUp .5s .06s ease both; }
+      .anim-up-3 { animation: fadeUp .5s .12s ease both; }
+
+      .topbar { isolation: isolate; }
+      .topbar::before {
+        content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+        background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+        -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+
+      /* ===== SIDEBAR (same as dashboard) ===== */
+      html .sidebar {
+        position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+        display: flex; flex-direction: column;
+        width: 280px; max-width: calc(100vw - 48px);
+        overflow-y: auto; overflow-x: visible;
+        background: rgba(255,255,255,0.9);
+        transform: translateX(calc(-100% - 24px));
+        transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+      }
+      html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+      html.sidebar-open .sidebar { transform: none; }
+      .sidebar-overlay {
+        position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+        -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+      html.sidebar-open body { overflow: hidden; }
+
+      @media (min-width: 1024px) {
+        html .sidebar, html[dir="rtl"] .sidebar {
+          position: sticky; top: 20px; bottom: auto; z-index: 30;
+          height: calc(100vh - 40px); width: 248px; max-width: none;
+          transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+          cursor: pointer;
+        }
+        .sidebar-overlay { display: none; }
+        html.sidebar-collapsed .sidebar { width: 80px; }
+        html.sidebar-collapsed .sidebar .side-label { display: none; }
+        html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+        html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+        html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+        html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+          display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+          transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+          background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+          box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+        }
+      }
+
+      :root {
+        --ink: #0f172a; --muted: #64748b; --soft: #94a3b8; --line: #e2e8f0;
+        --teal: #0f766e; --teal-50: #f0fdfa; --teal-100: #ccfbf1;
+        --green: #15803d; --green-bg: #dcfce7; --amber: #b45309; --amber-bg: #fef3c7;
+        --orange: #c2410c; --orange-bg: #ffedd5; --red: #b91c1c; --red-bg: #fee2e2; --grey-bg: #f1f5f9;
+      }
+  /* ---------- A4 sheet ---------- */
+  .sheet {
+    max-width: 210mm; margin: 0 auto; background: #fff; padding: 14mm 13mm 12mm; color: var(--ink);
+    font-size: 13px; line-height: 1.55; border-radius: 18px; border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 10px 40px rgba(15,23,42,0.10);
+  }
+  /* exact A4 content width while the PDF is being made */
+  .sheet.pdf-mode { width: 186mm; max-width: none; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+  @media (max-width: 860px) { .sheet { padding: 18px; } }
+
+  /* ---------- header ---------- */
+  .sheet .rep-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding-bottom: 14px; border-bottom: 3px solid var(--teal); }
+  .sheet .brand { display: flex; align-items: center; gap: 12px; }
+  .sheet .brand-mark { width: 44px; height: 44px; border-radius: 12px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; }
+  .sheet .brand-mark [data-icon] { display: block; width: 22px; height: 22px; }
+  .sheet .brand-name { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .sheet .brand-sub { font-size: 11px; color: var(--muted); }
+  .sheet .rep-meta { text-align: right; font-size: 11.5px; color: var(--muted); line-height: 1.7; }
+  .sheet .rep-meta b { color: var(--ink); font-weight: 600; }
+  .sheet .rep-title { margin: 18px 0 4px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .sheet .rep-period { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  .sheet .confidential { display: inline-block; margin-top: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: var(--red); border: 1px solid #fecaca; background: #fff5f5; padding: 3px 8px; border-radius: 6px; }
+
+  /* ---------- status banner ---------- */
+  .sheet .status { display: flex; gap: 14px; align-items: flex-start; margin: 16px 0 6px; padding: 14px 16px; border-radius: 12px; border: 1px solid; }
+  .sheet .status .dot { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; margin-top: 4px; }
+  .sheet .status h3 { margin: 0 0 2px; font-size: 14px; }
+  .sheet .status p { margin: 0; font-size: 12.5px; color: #334155; }
+  .sheet .st-urgent { background: var(--red-bg); border-color: #fecaca; } .st-urgent .dot { background: var(--red); } .st-urgent h3 { color: var(--red); }
+  .sheet .st-attention { background: var(--orange-bg); border-color: #fed7aa; } .st-attention .dot { background: var(--orange); } .st-attention h3 { color: var(--orange); }
+  .sheet .st-monitor { background: var(--amber-bg); border-color: #fde68a; } .st-monitor .dot { background: var(--amber); } .st-monitor h3 { color: var(--amber); }
+  .sheet .st-stable { background: var(--green-bg); border-color: #bbf7d0; } .st-stable .dot { background: var(--green); } .st-stable h3 { color: var(--green); }
+  .sheet .st-nodata { background: var(--grey-bg); border-color: var(--line); } .st-nodata .dot { background: var(--soft); } .st-nodata h3 { color: var(--muted); }
+
+  /* ---------- sections ---------- */
+  .sheet .section { margin-top: 22px; break-inside: avoid; page-break-inside: avoid; }
+  .sheet .section.allow-break { break-inside: auto; page-break-inside: auto; }
+  .sheet .keep { break-inside: avoid; page-break-inside: avoid; }
+  .sheet .panel, .sheet .chart-box, .sheet .kpi, .sheet .risk-box, .sheet .tbl-wrap tr, .sheet .sign { break-inside: avoid; page-break-inside: avoid; }
+  .sheet .sec-title { break-after: avoid; page-break-after: avoid; display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+  .sheet .sec-num { width: 24px; height: 24px; border-radius: 7px; background: var(--teal); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .sheet .sec-note { margin: -4px 0 10px; font-size: 11.5px; color: var(--muted); }
+  .sheet p.body { margin: 0 0 8px; color: #1e293b; }
+
+  .sheet .info-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .sheet .info-grid div { display: flex; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .sheet .info-grid div:nth-child(odd) { border-inline-end: 1px solid var(--line); }
+  .sheet .info-grid div:nth-last-child(-n+2) { border-bottom: 0; }
+  .sheet .info-grid dt { flex: 0 0 42%; color: var(--muted); }
+  .sheet .info-grid dd { margin: 0; font-weight: 600; }
+  .sheet .urdu { font-family: 'Noto Sans Arabic', sans-serif; font-weight: 600; }
+
+  .sheet .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .sheet .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .sheet .kpi .k-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .sheet .kpi .k-value { font-size: 20px; font-weight: 800; margin-top: 2px; }
+  .sheet .kpi .k-sub { font-size: 11.5px; color: var(--muted); }
+
+  .sheet table.data { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sheet table.data th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: #f8fafc; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .sheet table.data td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .sheet table.data tr:last-child td { border-bottom: 0; }
+  .sheet .tbl-wrap { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+
+  .sheet .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .sheet .lv-1 { background: var(--green-bg); color: var(--green); }
+  .sheet .lv-2 { background: var(--amber-bg); color: var(--amber); }
+  .sheet .lv-3 { background: var(--orange-bg); color: var(--orange); }
+  .sheet .lv-4 { background: var(--red-bg); color: var(--red); }
+  .sheet .lv-0 { background: var(--grey-bg); color: var(--muted); }
+  .sheet .chg { font-size: 11px; font-weight: 600; }
+  .sheet .chg.better { color: var(--green); } .chg.worse { color: var(--red); } .chg.same, .chg.none { color: var(--soft); }
+
+  .sheet .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sheet .chart-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .sheet .chart-box h4 { margin: 0 0 6px; font-size: 12px; font-weight: 700; }
+  .sheet .chart-box .cv { position: relative; height: 150px; }
+  .sheet .chart-box.wide { grid-column: 1 / -1; }
+  .sheet .chart-box.wide .cv { height: 170px; }
+
+  .sheet .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .sheet .panel { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .sheet .panel h4 { margin: 0 0 6px; font-size: 12.5px; font-weight: 700; color: var(--teal); }
+  .sheet ul.clean { list-style: disc;  margin: 0; padding-inline-start: 18px; }
+  .sheet ul.clean li { margin: 3px 0; }
+
+  .sheet .theme-row { display: grid; grid-template-columns: 44% 1fr 52px; align-items: center; gap: 10px; padding: 5px 0; font-size: 12px; }
+  .sheet .bar { height: 8px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
+  .sheet .bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #14b8a6, #0f766e); }
+  .sheet .theme-row .pct { text-align: right; color: var(--muted); font-weight: 600; }
+
+  .sheet .risk-box { border: 1px solid #fecaca; background: #fff7f7; border-radius: 10px; padding: 12px 14px; }
+  .sheet .risk-box.ok { border-color: #bbf7d0; background: #f6fef9; }
+  .sheet .risk-item { font-size: 12px; padding: 6px 0; border-top: 1px dashed #fecaca; }
+  .sheet .risk-item:first-of-type { border-top: 0; }
+  .sheet .risk-item .when { font-weight: 600; color: var(--red); }
+  .sheet .risk-item .ex { color: #334155; font-style: italic; unicode-bidi: plaintext; }
+
+  .sheet ol.recs { list-style: decimal;  margin: 0; padding-inline-start: 20px; }
+  .sheet ol.recs li { margin: 5px 0; }
+
+  .sheet .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+  .sheet .sign { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 28px; }
+  .sheet .sign div { border-top: 1px solid var(--ink); padding-top: 6px; font-size: 11.5px; color: var(--muted); }
+
+  .sheet .disclaimer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 10.5px; color: var(--muted); line-height: 1.6; }
+  .sheet .ai-tag { display: inline-block; font-size: 10px; font-weight: 700; color: var(--teal); background: var(--teal-50); border: 1px solid var(--teal-100); padding: 1px 6px; border-radius: 6px; margin-inline-start: 6px; vertical-align: middle; }
+  .sheet .empty { color: var(--muted); font-style: italic; font-size: 12px; }
+
+  /* ---------- print (Print button) ---------- */
+  @page {
+    size: A4; margin: 12mm 12mm 16mm;
+    @bottom-left { content: "Empath AI · Confidential · {{ report_id }}"; font: 9px 'Inter', sans-serif; color: #94a3b8; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 9px 'Inter', sans-serif; color: #94a3b8; }
+  }
+  @media print {
+    html, body { background: #fff !important; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print, .sidebar, .sidebar-overlay, .topbar, .helpline-footer, .bg-layer { display: none !important; }
+    .page { display: block !important; padding: 0 !important; }
+    .main { padding: 0 !important; max-width: none !important; }
+    .sheet { max-width: none; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+  }
+
+  /* ---------- "Preparing PDF" overlay ---------- */
+  .pdf-overlay { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center;
+    background: rgba(238,243,248,0.75); backdrop-filter: blur(4px); }
+  .pdf-overlay.show { display: flex; }
+  .pdf-overlay .box { display: flex; align-items: center; gap: 12px; padding: 16px 22px; border-radius: 16px; background: #fff;
+    box-shadow: 0 20px 50px rgba(15,23,42,0.15); font: 600 14px 'Inter', sans-serif; color: #0f172a; }
+  .spin { width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ccfbf1; border-top-color: #0f766e; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+      /* ===== URDU / RTL ===== */
+      html[dir="rtl"] body { direction: rtl; }
+      html[lang="ur"] body,
+      html[lang="ur"] button { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+      html[lang="ur"] *,
+      html[lang="ur"] *::before,
+      html[lang="ur"] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+      html[lang="ur"] h1, html[lang="ur"] .panel-title { line-height: 1.7; }
+      html[lang="ur"] p, html[lang="ur"] .ex-desc, html[lang="ur"] .panel-sub,
+      html[lang="ur"] .step-text, html[lang="ur"] .step-hint { line-height: 2; }
+      html[lang="ur"] .side-link, html[lang="ur"] .helpline-footer { line-height: 1.8; }
+
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
+
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="bg-layer pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="page flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+      <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+        <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+            <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+          </span>
+          <span class="side-label">Empath AI</span>
+        </a>
+        <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+      </div>
+
+      <nav class="flex flex-col gap-1" aria-label="Main">
+        <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-i18n-extra="dashboard">Dashboard</span></a>
+        <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-i18n-extra="letsChat">Let's Chat</span></a>
+        <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-i18n-extra="weeklyAssessment">Weekly Self Assessment</span></a>
+        <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-i18n-extra="wellnessProgress">Wellness Progress</span></a>
+        <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-i18n-extra="wordsOfHope">Words of Hope</span></a>
+        <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-i18n-extra="quranicCorner">Quranic Comfort Corner</span></a>
+        <a class="side-link" href="/calm_corner">
+          <span data-icon="calm"></span>
+          <span class="side-label" data-i18n-extra="calmCorner">Calm Corner</span>
+        </a>
+        <a class="side-link active" href="/report" aria-current="page"><span data-icon="report"></span><span class="side-label" data-i18n-extra="myReport">My Report</span></a>
+      </nav>
+
+      <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+        <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-i18n-extra="logout">Logout</span></a>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="min-w-0 flex-1">
+
+    <!-- NAVBAR -->
+    <nav class="topbar no-print sticky top-3 z-40 flex items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
+        <div class="nav-left flex min-w-0 items-center gap-3">
+            <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+            <a class="idp-badge flex min-w-0 items-center gap-2.5 lg:hidden" href="/dashboard">
+                <div class="idp-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+                    <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+                </div>
+                <div class="brand-text hidden min-w-0 flex-col min-[400px]:flex">
+                    <span class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</span>
+                    <span class="brand-sub truncate text-[11px] text-slate-500" data-t="brandSub">IDP Mental Health</span>
+                </div>
+            </a>
+            <div class="nav-divider hidden h-7 w-px bg-slate-900/10 sm:block lg:hidden"></div>
+            <span class="nav-page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" data-t="page">My Wellbeing Report</span>
+        </div>
+        <div class="nav-right flex shrink-0 items-center gap-3">
+            <a href="/dashboard" class="nav-btn-green" data-t="dashboard">Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="main mx-auto w-full max-w-6xl px-1 pb-8 pt-6 md:px-2 md:pt-10">
+
+        <div class="no-print anim-up mb-6">
+            <h1 class="text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[36px]" data-t="title">My Wellbeing Report</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" data-t="subtitle">A professional summary of your progress that you can download and share with a doctor, counsellor or NGO case worker.</p>
+        </div>
+
+        <div class="ctrl-card no-print anim-up-2">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-[13px] font-semibold text-slate-600" data-t="periodLabel">Report period</span>
+                <div class="seg" aria-label="Report period">
+                    <a href="?period=7" class="{{ 'on' if period == '7' }}" data-t="p7">7 days</a>
+                    <a href="?period=30" class="{{ 'on' if period == '30' }}" data-t="p30">30 days</a>
+                    <a href="?period=90" class="{{ 'on' if period == '90' }}" data-t="p90">90 days</a>
+                    <a href="?period=all" class="{{ 'on' if period == 'all' }}" data-t="pall">All time</a>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" class="btn-soft" onclick="window.print()"><span data-icon="printer"></span><span data-t="print">Print</span></button>
+                <button type="button" class="btn-main" id="downloadBtn"><span data-icon="download"></span><span id="downloadText" data-t="download">Download PDF</span></button>
+            </div>
+        </div>
+
+        <div class="anim-up-3">
+<article class="sheet" id="reportSheet">
+
+  <header class="rep-head">
+    <div class="brand">
+      <div class="brand-mark"><svg width="22" height="22" viewBox="0 0 18 18" fill="#ffffff" aria-hidden="true"><circle cx="9" cy="7" r="4"/><rect x="7" y="11" width="4" height="5" rx="1"/></svg></div>
+      <div>
+        <div class="brand-name">Empath AI</div>
+        <div class="brand-sub">Mental Health Support for Internally Displaced People · Pakistan</div>
+      </div>
+    </div>
+    <div class="rep-meta">
+      <div>Report ID: <b>{{ report_id }}</b></div>
+      <div>Printed on: <b>{{ printed_on }}</b> (PKT)</div>
+      <div>Prepared for: <b>Doctor / Counsellor / Case worker</b></div>
+    </div>
+  </header>
+
+  <h1 class="rep-title">Mental Wellbeing Progress Report</h1>
+  <div class="rep-period">Reporting period: <b>{{ period_label }}</b></div>
+  <span class="confidential">CONFIDENTIAL · FOR PROFESSIONAL USE</span>
+
+  <div class="status st-{{ status.key }}">
+    <span class="dot"></span>
+    <div>
+      <h3>Overall status: {{ status.label }}</h3>
+      <p>Based on: {{ status.reasons | join('; ') }}.</p>
+    </div>
+  </div>
+
+  <!-- 1. CLIENT INFORMATION -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">1</span>Client Information</h2>
+    {% set p = d.profile %}
+    <dl class="info-grid">
+      <div><dt>Full name</dt><dd>{{ p.full_name or '—' }}</dd></div>
+      <div><dt>Name (Urdu)</dt><dd class="urdu" dir="rtl">{{ p.urdu_name or '—' }}</dd></div>
+      <div><dt>Age</dt><dd>{{ (p.age ~ ' years') if p.age else '—' }}</dd></div>
+      <div><dt>Date of birth</dt><dd>{{ p.dob }}</dd></div>
+      <div><dt>Profession / role</dt><dd>{{ p.profession }}</dd></div>
+      <div><dt>Email</dt><dd>{{ p.email or '—' }}</dd></div>
+      <div><dt>Current living situation</dt><dd>{{ p.living_place }}</dd></div>
+      <div><dt>Displacement cause</dt><dd>{{ p.displacement }}</dd></div>
+      <div><dt>Member since</dt><dd>{{ p.member_since }}</dd></div>
+      <div><dt>Last active</dt><dd>{{ p.last_active }}</dd></div>
+      {% for label, value in p.extra %}
+      <div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>
+      {% endfor %}
+      {% if p.extra|length is odd %}<div><dt></dt><dd></dd></div>{% endif %}
+    </dl>
+    {% if p.hardships %}
+    <p class="body" style="margin-top:8px"><b>Reported hardships:</b> {{ p.hardships | join(', ') }}.</p>
+    {% endif %}
+  </section>
+
+  <!-- 2. EXECUTIVE SUMMARY -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">2</span>Executive Summary {% if n.ai %}<span class="ai-tag">AI-ASSISTED</span>{% endif %}</h2>
+    <p class="body">{{ n.executive_summary }}</p>
+  </section>
+
+  <!-- 3. KEY INDICATORS -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">3</span>Key Indicators</h2>
+    {% set L = d.latest %}
+    <div class="kpis">
+      <div class="kpi">
+        <div class="k-label">Depression (PHQ-9)</div>
+        <div class="k-value">{{ L.phq if L else '—' }}<span style="font-size:12px;color:#94a3b8;font-weight:600"> / 27</span></div>
+        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.phq_level }}">{{ L.phq_band }}</span>{% else %}No assessment in period{% endif %}</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Anxiety (GAD-7)</div>
+        <div class="k-value">{{ L.gad if L else '—' }}<span style="font-size:12px;color:#94a3b8;font-weight:600"> / 21</span></div>
+        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.gad_level }}">{{ L.gad_band }}</span>{% else %}No assessment in period{% endif %}</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Wellbeing (WHO-5)</div>
+        <div class="k-value">{{ L.who if L else '—' }}<span style="font-size:12px;color:#94a3b8;font-weight:600"> / 25</span></div>
+        <div class="k-sub">{% if L %}<span class="badge lv-{{ L.who_level }}">{{ L.who_band }}</span>{% else %}No assessment in period{% endif %}</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Average sleep</div>
+        <div class="k-value">{{ ('%g' % d.wb.avg_sleep) ~ ' h' if d.wb.avg_sleep is not none else '—' }}</div>
+        <div class="k-sub">{% if d.wb.sleep_count %}{{ d.wb.short_sleep_nights }} of {{ d.wb.sleep_count }} records under 6 hours{% else %}Not reported{% endif %}</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Most frequent mood</div>
+        <div class="k-value" style="font-size:17px">{{ d.wb.top_mood or '—' }}</div>
+        <div class="k-sub">{% if d.wb.low_mood_share is not none %}Low or anxious in {{ d.wb.low_mood_share }}% of entries{% else %}Not reported{% endif %}</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Engagement</div>
+        <div class="k-value" style="font-size:17px">{{ d.chat.active_days }} day{{ '' if d.chat.active_days == 1 else 's' }}</div>
+        <div class="k-sub">{{ d.chat.user_messages }} messages · {{ d.assessments|length }} assessment{{ '' if d.assessments|length == 1 else 's' }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. STANDARDISED ASSESSMENTS -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">4</span>Standardised Screening Results</h2>
+    <p class="sec-note">PHQ-9 (depression, 0–27, lower is better) · GAD-7 (anxiety, 0–21, lower is better) · WHO-5 (wellbeing, 0–25, higher is better). Change is compared with the previous assessment.</p>
+    {% if d.assessments %}
+    <div class="tbl-wrap">
+      <table class="data">
+        <thead><tr><th>Date</th><th>PHQ-9</th><th>GAD-7</th><th>WHO-5</th><th>Overall severity</th></tr></thead>
+        <tbody>
+        {% for a in d.assessments|reverse %}
+          <tr>
+            <td><b>{{ a.date }}</b></td>
+            <td>{{ a.phq }} <span class="badge lv-{{ a.phq_level }}">{{ a.phq_band }}</span><br><span class="chg {{ a.phq_change.dir }}">{{ a.phq_change.text }}</span></td>
+            <td>{{ a.gad }} <span class="badge lv-{{ a.gad_level }}">{{ a.gad_band }}</span><br><span class="chg {{ a.gad_change.dir }}">{{ a.gad_change.text }}</span></td>
+            <td>{{ a.who }} <span class="badge lv-{{ a.who_level }}">{{ a.who_band }}</span><br><span class="chg {{ a.who_change.dir }}">{{ a.who_change.text }}</span></td>
+            <td>{{ a.severity }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if d.assessments|length > 1 %}
+    <div class="charts" style="margin-top:12px">
+      <div class="chart-box wide"><h4>Screening scores over time</h4><div class="cv"><canvas id="chAssess"></canvas></div></div>
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="empty">No self-assessment was completed in this period.</p>
+    {% endif %}
+  </section>
+
+  <!-- 5. DAILY WELLBEING -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">5</span>Daily Wellbeing (from conversations)</h2>
+    <p class="sec-note">Sleep, mood and energy are read automatically from what the client writes in chat. {{ d.wb.entries }} daily record{{ '' if d.wb.entries == 1 else 's' }} in this period.</p>
+    {% if d.wellbeing %}
+    <div class="charts">
+      <div class="chart-box"><h4>Sleep (hours)</h4><div class="cv"><canvas id="chSleep"></canvas></div></div>
+      <div class="chart-box"><h4>Mood and energy</h4><div class="cv"><canvas id="chMood"></canvas></div></div>
+    </div>
+    <div class="two-col" style="margin-top:12px">
+      <div class="panel">
+        <h4>Mood distribution</h4>
+        {% for name, count in d.wb.mood_counts %}<div class="theme-row"><span>{{ name }}</span><div class="bar"><span style="width: {{ (100 * count / d.wb.mood_counts[0][1])|round|int }}%"></span></div><span class="pct">{{ count }}</span></div>{% else %}<p class="empty">Not reported.</p>{% endfor %}
+      </div>
+      <div class="panel">
+        <h4>Energy distribution</h4>
+        {% for name, count in d.wb.energy_counts %}<div class="theme-row"><span>{{ name }}</span><div class="bar"><span style="width: {{ (100 * count / d.wb.energy_counts[0][1])|round|int }}%"></span></div><span class="pct">{{ count }}</span></div>{% else %}<p class="empty">Not reported.</p>{% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <p class="empty">No sleep, mood or energy information was shared in this period.</p>
+    {% endif %}
+  </section>
+
+  <!-- 6. CONVERSATION ANALYSIS -->
+  <section class="section allow-break">
+    <div class="keep">
+    <h2 class="sec-title"><span class="sec-num">6</span>Conversation Analysis {% if n.ai %}<span class="ai-tag">AI-ASSISTED</span>{% endif %}</h2>
+    {% if d.chat.user_messages %}
+    <div class="tbl-wrap" style="margin-bottom:12px">
+      <table class="data">
+        <thead><tr><th>Messages from client</th><th>Active days</th><th>First / last</th><th>Avg. length</th><th>Language</th><th>Usual time</th></tr></thead>
+        <tbody><tr>
+          <td><b>{{ d.chat.user_messages }}</b></td>
+          <td><b>{{ d.chat.active_days }}</b></td>
+          <td>{{ d.chat.first }} – {{ d.chat.last }}</td>
+          <td>{{ d.chat.avg_words }} words</td>
+          <td>{{ d.chat.language }}</td>
+          <td>{{ d.chat.time_of_day }}</td>
+        </tr></tbody>
+      </table>
+    </div>
+    </div>
+
+    <div class="two-col keep">
+      <div class="panel">
+        <h4>Main themes in the client's messages</h4>
+        {% for t in d.chat.themes %}
+        <div class="theme-row"><span>{{ t.name }}</span><div class="bar"><span style="width: {{ t.pct if t.pct > 4 else 4 }}%"></span></div><span class="pct">{{ t.pct }}%</span></div>
+        {% else %}<p class="empty">No clear themes detected.</p>{% endfor %}
+        <div class="legend">% = share of the client's messages that mention the theme</div>
+      </div>
+      <div class="panel">
+        <h4>Presenting concerns</h4>
+        <ul class="clean">{% for x in n.presenting_concerns %}<li>{{ x }}</li>{% endfor %}</ul>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h4>Emotional themes</h4>
+      <p class="body">{{ n.emotional_themes }}</p>
+    </div>
+
+    <div class="two-col" style="margin-top:12px">
+      <div class="panel"><h4>Life stressors</h4><ul class="clean">{% for x in n.stressors %}<li>{{ x }}</li>{% endfor %}</ul></div>
+      <div class="panel"><h4>Strengths and coping</h4><ul class="clean">{% for x in n.strengths %}<li>{{ x }}</li>{% endfor %}</ul></div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h4>Progress during the period</h4>
+      <p class="body">{{ n.progress }}</p>
+    </div>
+    {% else %}
+    <p class="empty">The client did not use the chat in this period.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- 7. RISK AND SAFETY -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">7</span>Risk and Safety</h2>
+    <div class="risk-box {{ '' if d.chat.risk_count else 'ok' }}">
+      <p class="body" style="margin-bottom:6px"><b>{{ n.risk_assessment }}</b></p>
+      {% if d.chat.risk_count %}
+      <p class="body" style="font-size:12px;color:#7f1d1d">{{ d.chat.risk_count }} message{{ '' if d.chat.risk_count == 1 else 's' }} with possible suicidal thoughts or self-harm. Most recent:</p>
+      {% for r in d.chat.risk_events|reverse %}
+      <div class="risk-item"><span class="when">{{ r.date }}</span> — <span class="ex">“{{ r.excerpt }}”</span></div>
+      {% endfor %}
+      {% endif %}
+    </div>
+    <p class="sec-note" style="margin-top:8px">Emergency contacts shared with the client: Rescue 1122 · Umang 0311-7786264 · Rozan 051-2890505.</p>
+  </section>
+
+  <!-- 8. RECOMMENDATIONS -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">8</span>Recommendations</h2>
+    <ol class="recs">{% for x in n.recommendations %}<li>{{ x }}</li>{% endfor %}</ol>
+  </section>
+
+  <div class="sign">
+    <div>Reviewed by (name, signature)</div>
+    <div>Date of review</div>
+  </div>
+
+  <div class="disclaimer">
+    <b>Important:</b> This report was generated automatically by Empath AI from the client's own self-assessments and conversations.
+    It is a screening and monitoring summary, <b>not a medical diagnosis</b>. PHQ-9, GAD-7 and WHO-5 are validated screening tools;
+    scores should be interpreted by a qualified professional together with a clinical interview.
+    {% if n.ai %}Sections marked “AI-assisted” were written with the help of a language model and should be verified.{% endif %}
+    Report {{ report_id }} · printed {{ printed_on }} (Pakistan Standard Time).
+  </div>
+</article>
+        </div>
+
+    <!-- HELPLINE FOOTER -->
+    <div class="helpline-footer no-print">
+        <span class="block h-4 w-4 shrink-0 text-teal-700" data-icon="phone"></span>
+        <span data-t="helpline">🆘 Crisis helplines always available:</span>
+        <span>
+            <strong dir="ltr">1122</strong> <span data-t="emergency">Emergency</span>
+            &nbsp;|&nbsp;
+            <strong dir="ltr">0311-7786264</strong> <span data-t="umang">Umang</span>
+            &nbsp;|&nbsp;
+            <strong dir="ltr">051-2890505</strong> <span data-t="rozan">Rozan</span>
+        </span>
+    </div>
+
+    </div>
+    </div>
+</div>
+
+<div class="pdf-overlay" id="pdfOverlay"><div class="box"><span class="spin"></span><span data-t="preparing">Preparing your PDF…</span></div></div>
+
+<script>
+(function () {
+  if (!window.Chart) return;
+  const C = {{ charts|tojson }};
+  Chart.defaults.font.family = "Inter, sans-serif";
+  Chart.defaults.font.size = 10;
+  Chart.defaults.color = "#64748b";
+  Chart.defaults.animation = false;            // so the PDF never captures a half-drawn chart
+  Chart.defaults.devicePixelRatio = 2;          // sharp charts in the PDF
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.responsive = true;
+  const grid = { color: "rgba(15,23,42,0.06)" };
+
+  const el = id => document.getElementById(id);
+
+  if (el("chSleep")) {
+    new Chart(el("chSleep"), {
+      type: "bar",
+      data: { labels: C.wb_labels, datasets: [{ data: C.sleep, backgroundColor: "rgba(14,165,233,0.55)", borderRadius: 4 }] },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, suggestedMax: 10, grid }, x: { grid: { display: false } } } }
+    });
+  }
+
+  if (el("chMood")) {
+    const names = { 1: "Very low", 2: "Low", 3: "Okay / Medium", 4: "Good / High" };
+    new Chart(el("chMood"), {
+      type: "line",
+      data: { labels: C.wb_labels, datasets: [
+        { label: "Mood", data: C.mood, borderColor: "#0f766e", backgroundColor: "#0f766e", tension: .35, spanGaps: true, pointRadius: 3 },
+        { label: "Energy", data: C.energy, borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: .35, spanGaps: true, pointRadius: 3, borderDash: [4, 3] }
+      ]},
+      options: {
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10 } } },
+        scales: { y: { min: 0.5, max: 4.5, ticks: { stepSize: 1, callback: v => names[v] || "" }, grid }, x: { grid: { display: false } } }
+      }
+    });
+  }
+
+  if (el("chAssess")) {
+    new Chart(el("chAssess"), {
+      type: "line",
+      data: { labels: C.as_labels, datasets: [
+        { label: "PHQ-9 (depression)", data: C.phq, borderColor: "#dc2626", backgroundColor: "#dc2626", tension: .3, pointRadius: 3 },
+        { label: "GAD-7 (anxiety)", data: C.gad, borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: .3, pointRadius: 3 },
+        { label: "WHO-5 (wellbeing)", data: C.who, borderColor: "#0f766e", backgroundColor: "#0f766e", tension: .3, pointRadius: 3 }
+      ]},
+      options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10 } } },
+                 scales: { y: { beginAtZero: true, suggestedMax: 27, grid }, x: { grid: { display: false } } } }
+    });
+  }
+})();
+</script>
+
+<script>
+/* =========================================================
+   LANGUAGE for the app parts (the report itself stays in English)
+   ========================================================= */
+const savedLang = (
+    localStorage.getItem('empathLanguage') || localStorage.getItem('language') ||
+    localStorage.getItem('selectedLanguage') || localStorage.getItem('appLanguage') ||
+    {{ session.get('language', 'en')|tojson }} || 'en'
+).toLowerCase().trim();
+const LANG = (savedLang === 'ur' || savedLang === 'urdu' || savedLang.startsWith('ur-')) ? 'ur' : 'en';
+document.documentElement.lang = LANG;
+document.documentElement.dir = LANG === 'ur' ? 'rtl' : 'ltr';
+
+const T = {
+  en: { brandSub:'IDP Mental Health', page:'My Wellbeing Report', dashboard:'Dashboard', title:'My Wellbeing Report',
+        subtitle:'A professional summary of your progress that you can download and share with a doctor, counsellor or NGO case worker.',
+        periodLabel:'Report period', p7:'7 days', p30:'30 days', p90:'90 days', pall:'All time',
+        print:'Print', download:'Download PDF', preparing:'Preparing your PDF…', failed:'Could not create the PDF. Opening the print window instead.',
+        helpline:'🆘 Crisis helplines always available:', emergency:'Emergency', umang:'Umang', rozan:'Rozan' },
+  ur: { brandSub:'آئی ڈی پی ذہنی صحت', page:'میری ذہنی صحت کی رپورٹ', dashboard:'ڈیش بورڈ', title:'میری ذہنی صحت کی رپورٹ',
+        subtitle:'آپ کی پیش رفت کا پیشہ ورانہ خلاصہ، جسے آپ ڈاؤن لوڈ کر کے ڈاکٹر، کونسلر یا این جی او کو دکھا سکتے ہیں۔ رپورٹ انگریزی میں ہے۔',
+        periodLabel:'رپورٹ کا عرصہ', p7:'۷ دن', p30:'۳۰ دن', p90:'۹۰ دن', pall:'تمام ریکارڈ',
+        print:'پرنٹ', download:'PDF ڈاؤن لوڈ کریں', preparing:'آپ کی PDF تیار ہو رہی ہے…', failed:'PDF نہیں بن سکی۔ اس کے بجائے پرنٹ ونڈو کھل رہی ہے۔',
+        helpline:'🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:', emergency:'ایمرجنسی', umang:'اُمنگ', rozan:'روزن' }
+}[LANG];
+document.querySelectorAll('[data-t]').forEach(el => {
+  const v = T[el.getAttribute('data-t')];
+  if (typeof v === 'string') el.textContent = v;
+});
+document.querySelectorAll('.sheet').forEach(el => el.setAttribute('dir', 'ltr'));   // report is always left-to-right
+
+/* =========================================================
+   DOWNLOAD PDF — one click, the file downloads straight away
+   ========================================================= */
+const PDF_NAME = {{ file_name|tojson }} + '.pdf';
+const REPORT_ID = {{ report_id|tojson }};
+
+function waitFrames(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+document.getElementById('downloadBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('downloadBtn');
+  const sheet = document.getElementById('reportSheet');
+  if (typeof html2pdf === 'undefined') { alert(T.failed); window.print(); return; }
+
+  btn.disabled = true;
+  document.getElementById('pdfOverlay').classList.add('show');
+  sheet.classList.add('pdf-mode');            // exact A4 width
+  window.dispatchEvent(new Event('resize'));
+  await waitFrames(450);                      // let the charts redraw at the new width
+
+  try {
+    await html2pdf().set({
+      margin: [12, 12, 16, 12],
+      filename: PDF_NAME,
+      image: { type: 'jpeg', quality: 0.97 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'], avoid: ['.keep', '.panel', '.chart-box', '.kpi', '.risk-box', '.status', '.sign', '.info-grid', '.tbl-wrap tr', '.sec-title', '.kpis'] }
+    }).from(sheet).toPdf().get('pdf').then(pdf => {
+      const pages = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text('Empath AI · Confidential · ' + REPORT_ID, 12, 289);
+        pdf.text('Page ' + i + ' of ' + pages, 198, 289, { align: 'right' });
+      }
+    }).save();
+  } catch (e) {
+    console.error(e);
+    alert(T.failed);
+    window.print();
+  } finally {
+    sheet.classList.remove('pdf-mode');
+    window.dispatchEvent(new Event('resize'));
+    document.getElementById('pdfOverlay').classList.remove('show');
+    btn.disabled = false;
+  }
+});
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", calmCorner: "Calm Corner", myReport: "My Report", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", calmCorner: "سکون کا گوشہ", myReport: "میری رپورٹ", logout: "لاگ آؤٹ" }
+  };
+
+  const t = SIDEBAR_TEXT[root.lang === "ur" ? "ur" : "en"];
+  document.querySelectorAll("[data-i18n-extra]").forEach(function (el) {
+    const key = el.getAttribute("data-i18n-extra");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  function setCollapsed(collapsed) {
+    root.classList.toggle("sidebar-collapsed", collapsed);
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e) {}
+  }
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    setCollapsed(!root.classList.contains("sidebar-collapsed"));
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
+</script>
+
+</body>
+</html>

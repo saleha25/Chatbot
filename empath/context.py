@@ -465,6 +465,147 @@ def extract_wellbeing_info(text):
     }
 
 
+# ─────────────────────────────────────────────
+# SMART WELLBEING READING (AI understands the message)
+# The user does not have to say "my mood is low". The AI reads what they
+# wrote (English, Urdu or Roman Urdu), together with their last two messages,
+# and judges mood, energy and sleep the way a counsellor would.
+# The keyword reader above is only the backup when the API is not available.
+# One tiny gpt-4o-mini call per message (~60 output tokens).
+# ─────────────────────────────────────────────
+WELLBEING_MOODS = {"very_low", "low", "anxious", "okay", "good"}
+WELLBEING_ENERGY = {"very_low", "low", "medium", "high"}
+
+WELLBEING_READER_PROMPT = """
+You read ONE message from a user of a mental-health support chat for displaced people in Pakistan
+(English, Urdu or Roman Urdu) and judge their CURRENT state, like a careful counsellor would.
+The user usually does NOT name their mood. Infer it from what they describe and how they say it.
+
+Return ONLY JSON: {"mood": ..., "energy": ..., "sleep_hours": ...}
+
+mood (how they feel emotionally right now):
+  "very_low" = despair, hopelessness, wanting to die/give up, deep grief, feeling broken or worthless
+  "low"      = sad, hurt, lonely, angry, frustrated, ignored, homesick, disappointed, crying
+  "anxious"  = worried, scared, nervous, panicky, afraid of what will happen, frightening experiences
+  "okay"     = neutral or mixed, "fine", getting by
+  "good"     = happy, relieved, grateful, proud, calm, hopeful, feeling better
+  null       = the message gives NO emotional information (e.g. "ok", "thanks", a recipe question, a factual question)
+energy (physical/mental energy):
+  "very_low" = exhausted, drained, can't get out of bed, no strength at all
+  "low"      = tired, weak, sleepy, no motivation
+  "medium"   = normal energy
+  "high"     = energetic, active, refreshed, full of energy
+  null       = not described or implied
+sleep_hours (number):
+  only when the user says how long they slept (e.g. "3 ghante soi" -> 3, "slept around 8 hours" -> 8),
+  0 if they say they did not sleep at all / were awake the whole night,
+  otherwise null. Hours of work/walking/travel are NOT sleep.
+
+Rules:
+- Judge the CURRENT message. Earlier messages are only context (e.g. "yes, every night" after talking about nightmares).
+- Do not guess: if unsure, use null.
+- Negation matters: "not happy" is low, "not tired" gives energy null.
+- Asking for help with a task (recipe, information) says nothing about mood unless feelings are expressed.
+
+Examples:
+"Everyone in the camp ignores us" -> {"mood": "low", "energy": null, "sleep_hours": null}
+"aaj ka din kuch khaas nahi tha, bas guzar gaya" -> {"mood": "okay", "energy": null, "sleep_hours": null}
+"main ab khushi mehsoos kr rahi hon" -> {"mood": "good", "energy": null, "sleep_hours": null}
+"raat bhar karwatein badalti rahi, subah uthne ka dil nahi kiya" -> {"mood": "low", "energy": "low", "sleep_hours": 0}
+"I finally got my ID card made today!" -> {"mood": "good", "energy": null, "sleep_hours": null}
+"مجھے ڈر ہے کہ کل کیا ہوگا، بچوں کی فیس کہاں سے آئے گی" -> {"mood": "anxious", "energy": null, "sleep_hours": null}
+"I walked 3 hours to the clinic and slept maybe 4 hours" -> {"mood": null, "energy": null, "sleep_hours": 4}
+"biryani ki recipe batao" -> {"mood": null, "energy": null, "sleep_hours": null}
+""".strip()
+
+_SMART_WELLBEING_CACHE = {}
+
+
+def _recent_user_messages_for_context(current, limit=2):
+    try:
+        history = session.get("history", []) or []
+    except RuntimeError:
+        return []
+    msgs = [str(h.get("content", "")) for h in history if h.get("role") == "user"]
+    if msgs and msgs[-1].strip() == (current or "").strip():
+        msgs = msgs[:-1]
+    return [m[:300] for m in msgs[-limit:]]
+
+
+def _ai_read_wellbeing(text):
+    """Ask the model; returns {"mood","energy","sleep_hours"} or None on any problem."""
+    if not os.environ.get("OPENAI_API_KEY"):
+        return None
+    earlier = _recent_user_messages_for_context(text)
+    user_block = ""
+    if earlier:
+        user_block += "Earlier messages (context only):\n" + "\n".join(f"- {m}" for m in earlier) + "\n\n"
+    user_block += f"CURRENT message:\n{str(text)[:800]}"
+    try:
+        result = client.chat.completions.create(
+            model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
+            messages=[{"role": "system", "content": WELLBEING_READER_PROMPT},
+                      {"role": "user", "content": user_block}],
+            temperature=0,
+            max_tokens=60,
+            response_format={"type": "json_object"},
+        )
+        data = json.loads(result.choices[0].message.content or "{}")
+    except Exception as e:
+        print("Wellbeing AI reader error (using keyword backup):", e)
+        return None
+
+    mood = data.get("mood")
+    energy = data.get("energy")
+    sleep = data.get("sleep_hours")
+    mood = mood if mood in WELLBEING_MOODS else None
+    energy = energy if energy in WELLBEING_ENERGY else None
+    try:
+        sleep = float(sleep) if sleep is not None else None
+        if sleep is not None and not 0 <= sleep <= 24:
+            sleep = None
+    except (TypeError, ValueError):
+        sleep = None
+    return {"mood": mood, "energy": energy, "sleep_hours": sleep}
+
+
+def extract_wellbeing_info_smart(text):
+    """Same result shape as extract_wellbeing_info, but the AI does the reading.
+
+    The keyword reader still runs: it fills in only what the AI left empty,
+    and it is the full backup when the AI call fails.
+    """
+    key = (text or "").strip()
+    if key in _SMART_WELLBEING_CACHE:
+        return dict(_SMART_WELLBEING_CACHE[key])
+
+    keyword_result = extract_wellbeing_info(text)
+
+    # Very short messages ("ok", "hmm", "thanks") carry no state: skip the API call
+    if len(key) < 4:
+        return keyword_result
+
+    ai = _ai_read_wellbeing(text)
+    if ai is None:
+        result = keyword_result
+    else:
+        result = dict(keyword_result)
+        for field in ("mood", "energy", "sleep_hours"):
+            if ai[field] is not None:
+                result[field] = ai[field]
+        result["mentioned_mood"] = keyword_result["mentioned_mood"] or result["mood"] is not None
+        result["mentioned_energy"] = keyword_result["mentioned_energy"] or result["energy"] is not None
+        result["mentioned_sleep"] = keyword_result["mentioned_sleep"] or result["sleep_hours"] is not None
+        result["has_any"] = any([result["mentioned_mood"], result["mentioned_energy"], result["mentioned_sleep"]])
+        result["has_values"] = any(result[f] is not None for f in ("mood", "energy", "sleep_hours"))
+        result["read_by"] = "ai"
+
+    if len(_SMART_WELLBEING_CACHE) > 200:
+        _SMART_WELLBEING_CACHE.clear()
+    _SMART_WELLBEING_CACHE[key] = dict(result)
+    return result
+
+
 def save_wellbeing_if_mentioned(user_id, user_message, mood_if_missing=None):
     """Save sleep / mood / energy from this message into today's wellbeing log.
 
@@ -474,7 +615,7 @@ def save_wellbeing_if_mentioned(user_id, user_message, mood_if_missing=None):
     if not user_id:
         return None
 
-    extracted = extract_wellbeing_info(user_message)
+    extracted = extract_wellbeing_info_smart(user_message)
     if mood_if_missing and not extracted.get("mood"):
         extracted["mood"] = mood_if_missing
         extracted["mentioned_mood"] = True
@@ -827,6 +968,7 @@ def detect_family_stress(msg):
 # ─────────────────────────────────────────────
 from .core import (  # noqa: E402
     RETRIEVAL_DATA,
+    client,
     tfidf,
 )
 from .database import (  # noqa: E402

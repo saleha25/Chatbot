@@ -54,6 +54,8 @@
       @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)];
     }
     .side-link.active [data-icon] { @apply text-teal-700; }
+    .side-link .side-svg { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+    .side-link:hover .side-svg { @apply text-teal-700; }
 
     /* ---------- Top bar buttons ---------- */
     .icon-btn {
@@ -149,6 +151,7 @@
     }
 
     .icon-teal    { @apply bg-teal-600/10 text-teal-700; }
+    .icon-indigo  { @apply bg-indigo-600/10 text-indigo-700; }
     .icon-cyan    { @apply bg-cyan-600/10 text-cyan-700; }
     .icon-emerald { @apply bg-emerald-600/10 text-emerald-700; }
     .icon-sky     { @apply bg-sky-600/10 text-sky-700; }
@@ -194,6 +197,17 @@
   @media (min-width: 768px) {
     .cards-grid > .card:nth-child(1) { grid-column: span 2 / span 2; }
   }
+
+  /* ===== Calm Corner: wide card on the last row (no empty space) ===== */
+  @media (min-width: 768px) {
+    .cards-grid > .card.card-calm { grid-column: 1 / -1; }
+    .card.card-calm { display: grid; grid-template-columns: auto 1fr auto; column-gap: 20px; align-items: center; }
+    .card.card-calm .card-icon-wrap { margin-bottom: 0; }
+    .card.card-calm p, .card.card-calm .card-tags { margin-bottom: 0; }
+    .card.card-calm .card-cta { margin-top: 0; border-top: 0; padding-top: 0; gap: 10px; white-space: nowrap; }
+  }
+  .card.card-calm .calm-text h2 { margin-bottom: 6px; }
+  .card.card-calm .calm-text .card-tags { margin-top: 12px; }
 
   /* ===== Mobile: compact cards (icon + title on one line) ===== */
   @media (max-width: 767px) {
@@ -323,6 +337,8 @@
       <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-i18n="wellnessProgress">Wellness Progress</span></a>
       <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-i18n="wordsOfHope">Words of Hope</span></a>
       <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-i18n="quranicCorner">Quranic Comfort Corner</span></a>
+      <a class="side-link" href="/calm_corner"><span data-icon="calm"></span><span class="side-label" data-i18n="calmCorner">Calm Corner</span></a>
+      <a class="side-link" href="/report"><span data-icon="report"></span><span class="side-label" data-i18n="myReport">My Report</span></a>
     </nav>
 
     <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
@@ -564,6 +580,53 @@
             </div>
         </a>
 
+        <!-- 6. Calm Corner (wide card) -->
+        <a class="card card-calm group" href="/calm_corner">
+            <div class="card-icon-wrap icon-indigo"><span data-icon="calm"></span></div>
+
+            <div class="calm-text">
+                <h2 data-i18n="calmCorner">Calm Corner</h2>
+                <p data-i18n="calmDescription">
+                    Guided breathing and grounding exercises with an Urdu and English voice guide.
+                    Rate how you feel before and after, and see how much lighter you become.
+                </p>
+                <div class="card-tags">
+                    <span class="tag" data-i18n="breathing">Breathing</span>
+                    <span class="tag" data-i18n="grounding">5-4-3-2-1 Grounding</span>
+                    <span class="tag" data-i18n="badDreams">After Bad Dreams</span>
+                    <span class="tag" data-i18n="voiceGuide">Voice Guide</span>
+                </div>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="startCalm">Start a Calm Session</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+        <!-- 7. Wellbeing Report (wide card) -->
+        <a class="card card-calm card-report group" href="/report">
+            <div class="card-icon-wrap icon-teal"><span data-icon="report"></span></div>
+
+            <div class="calm-text">
+                <h2 data-i18n="myReport">My Wellbeing Report</h2>
+                <p data-i18n="reportDescription">
+                    A professional report of your progress: assessment scores, sleep, mood and energy,
+                    and an analysis of your conversations. Download it as a PDF to share with a doctor or counsellor.
+                </p>
+                <div class="card-tags">
+                    <span class="tag" data-i18n="pdfDownload">PDF Download</span>
+                    <span class="tag" data-i18n="forDoctors">For Doctors &amp; NGOs</span>
+                    <span class="tag" data-i18n="chatAnalysis">Chat Analysis</span>
+                </div>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="viewReport">View Report</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
       </div>
 
       <div class="bottom-note anim-up-3 mt-8 flex justify-center">
@@ -615,6 +678,13 @@ const translations = {
      quranicCornerDescription: "A peaceful space for spiritual reflection. Choose how you feel and explore carefully verified Quranic verses, translations, context, and gentle reflection prompts.",
      verifiedAyat: "Verified Ayat", urduEnglish: "Urdu & English",
      privateReflection: "Private Reflection", visitQuranicCorner: "Find Comfort",
+     calmCorner: "Calm Corner",
+     calmDescription: "Guided breathing and grounding exercises with an Urdu and English voice guide. Rate how you feel before and after, and see how much lighter you become.",
+     breathing: "Breathing", grounding: "5-4-3-2-1 Grounding", badDreams: "After Bad Dreams", voiceGuide: "Voice Guide",
+     startCalm: "Start a Calm Session",
+     myReport: "My Wellbeing Report",
+     reportDescription: "A professional report of your progress: assessment scores, sleep, mood and energy, and an analysis of your conversations. Download it as a PDF to share with a doctor or counsellor.",
+     pdfDownload: "PDF Download", forDoctors: "For Doctors & NGOs", chatAnalysis: "Chat Analysis", viewReport: "View Report",
      conversationsAre: "Your conversations are",
     privateAnonymous: "private and anonymous", deleteAccountQuestion: "Delete Account?",
     deleteWarning: "This action will permanently remove your account and all related data. This cannot be undone.",
@@ -645,6 +715,13 @@ const translations = {
      quranicCornerDescription: "روحانی غور و فکر کے لیے ایک پُرسکون جگہ۔ اپنے احساسات منتخب کریں اور مستند قرآنی آیات، ترجمہ، پس منظر اور نرم reflection سوالات سے رہنمائی حاصل کریں۔",
      verifiedAyat: "مستند آیات", urduEnglish: "اردو اور انگریزی",
      privateReflection: "ذاتی غور و فکر", visitQuranicCorner: "سکون حاصل کریں",
+     calmCorner: "سکون کا گوشہ",
+     calmDescription: "اردو اور انگریزی آواز کی رہنمائی کے ساتھ سانس اور گراؤنڈنگ کی مشقیں۔ مشق سے پہلے اور بعد میں اپنی کیفیت بتائیں اور دیکھیں کہ آپ کتنا ہلکا محسوس کرتے ہیں۔",
+     breathing: "سانس کی مشق", grounding: "۵-۴-۳-۲-۱ گراؤنڈنگ", badDreams: "برے خواب کے بعد", voiceGuide: "آواز کی رہنمائی",
+     startCalm: "سکون کی مشق شروع کریں",
+     myReport: "میری ذہنی صحت کی رپورٹ",
+     reportDescription: "آپ کی پیش رفت کی ایک پیشہ ورانہ رپورٹ: جائزوں کے اسکور، نیند، موڈ اور توانائی، اور آپ کی گفتگو کا تجزیہ۔ اسے PDF میں ڈاؤن لوڈ کر کے ڈاکٹر یا کونسلر کو دکھائیں۔",
+     pdfDownload: "PDF ڈاؤن لوڈ", forDoctors: "ڈاکٹروں اور این جی اوز کے لیے", chatAnalysis: "گفتگو کا تجزیہ", viewReport: "رپورٹ دیکھیں",
      conversationsAre: "آپ کی گفتگو",
     privateAnonymous: "نجی اور گمنام ہے", deleteAccountQuestion: "اکاؤنٹ حذف کریں؟",
     deleteWarning: "یہ کارروائی آپ کے اکاؤنٹ اور اس سے متعلق تمام ڈیٹا کو مستقل طور پر حذف کر دے گی۔ اسے واپس نہیں کیا جا سکتا۔",

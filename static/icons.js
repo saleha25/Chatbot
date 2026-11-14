@@ -90,6 +90,24 @@
       '<svg viewBox="0 0 24 24" ' + STROKE + '>' +
       '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4z"/><path d="M14 5l5 5"/></svg>',
 
+    /* Calm Corner page */
+    calm:
+      '<svg viewBox="0 0 24 24" ' + STROKE + '>' +
+      '<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h15a3 3 0 1 1-3 3"/><path d="M3 16h7"/></svg>',
+
+    /* Report page */
+    report:
+      '<svg viewBox="0 0 24 24" ' + STROKE + '>' +
+      '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>' +
+      '<path d="M9 17v-3M12 17v-6M15 17v-4"/></svg>',
+
+    download:
+      '<svg viewBox="0 0 24 24" ' + STROKE + '><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
+
+    printer:
+      '<svg viewBox="0 0 24 24" ' + STROKE + '>' +
+      '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>',
+
     feelAnxiety:
       '<svg viewBox="0 0 48 48" ' + STROKE + '>' +
       '<path d="M24 7C17 7 12 12 12 19C8 20 7 25 10 29C9 34 13 37 18 36C20 40 25 40 27 36C33 38 38 34 37 29C41 25 39 20 35 19C35 12 30 7 24 7Z"/>' +

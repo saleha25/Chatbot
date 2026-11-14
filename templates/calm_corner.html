@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+    <title>Calm Corner — Empath AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+    </script>
+
+    <!-- ===== ICONS (separate file) ===== -->
+    <script src="/static/icons.js"></script>
+
+    <!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+              urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer components {
+        .glass {
+          @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+                 shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
+        }
+
+        /* ---------- Sidebar ---------- */
+        .side-link {
+          @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+                 hover:bg-white/60 hover:text-slate-900;
+        }
+        .side-link [data-icon], .side-link .side-svg { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+        .side-link:hover [data-icon], .side-link:hover .side-svg { @apply text-teal-700; }
+        .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+        .side-link.active [data-icon], .side-link.active .side-svg { @apply text-teal-700; }
+
+        .icon-btn {
+          @apply relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/60
+                 text-slate-700 transition hover:bg-white hover:text-teal-700;
+        }
+        .icon-btn [data-icon] { @apply h-5 w-5; }
+
+        /* ---------- Top bar ---------- */
+        .nav-btn-green {
+          @apply inline-flex items-center rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
+        }
+
+        /* ---------- Calm Corner ---------- */
+        .ex-card {
+          @apply glass flex flex-col items-start rounded-2xl p-5 text-start transition
+                 hover:-translate-y-1 hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600;
+        }
+        .ex-emoji { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/80 text-2xl; }
+        .ex-title { @apply mb-1 text-[16px] font-bold tracking-tight text-slate-900; }
+        .ex-desc { @apply mb-4 text-[13px] leading-relaxed text-slate-500; }
+        .ex-meta { @apply mt-auto inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11.5px] font-semibold text-teal-800; }
+
+        .panel { @apply glass mx-auto w-full max-w-2xl rounded-3xl p-6 text-center md:p-10; }
+        .panel-title { @apply mb-2 text-[22px] font-bold tracking-tight text-slate-900 md:text-[26px]; }
+        .panel-sub { @apply mx-auto mb-6 max-w-md text-sm leading-relaxed text-slate-500; }
+
+        .btn-main {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 py-3 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800 disabled:opacity-50;
+        }
+        .btn-soft {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/80 bg-white/70 px-5 py-3 text-sm font-semibold
+                 text-slate-700 transition hover:bg-white hover:text-teal-800;
+        }
+
+        .stat-chip { @apply glass flex flex-col rounded-2xl px-4 py-3 text-start; }
+        .stat-chip b { @apply text-[22px] font-bold leading-tight text-slate-900; }
+        .stat-chip span { @apply text-xs text-slate-500; }
+
+        .helpline-footer {
+          @apply glass mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl px-4 py-3 text-center text-[12.5px] text-slate-500;
+        }
+        .helpline-footer strong { @apply whitespace-nowrap font-semibold text-slate-900; }
+      }
+    </style>
+
+    <style>
+      @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      .anim-up   { animation: fadeUp .5s ease both; }
+      .anim-up-2 { animation: fadeUp .5s .06s ease both; }
+      .anim-up-3 { animation: fadeUp .5s .12s ease both; }
+
+      .topbar { isolation: isolate; }
+      .topbar::before {
+        content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+        background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+        -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+
+      /* ===== SIDEBAR (same as dashboard) ===== */
+      html .sidebar {
+        position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+        display: flex; flex-direction: column;
+        width: 280px; max-width: calc(100vw - 48px);
+        overflow-y: auto; overflow-x: visible;
+        background: rgba(255,255,255,0.9);
+        transform: translateX(calc(-100% - 24px));
+        transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+      }
+      html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+      html.sidebar-open .sidebar { transform: none; }
+      .sidebar-overlay {
+        position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+        -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+      html.sidebar-open body { overflow: hidden; }
+
+      @media (min-width: 1024px) {
+        html .sidebar, html[dir="rtl"] .sidebar {
+          position: sticky; top: 20px; bottom: auto; z-index: 30;
+          height: calc(100vh - 40px); width: 248px; max-width: none;
+          transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+          cursor: pointer;
+        }
+        .sidebar-overlay { display: none; }
+        html.sidebar-collapsed .sidebar { width: 80px; }
+        html.sidebar-collapsed .sidebar .side-label { display: none; }
+        html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+        html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+        html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+        html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+          display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+          transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+          background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+          box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+        }
+      }
+
+      /* ===== Breathing circle ===== */
+      .breath-wrap { position: relative; width: 260px; height: 260px; margin: 8px auto 24px; }
+      @media (max-width: 400px) { .breath-wrap { width: 220px; height: 220px; } }
+      .breath-ring {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 2px dashed rgba(15,118,110,0.25);
+      }
+      .breath-circle {
+        position: absolute; inset: 0; margin: auto; width: 100%; height: 100%; border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, rgba(94,234,212,0.95), rgba(20,184,166,0.85) 45%, rgba(15,118,110,0.9));
+        box-shadow: 0 20px 60px rgba(15,118,110,0.35), inset 0 -10px 30px rgba(15,118,110,0.35);
+        transform: scale(0.45);
+        transition-property: transform; transition-timing-function: ease-in-out;
+      }
+      .breath-glow {
+        position: absolute; inset: -20px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(45,212,191,0.25), transparent 65%);
+        transform: scale(0.6); transition-property: transform; transition-timing-function: ease-in-out;
+      }
+      .breath-text {
+        position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #fff; text-shadow: 0 1px 8px rgba(15,23,42,0.25); pointer-events: none;
+      }
+      .breath-word { font-size: 20px; font-weight: 700; }
+      .breath-count { font-size: 40px; font-weight: 800; line-height: 1.1; }
+
+      .progress-track { height: 6px; border-radius: 999px; background: rgba(15,23,42,0.07); overflow: hidden; }
+      .progress-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #14b8a6, #0f766e); transition: width .4s ease; }
+
+      /* ===== Rating slider ===== */
+      .rate-emoji { font-size: 64px; line-height: 1; margin-bottom: 8px; transition: transform .2s ease; }
+      .rate-num { font-size: 34px; font-weight: 800; color: #0f172a; }
+      input[type=range].rate {
+        -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 999px;
+        background: linear-gradient(90deg, #34d399, #fbbf24, #f87171); outline: none;
+      }
+      input[type=range].rate::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%;
+        background: #fff; border: 3px solid #0f766e; box-shadow: 0 4px 12px rgba(15,23,42,0.2); cursor: pointer;
+      }
+      input[type=range].rate::-moz-range-thumb {
+        width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 3px solid #0f766e; cursor: pointer;
+      }
+      html[dir="rtl"] input[type=range].rate { direction: rtl; background: linear-gradient(270deg, #34d399, #fbbf24, #f87171); }
+
+      /* ===== Result ===== */
+      .result-scores { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 8px 0 18px; }
+      .result-box { width: 96px; padding: 14px 0; border-radius: 20px; background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.9); }
+      .result-box b { display: block; font-size: 34px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+      .result-box span { font-size: 12px; color: #64748b; }
+      .result-arrow { font-size: 26px; color: #0f766e; }
+      html[dir="rtl"] .result-arrow { transform: scaleX(-1); }
+
+      .step-big { font-size: 56px; line-height: 1; margin-bottom: 14px; }
+      .step-text { font-size: 18px; line-height: 1.7; color: #0f172a; font-weight: 600; max-width: 460px; margin: 0 auto 8px; }
+      .step-hint { font-size: 13.5px; color: #64748b; line-height: 1.7; max-width: 440px; margin: 0 auto; }
+      .step-inputs { display: grid; gap: 10px; max-width: 420px; margin: 20px auto 0; }
+      .step-input {
+        width: 100%; border-radius: 14px; border: 1px solid rgba(15,23,42,0.1); background: rgba(255,255,255,0.85);
+        padding: 12px 14px; font-size: 15px; color: #0f172a; outline: none; transition: border-color .2s, box-shadow .2s;
+      }
+      .step-input:focus { border-color: #14b8a6; box-shadow: 0 0 0 4px rgba(20,184,166,0.15); }
+      .step-input.filled { border-color: rgba(20,184,166,0.5); }
+      .step-input.bad { border-color: #f43f5e; box-shadow: 0 0 0 4px rgba(244,63,94,0.12); }
+      .step-need.err { color: #be123c; }
+      .rate-note { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: #b45309; min-height: 20px; }
+      .input-row { display: flex; gap: 8px; align-items: center; }
+      .input-row .step-input { flex: 1 1 auto; min-width: 0; }
+      .mic-btn {
+        flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+        border: 1px solid rgba(15,23,42,0.1); background: rgba(255,255,255,0.85); color: #0f766e; cursor: pointer; transition: all .2s;
+      }
+      .mic-btn:hover { background: #fff; border-color: #14b8a6; }
+      .mic-btn [data-icon] { display: block; width: 20px; height: 20px; }
+      .mic-btn.listening { background: #e11d48; border-color: #e11d48; color: #fff; animation: micPulse 1.2s ease-in-out infinite; }
+      @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(225,29,72,0.45); } 50% { box-shadow: 0 0 0 8px rgba(225,29,72,0); } }
+      .mic-note { margin-top: 8px; font-size: 12.5px; color: #64748b; }
+      .mic-note.err { color: #be123c; font-weight: 600; }
+      .step-need { margin-top: 10px; font-size: 12.5px; color: #0f766e; font-weight: 600; }
+      .step-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 520px; margin: 18px auto 0; }
+      .step-summary span { border-radius: 999px; background: rgba(20,184,166,0.1); color: #115e59; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+      .btn-main:disabled { opacity: .45; cursor: not-allowed; }
+
+      .voice-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; user-select: none; }
+      .voice-toggle .sw { width: 38px; height: 22px; border-radius: 999px; background: #cbd5e1; position: relative; transition: background .2s; }
+      .voice-toggle .sw::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start .2s; }
+      .voice-toggle.on .sw { background: #0f766e; }
+      .voice-toggle.on .sw::after { inset-inline-start: 19px; }
+
+      .screen { display: none; }
+      .screen.show { display: block; animation: fadeUp .4s ease both; }
+
+      /* ===== URDU / RTL ===== */
+      html[dir="rtl"] body { direction: rtl; }
+      html[lang="ur"] body,
+      html[lang="ur"] button { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+      html[lang="ur"] *,
+      html[lang="ur"] *::before,
+      html[lang="ur"] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+      html[lang="ur"] h1, html[lang="ur"] .panel-title { line-height: 1.7; }
+      html[lang="ur"] p, html[lang="ur"] .ex-desc, html[lang="ur"] .panel-sub,
+      html[lang="ur"] .step-text, html[lang="ur"] .step-hint { line-height: 2; }
+      html[lang="ur"] .side-link, html[lang="ur"] .helpline-footer { line-height: 1.8; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .breath-circle, .breath-glow { transition-duration: 0s !important; }
+      }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
+
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="page flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+      <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+        <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+            <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+          </span>
+          <span class="side-label">Empath AI</span>
+        </a>
+        <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+      </div>
+
+      <nav class="flex flex-col gap-1" aria-label="Main">
+        <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-i18n-extra="dashboard">Dashboard</span></a>
+        <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-i18n-extra="letsChat">Let's Chat</span></a>
+        <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-i18n-extra="weeklyAssessment">Weekly Self Assessment</span></a>
+        <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-i18n-extra="wellnessProgress">Wellness Progress</span></a>
+        <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-i18n-extra="wordsOfHope">Words of Hope</span></a>
+        <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-i18n-extra="quranicCorner">Quranic Comfort Corner</span></a>
+        <a class="side-link active" href="/calm_corner" aria-current="page">
+          <span data-icon="calm"></span>
+          <span class="side-label" data-i18n-extra="calmCorner">Calm Corner</span>
+        </a>
+      </nav>
+
+      <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+        <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-i18n-extra="logout">Logout</span></a>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="min-w-0 flex-1">
+
+    <!-- NAVBAR -->
+    <nav class="topbar sticky top-3 z-40 flex items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
+        <div class="nav-left flex min-w-0 items-center gap-3">
+            <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+            <a class="idp-badge flex min-w-0 items-center gap-2.5 lg:hidden" href="/dashboard">
+                <div class="idp-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+                    <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+                </div>
+                <div class="brand-text hidden min-w-0 flex-col min-[400px]:flex">
+                    <span class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</span>
+                    <span class="brand-sub truncate text-[11px] text-slate-500" data-t="brandSub">IDP Mental Health</span>
+                </div>
+            </a>
+            <div class="nav-divider hidden h-7 w-px bg-slate-900/10 sm:block lg:hidden"></div>
+            <span class="nav-page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" data-t="page">Calm Corner</span>
+        </div>
+        <div class="nav-right flex shrink-0 items-center gap-3">
+            <span class="voice-toggle" id="voiceToggle" role="switch" aria-checked="true" tabindex="0">
+                <span class="sw"></span><span data-t="voice">Voice guide</span>
+            </span>
+            <a href="/dashboard" class="nav-btn-green" data-t="dashboard">Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="main mx-auto w-full max-w-6xl px-1 pb-8 pt-6 md:px-2 md:pt-10">
+
+        <!-- ========== SCREEN 1: CHOOSE ========== -->
+        <section class="screen show" id="screenChoose">
+            <div class="anim-up mb-6 md:mb-8">
+                <h1 class="text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[36px]" data-t="title">Calm Corner</h1>
+                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" data-t="subtitle">Short guided exercises to calm your body and mind. Choose one, follow the voice, and see how much lighter you feel.</p>
+            </div>
+
+            <div class="anim-up-2 mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 xl:grid-cols-4">
+                <button type="button" class="ex-card group" data-ex="calm">
+                    <span class="ex-emoji bg-teal-600/10">🌬️</span>
+                    <span class="ex-title" data-t="calmTitle">Calming Breath</span>
+                    <span class="ex-desc" data-t="calmDesc">Breathe in for 4, out for 6. A longer out-breath tells your body it is safe.</span>
+                    <span class="ex-meta" data-t="calmMeta">⏱ 1 minute</span>
+                </button>
+                <button type="button" class="ex-card group" data-ex="box">
+                    <span class="ex-emoji bg-sky-600/10">🟦</span>
+                    <span class="ex-title" data-t="boxTitle">Box Breathing</span>
+                    <span class="ex-desc" data-t="boxDesc">In 4, hold 4, out 4, hold 4. Steadies a racing heart and busy thoughts.</span>
+                    <span class="ex-meta" data-t="boxMeta">⏱ 1 minute</span>
+                </button>
+                <button type="button" class="ex-card group" data-ex="grounding">
+                    <span class="ex-emoji bg-emerald-600/10">🖐️</span>
+                    <span class="ex-title" data-t="groundTitle">5-4-3-2-1 Grounding</span>
+                    <span class="ex-desc" data-t="groundDesc">Use your five senses to come back to the present moment when worry takes over.</span>
+                    <span class="ex-meta" data-t="groundMeta">⏱ 2–3 minutes</span>
+                </button>
+                <button type="button" class="ex-card group" data-ex="nightmare">
+                    <span class="ex-emoji bg-indigo-600/10">🌙</span>
+                    <span class="ex-title" data-t="nightTitle">After a Bad Dream</span>
+                    <span class="ex-desc" data-t="nightDesc">Woke up scared? A gentle guide to remind your mind that you are awake and safe.</span>
+                    <span class="ex-meta" data-t="nightMeta">⏱ 2 minutes</span>
+                </button>
+            </div>
+
+            <!-- My progress -->
+            <div class="anim-up-3">
+                <h2 class="mb-3 text-base font-bold tracking-tight text-slate-900" data-t="progressTitle">My Calm Progress</h2>
+                <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <div class="stat-chip"><b id="statSessions">0</b><span data-t="statSessions">sessions done</span></div>
+                    <div class="stat-chip"><b id="statWeek">0</b><span data-t="statWeek">this week</span></div>
+                    <div class="stat-chip"><b id="statRelief">–</b><span data-t="statRelief">average relief (points)</span></div>
+                    <div class="stat-chip"><b id="statFav">–</b><span data-t="statFav">most used</span></div>
+                </div>
+                <p class="mt-3 text-xs text-slate-400" data-t="privacyNote">Your progress is saved only on this device.</p>
+            </div>
+        </section>
+
+        <!-- ========== SCREEN 2: BEFORE / AFTER RATING ========== -->
+        <section class="screen" id="screenRate">
+            <div class="panel">
+                <div class="mb-1 text-xs font-semibold uppercase tracking-wider text-teal-700" id="rateStepLabel"></div>
+                <h2 class="panel-title" id="rateTitle"></h2>
+                <p class="panel-sub" id="rateSub"></p>
+                <div class="rate-emoji" id="rateEmoji">😐</div>
+                <div class="rate-num" id="rateNum" dir="ltr">5</div>
+                <div class="mx-auto mb-2 mt-4 max-w-md">
+                    <input type="range" class="rate" id="rateInput" min="0" max="10" step="1" value="5" aria-label="Rating">
+                    <div class="mt-2 flex justify-between text-xs text-slate-500">
+                        <span data-t="calmEnd">0 · Calm</span><span data-t="tenseEnd">10 · Very tense</span>
+                    </div>
+                </div>
+                <p class="rate-note" id="rateNote"></p>
+                <div class="mt-6 flex flex-wrap justify-center gap-3">
+                    <button type="button" class="btn-soft" id="rateBack" data-t="back">← Back</button>
+                    <button type="button" class="btn-main" id="rateNext"></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== SCREEN 3: BREATHING ========== -->
+        <section class="screen" id="screenBreath">
+            <div class="panel">
+                <h2 class="panel-title" id="breathTitle"></h2>
+                <p class="panel-sub" id="breathSub"></p>
+                <div class="breath-wrap">
+                    <div class="breath-glow" id="breathGlow"></div>
+                    <div class="breath-ring"></div>
+                    <div class="breath-circle" id="breathCircle"></div>
+                    <div class="breath-text">
+                        <span class="breath-word" id="breathWord"></span>
+                        <span class="breath-count" id="breathCount" dir="ltr"></span>
+                    </div>
+                </div>
+                <div class="mx-auto max-w-sm">
+                    <div class="progress-track"><div class="progress-fill" id="breathProgress"></div></div>
+                    <div class="mt-2 text-xs text-slate-500" id="breathRound"></div>
+                </div>
+                <div class="mt-8 flex flex-wrap justify-center gap-3">
+                    <button type="button" class="btn-soft" id="breathStop" data-t="stop">Stop</button>
+                    <button type="button" class="btn-main" id="breathStart" data-t="start">Start</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== SCREEN 4: STEP-BY-STEP (grounding / bad dream) ========== -->
+        <section class="screen" id="screenSteps">
+            <div class="panel">
+                <div class="mx-auto mb-6 max-w-sm">
+                    <div class="progress-track"><div class="progress-fill" id="stepProgress"></div></div>
+                    <div class="mt-2 text-xs text-slate-500" id="stepCounter"></div>
+                </div>
+                <div class="step-big" id="stepBig"></div>
+                <p class="step-text" id="stepText"></p>
+                <p class="step-hint" id="stepHint"></p>
+                <div class="step-inputs" id="stepInputs"></div>
+                <div class="mic-note" id="micNote"></div>
+                <div class="step-need" id="stepNeed"></div>
+                <div class="step-summary" id="stepSummary"></div>
+                <div class="mt-8 flex flex-wrap justify-center gap-3">
+                    <button type="button" class="btn-soft" id="stepStop" data-t="stop">Stop</button>
+                    <button type="button" class="btn-soft" id="stepRepeat" data-t="repeat">🔊 Repeat</button>
+                    <button type="button" class="btn-main" id="stepNext" data-t="next">Next →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== SCREEN 5: RESULT ========== -->
+        <section class="screen" id="screenResult">
+            <div class="panel">
+                <div class="mb-3 text-5xl" id="resultEmoji">🌿</div>
+                <h2 class="panel-title" id="resultTitle"></h2>
+                <div class="result-scores" dir="ltr">
+                    <div class="result-box"><b id="resultBefore">0</b><span data-t="before">Before</span></div>
+                    <div class="result-arrow">→</div>
+                    <div class="result-box"><b id="resultAfter">0</b><span data-t="after">After</span></div>
+                </div>
+                <p class="panel-sub" id="resultMsg"></p>
+
+                <div class="mx-auto mb-6 hidden max-w-md rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm leading-relaxed text-rose-800" id="resultHelp">
+                    <span data-t="helpText">If this feeling is too heavy right now, please talk to someone. Umang:</span>
+                    <strong dir="ltr">0311-7786264</strong> · <span data-t="emergency">Emergency</span> <strong dir="ltr">1122</strong>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-3">
+                    <button type="button" class="btn-main hidden" id="resultTry"></button>
+                    <button type="button" class="btn-soft" id="resultAgain" data-t="again">↻ Do it again</button>
+                    <a href="/app" class="btn-soft" data-t="talk">💬 Talk to Empath AI</a>
+                    <button type="button" class="btn-main" id="resultDone" data-t="done">Done</button>
+                </div>
+            </div>
+        </section>
+
+    <!-- HELPLINE FOOTER -->
+    <div class="helpline-footer">
+        <span class="block h-4 w-4 shrink-0 text-teal-700" data-icon="phone"></span>
+        <span data-t="helpline">🆘 Crisis helplines always available:</span>
+        <span>
+            <strong dir="ltr">1122</strong>
+            <span data-t="emergency">Emergency</span>
+            &nbsp;|&nbsp;
+            <strong dir="ltr">0311-7786264</strong>
+            <span data-t="umang">Umang</span>
+            &nbsp;|&nbsp;
+            <strong dir="ltr">051-2890505</strong>
+            <span data-t="rozan">Rozan</span>
+        </span>
+    </div>
+
+    </div>
+    </div>
+</div>
+
+
+<script>
+/* =========================================================
+   LANGUAGE (same detection as the other pages)
+   ========================================================= */
+const savedCalmLanguage = (
+    localStorage.getItem('empathLanguage') ||
+    localStorage.getItem('language') ||
+    localStorage.getItem('selectedLanguage') ||
+    localStorage.getItem('appLanguage') ||
+    {{ session.get('language', 'en')|tojson }} ||
+    'en'
+).toLowerCase().trim();
+
+const LANG = (savedCalmLanguage === 'ur' || savedCalmLanguage === 'urdu' || savedCalmLanguage.startsWith('ur-')) ? 'ur' : 'en';
+const IS_UR = LANG === 'ur';
+document.documentElement.lang = LANG;
+document.documentElement.dir = IS_UR ? 'rtl' : 'ltr';
+
+const USER_KEY = {{ user_key|tojson }};
+
+const T = {
+  en: {
+    brandSub:'IDP Mental Health', page:'Calm Corner', dashboard:'Dashboard', voice:'Voice guide',
+    title:'Calm Corner',
+    subtitle:'Short guided exercises to calm your body and mind. Choose one, follow the voice, and see how much lighter you feel.',
+    calmTitle:'Calming Breath', calmDesc:'Breathe in for 4, out for 6. A longer out-breath tells your body it is safe.', calmMeta:'⏱ 1 minute',
+    boxTitle:'Box Breathing', boxDesc:'In 4, hold 4, out 4, hold 4. Steadies a racing heart and busy thoughts.', boxMeta:'⏱ 1 minute',
+    groundTitle:'5-4-3-2-1 Grounding', groundDesc:'Use your five senses to come back to the present moment when worry takes over.', groundMeta:'⏱ 2–3 minutes',
+    nightTitle:'After a Bad Dream', nightDesc:'Woke up scared? A gentle guide to remind your mind that you are awake and safe.', nightMeta:'⏱ 2 minutes',
+    progressTitle:'My Calm Progress', statSessions:'sessions done', statWeek:'this week', statRelief:'average relief (points)', statFav:'most used',
+    privacyNote:'Your progress is saved only on this device.',
+    stepBefore:'Before you start', stepAfter:'After the exercise',
+    rateTitleBefore:'How tense or anxious do you feel right now?', rateTitleAfter:'And how do you feel now?',
+    rateSub:'Move the slider. There is no right or wrong answer.',
+    calmEnd:'0 · Calm', tenseEnd:'10 · Very tense', back:'← Back', begin:'Begin exercise →', seeResult:'See my result →',
+    start:'Start', stop:'Stop', next:'Next →', finish:'Finish ✓', repeat:'🔊 Repeat',
+    breathIn:'Breathe in', hold:'Hold', breathOut:'Breathe out',
+    roundOf:'Round {n} of {total}',
+    calmSub:'Breathe in through your nose as the circle grows, and slowly out through your mouth as it shrinks.',
+    boxSub:'Follow the circle: in, hold, out, hold. Four counts each.',
+    stepOf:'Step {n} of {total}',
+    needAll:'Write or say all {n} to continue', needOne:'Write or say it to continue',
+    badWords:'Please write real things, like “cup”, “wall” or “my son”.', sameTwice:'Each one should be different.',
+    notMoved:'You have not moved the slider. Is it really {n}?', yesItIs:'Yes, it is {n} →',
+    tryOther:'Try {name} instead →',
+    micHelp:'Type, or tap 🎤 and speak', listening:'Listening… speak now', micDenied:'Please allow the microphone in your browser to speak.',
+    micNoHear:'I could not hear you. Tap 🎤 and try again.', micSpeak:'Speak',
+    youNoticed:'Here is what you noticed:', realThings:'These are real, and they are here with you:',
+    before:'Before', after:'After',
+    resBetterTitle:'You feel lighter 🌿', resSameTitle:'You showed up for yourself', resWorseTitle:'It still feels heavy',
+    resBetter:'Your tension went from {b} to {a}, that is {d} {pts} lighter. Your body can find calm, and you just helped it.',
+    resSame:'Sometimes the body needs a little more time. That is okay. You can try another round or a different exercise.',
+    resWorse:'Some moments are harder than others, and that is not your fault. Talking about what you feel can help.',
+    helpText:'If this feeling is too heavy right now, please talk to someone. Umang:',
+    again:'↻ Do it again', talk:'💬 Talk to Empath AI', done:'Done',
+    helpline:'🆘 Crisis helplines always available:', emergency:'Emergency', umang:'Umang', rozan:'Rozan',
+    exNames:{ calm:'Calming Breath', box:'Box Breathing', grounding:'Grounding', nightmare:'Bad Dream' },
+    exFull:{ calm:'Calming Breath', box:'Box Breathing', grounding:'5-4-3-2-1 Grounding', nightmare:'After a Bad Dream' },
+    faces:['😌','🙂','🙂','😐','😐','😕','😟','😟','😣','😰','😫']
+  },
+  ur: {
+    brandSub:'آئی ڈی پی ذہنی صحت', page:'سکون کا گوشہ', dashboard:'ڈیش بورڈ', voice:'آواز کی رہنمائی',
+    title:'سکون کا گوشہ',
+    subtitle:'جسم اور ذہن کو پرسکون کرنے کی مختصر مشقیں۔ ایک مشق چنیں، آواز کے ساتھ چلیں، اور دیکھیں کہ آپ کتنا ہلکا محسوس کرتے ہیں۔',
+    calmTitle:'پرسکون سانس', calmDesc:'چار گنتی تک سانس اندر، چھ گنتی تک باہر۔ لمبی سانس باہر نکالنے سے جسم کو تحفظ کا احساس ہوتا ہے۔', calmMeta:'⏱ ایک منٹ',
+    boxTitle:'باکس بریدنگ', boxDesc:'چار اندر، چار روکیں، چار باہر، چار روکیں۔ تیز دھڑکن اور الجھے خیالات کو تھامتی ہے۔', boxMeta:'⏱ ایک منٹ',
+    groundTitle:'۵-۴-۳-۲-۱ گراؤنڈنگ', groundDesc:'جب فکر حاوی ہو جائے تو اپنے پانچ حواس کے ذریعے اس لمحے میں واپس آئیں۔', groundMeta:'⏱ دو سے تین منٹ',
+    nightTitle:'برے خواب کے بعد', nightDesc:'ڈر کر آنکھ کھلی؟ ذہن کو یاد دلانے کی ایک نرم رہنمائی کہ آپ جاگ رہے ہیں اور محفوظ ہیں۔', nightMeta:'⏱ دو منٹ',
+    progressTitle:'میری سکون کی پیش رفت', statSessions:'مکمل مشقیں', statWeek:'اس ہفتے', statRelief:'اوسط سکون (پوائنٹس)', statFav:'سب سے زیادہ',
+    privacyNote:'آپ کی پیش رفت صرف اسی ڈیوائس پر محفوظ ہے۔',
+    stepBefore:'شروع کرنے سے پہلے', stepAfter:'مشق کے بعد',
+    rateTitleBefore:'اس وقت آپ کتنی بے چینی یا تناؤ محسوس کر رہے ہیں؟', rateTitleAfter:'اور اب آپ کیسا محسوس کر رہے ہیں؟',
+    rateSub:'سلائیڈر کو ہلائیں۔ کوئی جواب صحیح یا غلط نہیں۔',
+    calmEnd:'۰ · پرسکون', tenseEnd:'۱۰ · بہت زیادہ تناؤ', back:'واپس →', begin:'مشق شروع کریں ←', seeResult:'نتیجہ دیکھیں ←',
+    start:'شروع کریں', stop:'روکیں', next:'اگلا ←', finish:'مکمل ✓', repeat:'🔊 دوبارہ سنیں',
+    breathIn:'سانس اندر لیں', hold:'روکیں', breathOut:'سانس باہر چھوڑیں',
+    roundOf:'دور {n} از {total}',
+    calmSub:'جب دائرہ بڑا ہو تو ناک سے سانس اندر لیں، اور جب چھوٹا ہو تو منہ سے آہستہ آہستہ باہر چھوڑیں۔',
+    boxSub:'دائرے کے ساتھ چلیں: اندر، روکیں، باہر، روکیں۔ ہر ایک چار گنتی۔',
+    stepOf:'مرحلہ {n} از {total}',
+    needAll:'آگے بڑھنے کے لیے سب {n} لکھیں یا بولیں', needOne:'آگے بڑھنے کے لیے لکھیں یا بولیں',
+    badWords:'براہِ کرم اصل چیزیں لکھیں، جیسے “کپ”، “دیوار” یا “میرا بیٹا”۔', sameTwice:'ہر چیز الگ ہونی چاہیے۔',
+    notMoved:'آپ نے سلائیڈر نہیں ہلایا۔ کیا واقعی {n} ہے؟', yesItIs:'ہاں، {n} ہی ہے ←',
+    tryOther:'اس کے بجائے {name} آزمائیں ←',
+    micHelp:'لکھیں، یا 🎤 دبا کر بولیں', listening:'سن رہے ہیں… اب بولیں', micDenied:'بولنے کے لیے براؤزر میں مائیکروفون کی اجازت دیں۔',
+    micNoHear:'آواز سنائی نہیں دی۔ 🎤 دبا کر دوبارہ بولیں۔', micSpeak:'بولیں',
+    youNoticed:'آپ نے یہ چیزیں محسوس کیں:', realThings:'یہ سب حقیقی ہیں، اور یہیں آپ کے پاس ہیں:',
+    before:'پہلے', after:'بعد میں',
+    resBetterTitle:'آپ ہلکا محسوس کر رہے ہیں 🌿', resSameTitle:'آپ نے اپنے لیے وقت نکالا', resWorseTitle:'ابھی بھی بوجھ محسوس ہو رہا ہے',
+    resBetter:'آپ کا تناؤ {b} سے {a} پر آ گیا، یعنی {d} پوائنٹس کم۔ آپ کا جسم سکون پا سکتا ہے، اور آپ نے ابھی اس کی مدد کی۔',
+    resSame:'کبھی کبھی جسم کو تھوڑا زیادہ وقت چاہیے ہوتا ہے۔ یہ بالکل ٹھیک ہے۔ آپ ایک اور دور یا کوئی دوسری مشق آزما سکتے ہیں۔',
+    resWorse:'کچھ لمحے دوسروں سے زیادہ مشکل ہوتے ہیں، اور یہ آپ کا قصور نہیں۔ اپنے احساسات کے بارے میں بات کرنا مدد دے سکتا ہے۔',
+    helpText:'اگر یہ احساس اس وقت بہت بھاری ہے تو براہِ کرم کسی سے بات کریں۔ اُمنگ:',
+    again:'↻ دوبارہ کریں', talk:'💬 ایمپاتھ اے آئی سے بات کریں', done:'مکمل',
+    helpline:'🆘 ہنگامی مدد کی لائنیں ہمیشہ دستیاب ہیں:', emergency:'ایمرجنسی', umang:'اُمنگ', rozan:'روزن',
+    exNames:{ calm:'پرسکون سانس', box:'باکس بریدنگ', grounding:'گراؤنڈنگ', nightmare:'برا خواب' },
+    exFull:{ calm:'پرسکون سانس', box:'باکس بریدنگ', grounding:'۵-۴-۳-۲-۱ گراؤنڈنگ', nightmare:'برے خواب کے بعد' },
+    faces:['😌','🙂','🙂','😐','😐','😕','😟','😟','😣','😰','😫']
+  }
+}[LANG];
+
+function fmt(str, vals) { return str.replace(/\{(\w+)\}/g, (_, k) => (vals[k] !== undefined ? vals[k] : '')); }
+const URDU_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+function num(n) { return IS_UR ? String(n).replace(/\d/g, d => URDU_DIGITS[d]) : String(n); }
+
+document.querySelectorAll('[data-t]').forEach(el => {
+  const v = T[el.getAttribute('data-t')];
+  if (typeof v === 'string') el.textContent = v;
+});
+document.title = T.page + ' — Empath AI';
+
+/* =========================================================
+   EXERCISE CONTENT
+   ========================================================= */
+const EXERCISES = {
+  calm: { type:'breath', phases:[['in',4],['out',6]], rounds:6, titleKey:'calmTitle', subKey:'calmSub' },
+  box:  { type:'breath', phases:[['in',4],['hold',4],['out',4],['hold',4]], rounds:4, titleKey:'boxTitle', subKey:'boxSub' },
+  grounding: { type:'steps', steps: {
+    en: [
+      { big:'🖐️', text:'Let us come back to this moment together.', hint:'Sit or stand comfortably. Take one slow breath.' },
+      { big:'👀 5', text:'Look around and write 5 things you can see.', hint:'A cup, a wall, the sky, your hands… take your time.', inputs:5, ph:'Something I can see' },
+      { big:'✋ 4', text:'Write 4 things you can touch right now.', hint:'Your clothes, the floor under your feet, the ground, a blanket.', inputs:4, ph:'Something I can touch' },
+      { big:'👂 3', text:'Listen, and write 3 things you can hear.', hint:'Voices, birds, wind, the fan… just notice them.', inputs:3, ph:'Something I can hear' },
+      { big:'👃 2', text:'Write 2 things you can smell.', hint:'Food, soap, fresh air. If you cannot smell anything, write a smell you like.', inputs:2, ph:'Something I can smell' },
+      { big:'👅 1', text:'Write 1 thing you can taste.', hint:'Take a sip of water, or simply notice the taste in your mouth.', inputs:1, ph:'Something I can taste' },
+      { big:'🌿', text:'You are here, in this moment. You did very well.', hint:'Take one more slow breath before you continue your day.', summary:'grounding' }
+    ],
+    ur: [
+      { big:'🖐️', text:'آئیں مل کر اس لمحے میں واپس آتے ہیں۔', hint:'آرام سے بیٹھ جائیں یا کھڑے ہو جائیں۔ ایک آہستہ سانس لیں۔' },
+      { big:'👀 ۵', text:'اپنے ارد گرد دیکھیں اور پانچ چیزیں لکھیں جو آپ کو نظر آ رہی ہیں۔', hint:'ایک کپ، دیوار، آسمان، آپ کے ہاتھ… آرام سے لکھیں۔', inputs:5, ph:'جو چیز مجھے نظر آ رہی ہے' },
+      { big:'✋ ۴', text:'چار ایسی چیزیں لکھیں جنہیں آپ اس وقت چھو سکتے ہیں۔', hint:'آپ کے کپڑے، پاؤں کے نیچے فرش، زمین، کوئی چادر۔', inputs:4, ph:'جو چیز میں چھو سکتا/سکتی ہوں' },
+      { big:'👂 ۳', text:'غور سے سنیں اور تین آوازیں لکھیں۔', hint:'لوگوں کی آوازیں، پرندے، ہوا، پنکھا… بس انہیں محسوس کریں۔', inputs:3, ph:'جو آواز مجھے سنائی دے رہی ہے' },
+      { big:'👃 ۲', text:'دو چیزوں کی خوشبو لکھیں۔', hint:'کھانا، صابن، تازہ ہوا۔ اگر کچھ محسوس نہ ہو تو کوئی پسندیدہ خوشبو لکھیں۔', inputs:2, ph:'جس چیز کی خوشبو آ رہی ہے' },
+      { big:'👅 ۱', text:'ایک ذائقہ لکھیں۔', hint:'پانی کا ایک گھونٹ لیں، یا بس منہ کے ذائقے پر دھیان دیں۔', inputs:1, ph:'جو ذائقہ محسوس ہو رہا ہے' },
+      { big:'🌿', text:'آپ یہاں ہیں، اسی لمحے میں۔ آپ نے بہت اچھا کیا۔', hint:'اپنا دن جاری رکھنے سے پہلے ایک اور آہستہ سانس لیں۔', summary:'grounding' }
+    ]
+  }},
+  nightmare: { type:'steps', steps: {
+    en: [
+      { big:'🌙', text:'You had a bad dream. It was a dream. You are awake now.', hint:'Your heart may be beating fast. That is your body reacting to the dream, and it will settle.' },
+      { big:'🦶', text:'Press your feet on the floor, or feel the bed under you.', hint:'Notice how solid it is. It is holding you.' },
+      { big:'📍', text:'Say to yourself: I am here. Today is a new day. I am safe right now.', hint:'Say it slowly, then write it below in your own words.', inputs:1, ph:'I am awake and I am safe' },
+      { big:'💡', text:'Look around and write 3 things you know.', hint:'Your blanket, a family member, a familiar bag or object. These are real and they are here.', inputs:3, ph:'Something familiar near me' },
+      { big:'💧', text:'If you can, drink a little water.', hint:'Hold the cup with both hands and feel how cool it is.' },
+      { big:'🌬️', text:'Now breathe with me: in slowly… and out even slower.', hint:'Do this three times, letting your shoulders drop each time you breathe out.' },
+      { big:'🤲', text:'You are safe. The dream is over. You can rest again.', hint:'If bad dreams keep coming, you can talk about them with Empath AI or a doctor.', summary:'nightmare' }
+    ],
+    ur: [
+      { big:'🌙', text:'آپ نے ایک برا خواب دیکھا۔ وہ صرف خواب تھا۔ اب آپ جاگ رہے ہیں۔', hint:'دل تیز دھڑک رہا ہو تو یہ خواب پر جسم کا ردِعمل ہے، اور یہ آہستہ آہستہ تھم جائے گا۔' },
+      { big:'🦶', text:'اپنے پاؤں زمین پر دبائیں، یا اپنے نیچے بستر کو محسوس کریں۔', hint:'محسوس کریں کہ یہ کتنا مضبوط ہے۔ یہ آپ کو تھامے ہوئے ہے۔' },
+      { big:'📍', text:'اپنے آپ سے کہیں: میں یہاں ہوں۔ آج نیا دن ہے۔ میں اس وقت محفوظ ہوں۔', hint:'آہستہ آہستہ کہیں، پھر نیچے اپنے الفاظ میں لکھیں۔', inputs:1, ph:'میں جاگ رہا/رہی ہوں اور محفوظ ہوں' },
+      { big:'💡', text:'ارد گرد دیکھیں اور تین جانی پہچانی چیزیں لکھیں۔', hint:'آپ کی چادر، گھر کا کوئی فرد، کوئی جانا پہچانا تھیلا یا چیز۔ یہ سب حقیقی ہیں اور یہیں ہیں۔', inputs:3, ph:'میرے پاس کوئی جانی پہچانی چیز' },
+      { big:'💧', text:'اگر ہو سکے تو تھوڑا سا پانی پی لیں۔', hint:'گلاس دونوں ہاتھوں سے پکڑیں اور اس کی ٹھنڈک محسوس کریں۔' },
+      { big:'🌬️', text:'اب میرے ساتھ سانس لیں: آہستہ اندر… اور اس سے بھی آہستہ باہر۔', hint:'یہ تین بار کریں، اور ہر بار سانس چھوڑتے ہوئے کندھے ڈھیلے چھوڑ دیں۔' },
+      { big:'🤲', text:'آپ محفوظ ہیں۔ خواب ختم ہو گیا۔ آپ دوبارہ آرام کر سکتے ہیں۔', hint:'اگر برے خواب بار بار آئیں تو آپ ایمپاتھ اے آئی یا کسی ڈاکٹر سے ان کے بارے میں بات کر سکتے ہیں۔', summary:'nightmare' }
+    ]
+  }}
+};
+
+/* =========================================================
+   VOICE: Urdu uses the existing /tts/urdu route, English uses the browser
+   ========================================================= */
+const VOICE_KEY = 'empathCalmVoice';
+let voiceOn = true;
+try { voiceOn = localStorage.getItem(VOICE_KEY) !== '0'; } catch (e) {}
+const voiceToggle = document.getElementById('voiceToggle');
+function paintVoice() {
+  voiceToggle.classList.toggle('on', voiceOn);
+  voiceToggle.setAttribute('aria-checked', voiceOn ? 'true' : 'false');
+}
+function flipVoice() {
+  voiceOn = !voiceOn;
+  try { localStorage.setItem(VOICE_KEY, voiceOn ? '1' : '0'); } catch (e) {}
+  if (!voiceOn) stopVoice();
+  paintVoice();
+}
+voiceToggle.addEventListener('click', flipVoice);
+voiceToggle.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipVoice(); } });
+paintVoice();
+
+const audioCache = new Map();   // text -> object URL
+let currentAudio = null;
+
+async function getUrduAudio(text) {
+  if (audioCache.has(text)) return audioCache.get(text);
+  const res = await fetch('/tts/urdu', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+  if (!res.ok) throw new Error('tts failed');
+  const url = URL.createObjectURL(await res.blob());
+  audioCache.set(text, url);
+  return url;
+}
+
+function stopVoice() {
+  if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+async function speak(text) {
+  if (!voiceOn || !text) return;
+  stopVoice();
+  if (IS_UR) {
+    try {
+      const url = await getUrduAudio(text);
+      if (!voiceOn) return;
+      currentAudio = new Audio(url);
+      currentAudio.play().catch(() => {});
+    } catch (e) { /* no voice: the text on screen is enough */ }
+  } else if ('speechSynthesis' in window) {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1;
+    window.speechSynthesis.speak(u);
+  }
+}
+
+function prefetchUrdu(texts) {
+  if (!IS_UR || !voiceOn) return;
+  texts.forEach(t => getUrduAudio(t).catch(() => {}));
+}
+
+/* =========================================================
+   SCREENS & STATE
+   ========================================================= */
+const screens = ['screenChoose','screenRate','screenBreath','screenSteps','screenResult'];
+function show(id) {
+  screens.forEach(s => document.getElementById(s).classList.toggle('show', s === id));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+const state = { ex: null, before: 5, after: 5, phase: 'before', timer: null, stepIndex: 0, running: false, answers: {} };
+
+/* ---------- Rating ---------- */
+const rateInput = document.getElementById('rateInput');
+function paintRate() {
+  const v = Number(rateInput.value);
+  document.getElementById('rateNum').textContent = num(v);
+  const face = document.getElementById('rateEmoji');
+  face.textContent = T.faces[v];
+  face.style.transform = 'scale(1.12)';
+  setTimeout(() => { face.style.transform = 'scale(1)'; }, 150);
+}
+rateInput.addEventListener('input', () => {
+  state.rateTouched = true;
+  state.rateConfirm = false;
+  document.getElementById('rateNote').textContent = '';
+  document.getElementById('rateNext').textContent = state.phase === 'before' ? T.begin : T.seeResult;
+  paintRate();
+});
+
+function openRate(phase) {
+  state.phase = phase;
+  document.getElementById('rateStepLabel').textContent = phase === 'before' ? T.stepBefore : T.stepAfter;
+  document.getElementById('rateTitle').textContent = phase === 'before' ? T.rateTitleBefore : T.rateTitleAfter;
+  document.getElementById('rateSub').textContent = T.rateSub;
+  document.getElementById('rateNext').textContent = phase === 'before' ? T.begin : T.seeResult;
+  document.getElementById('rateBack').style.display = phase === 'before' ? '' : 'none';
+  rateInput.value = phase === 'before' ? 5 : state.before;
+  state.rateTouched = false;
+  state.rateConfirm = false;
+  document.getElementById('rateNote').textContent = '';
+  paintRate();
+  show('screenRate');
+}
+
+document.getElementById('rateBack').addEventListener('click', () => show('screenChoose'));
+document.getElementById('rateNext').addEventListener('click', () => {
+  // the user did not touch the slider: ask once if the number is really right
+  if (!state.rateTouched && !state.rateConfirm) {
+    const n = num(rateInput.value);
+    state.rateConfirm = true;
+    document.getElementById('rateNote').textContent = fmt(T.notMoved, { n });
+    document.getElementById('rateNext').textContent = fmt(T.yesItIs, { n });
+    return;
+  }
+  if (state.phase === 'before') {
+    state.before = Number(rateInput.value);
+    startExercise();
+  } else {
+    state.after = Number(rateInput.value);
+    showResult();
+  }
+});
+
+/* ---------- Choose ---------- */
+document.querySelectorAll('[data-ex]').forEach(card => {
+  card.addEventListener('click', () => {
+    state.ex = card.getAttribute('data-ex');
+    openRate('before');
+  });
+});
+
+function startExercise() {
+  const ex = EXERCISES[state.ex];
+  if (ex.type === 'breath') {
+    prefetchUrdu([T.breathIn, T.hold, T.breathOut]);
+    document.getElementById('breathTitle').textContent = T[ex.titleKey];
+    document.getElementById('breathSub').textContent = T[ex.subKey];
+    resetBreathUI();
+    show('screenBreath');
+  } else {
+    const steps = ex.steps[LANG];
+    prefetchUrdu(steps.slice(0, 2).map(s => s.text));
+    state.stepIndex = 0;
+    state.answers = {};
+    paintStep();
+    show('screenSteps');
+  }
+}
+
+/* =========================================================
+   BREATHING
+   ========================================================= */
+const circle = document.getElementById('breathCircle');
+const glow = document.getElementById('breathGlow');
+const wordEl = document.getElementById('breathWord');
+const countEl = document.getElementById('breathCount');
+const startBtn = document.getElementById('breathStart');
+
+function setScale(scale, seconds) {
+  [circle, glow].forEach(el => { el.style.transitionDuration = seconds + 's'; });
+  circle.style.transform = `scale(${scale})`;
+  glow.style.transform = `scale(${scale + 0.15})`;
+}
+
+function resetBreathUI() {
+  clearTimeout(state.timer); state.running = false;
+  setScale(0.45, 0.6);
+  wordEl.textContent = ''; countEl.textContent = '';
+  document.getElementById('breathProgress').style.width = '0%';
+  document.getElementById('breathRound').textContent = fmt(T.roundOf, { n: num(0), total: num(EXERCISES[state.ex].rounds) });
+  startBtn.style.display = '';
+}
+
+function runBreath() {
+  const ex = EXERCISES[state.ex];
+  const totalSteps = ex.rounds * ex.phases.length;
+  let stepNo = 0;
+  state.running = true;
+  startBtn.style.display = 'none';
+
+  function nextPhase() {
+    if (!state.running) return;
+    if (stepNo >= totalSteps) { finishExercise(); return; }
+    const round = Math.floor(stepNo / ex.phases.length) + 1;
+    const [kind, secs] = ex.phases[stepNo % ex.phases.length];
+    stepNo++;
+
+    document.getElementById('breathRound').textContent = fmt(T.roundOf, { n: num(round), total: num(ex.rounds) });
+    document.getElementById('breathProgress').style.width = Math.round(((stepNo - 1) / totalSteps) * 100) + '%';
+
+    const label = kind === 'in' ? T.breathIn : kind === 'out' ? T.breathOut : T.hold;
+    wordEl.textContent = label;
+    speak(label);
+    if (kind === 'in') setScale(1, secs);
+    else if (kind === 'out') setScale(0.45, secs);
+    // hold: keep the current size
+
+    let left = secs;
+    countEl.textContent = num(left);
+    function tick() {
+      if (!state.running) return;
+      left--;
+      if (left <= 0) { nextPhase(); return; }
+      countEl.textContent = num(left);
+      state.timer = setTimeout(tick, 1000);
+    }
+    state.timer = setTimeout(tick, 1000);
+  }
+  nextPhase();
+}
+
+startBtn.addEventListener('click', runBreath);
+document.getElementById('breathStop').addEventListener('click', () => {
+  state.running = false; clearTimeout(state.timer); stopVoice(); show('screenChoose');
+});
+
+/* =========================================================
+   STEP-BY-STEP (grounding / bad dream)
+   ========================================================= */
+function paintStep() {
+  const steps = EXERCISES[state.ex].steps[LANG];
+  const s = steps[state.stepIndex];
+  document.getElementById('stepBig').textContent = s.big;
+  document.getElementById('stepText').textContent = s.text;
+  document.getElementById('stepHint').textContent = s.hint;
+  document.getElementById('stepCounter').textContent = fmt(T.stepOf, { n: num(state.stepIndex + 1), total: num(steps.length) });
+  document.getElementById('stepProgress').style.width = Math.round(((state.stepIndex + 1) / steps.length) * 100) + '%';
+  document.getElementById('stepNext').textContent = state.stepIndex === steps.length - 1 ? T.finish : T.next;
+  paintInputs(s);
+  paintSummary(s);
+  speak(s.text);
+  // get the next step's voice ready
+  if (steps[state.stepIndex + 1]) prefetchUrdu([steps[state.stepIndex + 1].text]);
+}
+
+/* ---------- inputs: the user writes before moving on ---------- */
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+/* ---------- speak instead of typing (Chrome / Edge) ---------- */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+let recog = null, recogBtn = null;
+
+function setMicNote(text, isErr) {
+  const el = document.getElementById('micNote');
+  el.textContent = text || '';
+  el.classList.toggle('err', !!isErr);
+}
+
+function stopListening() {
+  if (recog) { try { recog.abort(); } catch (e) {} }
+  recog = null;
+  if (recogBtn) recogBtn.classList.remove('listening');
+  recogBtn = null;
+}
+
+function listenInto(inp, btn) {
+  if (!SpeechRec) return;
+  if (recogBtn === btn) { stopListening(); setMicNote(T.micHelp, false); return; }
+  stopListening();
+  stopVoice();                       // the guide voice should not be heard by the mic
+
+  const r = new SpeechRec();
+  r.lang = IS_UR ? 'ur-PK' : 'en-US';
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+  recog = r; recogBtn = btn;
+  btn.classList.add('listening');
+  setMicNote(T.listening, false);
+
+  let heard = '';
+  r.onresult = e => {
+    heard = [...e.results].map(x => x[0].transcript).join(' ').trim();
+    inp.value = heard.slice(0, 60);
+    checkInputs();
+  };
+  r.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') setMicNote(T.micDenied, true);
+    else if (e.error === 'no-speech') setMicNote(T.micNoHear, true);
+  };
+  r.onend = () => {
+    if (recog !== r) return;
+    btn.classList.remove('listening');
+    recog = null; recogBtn = null;
+    if (heard) {
+      setMicNote(T.micHelp, false);
+      // jump to the next empty box
+      const empty = [...document.querySelectorAll('#stepInputs .step-input')].find(x => !x.value.trim());
+      if (empty) empty.focus();
+    } else if (!document.getElementById('micNote').classList.contains('err')) {
+      setMicNote(T.micNoHear, true);
+    }
+  };
+  try { r.start(); } catch (e) { stopListening(); }
+}
+
+function paintInputs(s) {
+  const box = document.getElementById('stepInputs');
+  const need = document.getElementById('stepNeed');
+  const next = document.getElementById('stepNext');
+  stopListening();
+  box.innerHTML = '';
+  need.textContent = '';
+  setMicNote('', false);
+  if (!s.inputs) { next.disabled = false; return; }
+
+  const saved = state.answers[state.stepIndex] || [];
+  for (let i = 0; i < s.inputs; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'step-input';
+    inp.maxLength = 60;
+    inp.dir = 'auto';
+    inp.placeholder = (s.inputs > 1 ? num(i + 1) + '. ' : '') + s.ph;
+    inp.value = saved[i] || '';
+    inp.addEventListener('input', checkInputs);
+    inp.addEventListener('blur', () => setTimeout(checkInputs, 0));
+    const row = document.createElement('div');
+    row.className = 'input-row';
+    row.appendChild(inp);
+    if (SpeechRec) {
+      const mic = document.createElement('button');
+      mic.type = 'button';
+      mic.className = 'mic-btn';
+      mic.title = T.micSpeak;
+      mic.setAttribute('aria-label', T.micSpeak);
+      mic.innerHTML = '<span class="block h-5 w-5" data-icon="mic"></span>';
+      if (window.renderEmpathIcons) window.renderEmpathIcons(mic);
+      mic.addEventListener('click', () => listenInto(inp, mic));
+      row.appendChild(mic);
+    }
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const all = [...box.querySelectorAll('.step-input')];
+      const empty = all.find(x => !x.value.trim());
+      if (empty) empty.focus();
+      else if (!next.disabled) next.click();
+    });
+    box.appendChild(row);
+  }
+  setMicNote(SpeechRec ? T.micHelp : '', false);
+  checkInputs();
+  setTimeout(() => { const first = box.querySelector('.step-input'); if (first) first.focus(); }, 250);
+}
+
+/* ---------- reject junk like "33333", "asdfgh", "ertyui", "xxxx" ---------- */
+const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm', 'abcdefghijklmnopqrstuvwxyz'];
+function looksLikeJunk(value) {
+  const t = value.trim().toLowerCase();
+  const letters = t.match(/[a-z\u0600-\u06FF]/g) || [];
+  if (letters.length < 2) return true;                       // only numbers / symbols
+  if (/(.)\1\1/.test(t.replace(/\s+/g, ''))) return true;   // "aaa", "۳۳۳", "hhhh"
+  if (letters.length > 0 && (t.match(/[0-9۰-۹]/g) || []).length > letters.length) return true; // "a1234"
+  const words = t.split(/\s+/).map(w => w.replace(/[^a-z]/g, '')).filter(w => w.length >= 4);
+  for (const w of words) {
+    // any 4 letters in a row taken straight from the keyboard: "asdf…", "wert…", "…cvb"
+    for (let i = 0; i + 4 <= w.length; i++) {
+      const piece = w.slice(i, i + 4);
+      for (const row of KEY_ROWS) {
+        if (row.includes(piece) || row.split('').reverse().join('').includes(piece)) return true;
+      }
+    }
+    if (!/[aeiouy]/.test(w)) return true;                     // "xkcdvb": no vowel at all
+    if (/[^aeiouy]{6,}/.test(w)) return true;                 // too many consonants together
+  }
+  return false;
+}
+
+function normaliseAnswer(v) { return v.trim().toLowerCase().replace(/\s+/g, ' '); }
+
+function checkInputs() {
+  const s = EXERCISES[state.ex].steps[LANG][state.stepIndex];
+  const all = [...document.querySelectorAll('#stepInputs .step-input')];
+  const values = all.map(x => x.value.trim());
+  state.answers[state.stepIndex] = values;
+
+  const seen = new Set();
+  let junk = false, twice = false;
+  all.forEach((x, i) => {
+    const v = values[i];
+    let bad = false;
+    if (v) {
+      const showNow = document.activeElement !== x || v.length >= 4;
+      if (looksLikeJunk(v)) { bad = true; if (showNow) junk = true; }
+      else if (seen.has(normaliseAnswer(v))) { bad = true; twice = true; }
+      seen.add(normaliseAnswer(v));
+      x.dataset.bad = bad ? '1' : '';
+      x.classList.toggle('bad', bad && showNow);
+    } else {
+      x.dataset.bad = '';
+      x.classList.remove('bad');
+    }
+    x.classList.toggle('filled', !!v && !bad);
+  });
+
+  const left = values.filter(v => !v).length;
+  const anyBad = all.some(x => x.dataset.bad === '1');
+  document.getElementById('stepNext').disabled = left > 0 || anyBad;
+
+  const need = document.getElementById('stepNeed');
+  if (junk) { need.textContent = T.badWords; need.classList.add('err'); }
+  else if (twice) { need.textContent = T.sameTwice; need.classList.add('err'); }
+  else {
+    need.classList.remove('err');
+    need.textContent = (left === 0 && !anyBad) ? '' : (s.inputs === 1 ? T.needOne : fmt(T.needAll, { n: num(s.inputs) }));
+  }
+}
+
+function paintSummary(s) {
+  const box = document.getElementById('stepSummary');
+  box.innerHTML = '';
+  if (!s.summary) return;
+  const steps = EXERCISES[state.ex].steps[LANG];
+  let items = [];
+  if (s.summary === 'grounding') {
+    steps.forEach((st, i) => { if (st.inputs) items = items.concat(state.answers[i] || []); });
+  } else {
+    const idx = steps.findIndex(st => st.inputs === 3);
+    items = state.answers[idx] || [];
+  }
+  items = items.filter(Boolean);
+  if (!items.length) return;
+  const label = s.summary === 'grounding' ? T.youNoticed : T.realThings;
+  box.innerHTML = '<div class="w-full text-[13px] text-slate-500 mb-1">' + escapeHtml(label) + '</div>' +
+    items.map(v => '<span>' + escapeHtml(v) + '</span>').join('');
+}
+
+document.getElementById('stepNext').addEventListener('click', () => {
+  const steps = EXERCISES[state.ex].steps[LANG];
+  if (document.getElementById('stepNext').disabled) return;
+  if (state.stepIndex < steps.length - 1) { state.stepIndex++; paintStep(); }
+  else finishExercise();
+});
+document.getElementById('stepRepeat').addEventListener('click', () => {
+  speak(EXERCISES[state.ex].steps[LANG][state.stepIndex].text);
+});
+document.getElementById('stepStop').addEventListener('click', () => { stopListening(); stopVoice(); show('screenChoose'); });
+
+function finishExercise() {
+  state.running = false; clearTimeout(state.timer);
+  if (typeof stopListening === 'function') stopListening();
+  document.getElementById('breathProgress').style.width = '100%';
+  setTimeout(() => { stopVoice(); openRate('after'); }, 700);
+}
+
+/* =========================================================
+   RESULT + LOCAL PROGRESS
+   ========================================================= */
+const HISTORY_KEY = 'empathCalmSessions_' + USER_KEY;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; }
+}
+function saveHistory(list) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(-200))); } catch (e) {}
+}
+
+function showResult() {
+  const b = state.before, a = state.after, d = b - a;
+  document.getElementById('resultBefore').textContent = num(b);
+  document.getElementById('resultAfter').textContent = num(a);
+
+  let title, msg, emoji;
+  if (d > 0)      { title = T.resBetterTitle; msg = fmt(T.resBetter, { b: num(b), a: num(a), d: num(d), pts: d === 1 ? 'point' : 'points' }); emoji = '🌿'; }
+  else if (d === 0) { title = T.resSameTitle; msg = T.resSame; emoji = '🤍'; }
+  else            { title = T.resWorseTitle; msg = T.resWorse; emoji = '🫂'; }
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMsg').textContent = msg;
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultHelp').classList.toggle('hidden', a < 8);
+
+  // no relief: offer a different kind of exercise
+  const OTHER = { calm: 'grounding', box: 'grounding', grounding: 'calm', nightmare: 'calm' };
+  const tryBtn = document.getElementById('resultTry');
+  state.suggested = OTHER[state.ex];
+  tryBtn.textContent = fmt(T.tryOther, { name: T.exFull[state.suggested] });
+  tryBtn.classList.toggle('hidden', d > 0);
+  document.getElementById('resultDone').classList.toggle('btn-main', d > 0);
+  document.getElementById('resultDone').classList.toggle('btn-soft', d <= 0);
+
+  const list = loadHistory();
+  list.push({ ex: state.ex, before: b, after: a, at: Date.now() });
+  saveHistory(list);
+  paintStats();
+
+  show('screenResult');
+}
+
+document.getElementById('resultAgain').addEventListener('click', () => openRate('before'));
+document.getElementById('resultTry').addEventListener('click', () => {
+  state.ex = state.suggested;
+  state.before = state.after;       // carry today's feeling over, no need to rate again
+  startExercise();
+});
+document.getElementById('resultDone').addEventListener('click', () => show('screenChoose'));
+
+function paintStats() {
+  const list = loadHistory();
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  document.getElementById('statSessions').textContent = num(list.length);
+  document.getElementById('statWeek').textContent = num(list.filter(x => x.at >= weekAgo).length);
+  if (list.length) {
+    const avg = list.reduce((s, x) => s + (x.before - x.after), 0) / list.length;
+    document.getElementById('statRelief').textContent = (avg > 0 ? '+' : '') + num(avg.toFixed(1));
+    const counts = {};
+    list.forEach(x => { counts[x.ex] = (counts[x.ex] || 0) + 1; });
+    const fav = Object.keys(counts).sort((p, q) => counts[q] - counts[p])[0];
+    document.getElementById('statFav').textContent = T.exNames[fav] || '–';
+  }
+}
+paintStats();
+
+window.addEventListener('beforeunload', stopVoice);
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", calmCorner: "Calm Corner", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", calmCorner: "سکون کا گوشہ", logout: "لاگ آؤٹ" }
+  };
+
+  const t = SIDEBAR_TEXT[root.lang === "ur" ? "ur" : "en"];
+  document.querySelectorAll("[data-i18n-extra]").forEach(function (el) {
+    const key = el.getAttribute("data-i18n-extra");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  function setCollapsed(collapsed) {
+    root.classList.toggle("sidebar-collapsed", collapsed);
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e) {}
+  }
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    setCollapsed(!root.classList.contains("sidebar-collapsed"));
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
+</script>
+
+</body>
+</html>

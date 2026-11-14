@@ -15,3 +15,5 @@ from . import chat_routes  # noqa: F401,E402
 from . import pages  # noqa: F401,E402
 from . import words_of_hope  # noqa: F401,E402
 from . import password_reset  # noqa: F401,E402
+from . import calm_corner  # noqa: F401,E402
+from . import report  # noqa: F401,E402

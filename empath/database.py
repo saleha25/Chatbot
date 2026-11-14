@@ -551,7 +551,7 @@ def update_user_memory_profile(user_id, user_message, emotion="unknown", crisis_
     if any(k in t for k in ["camp", "shelter", "ngo", "crowded", "privacy", "noise"]): found.append("temporary living conditions")
     if any(k in t for k in ["job", "work", "income", "money", "fees", "expense"]): found.append("financial/work pressure")
     stressors = _memory_join_unique(stressors, found)
-    extracted = extract_wellbeing_info(user_message)
+    extracted = extract_wellbeing_info_smart(user_message)
     sleep_pattern = row["sleep_pattern"] or ""
     mood_pattern = row["mood_pattern"] or ""
     energy_pattern = row["energy_pattern"] or ""
@@ -795,6 +795,7 @@ def get_urdu_name_for_account(account_id):
 from .context import (  # noqa: E402
     detect_family_stress,
     extract_wellbeing_info,
+    extract_wellbeing_info_smart,
 )
 from .core import (  # noqa: E402
     DB_PATH,
