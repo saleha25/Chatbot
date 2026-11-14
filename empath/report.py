@@ -11,6 +11,7 @@ If the API is unavailable, a rule-based summary is used instead.
 import json
 import os
 import re
+import secrets
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
@@ -489,9 +490,33 @@ def _collect(account_id, days, lang="en"):
         "extra": extra_fields,
     }
 
+    # ---------- crisis alerts (saved by the chatbot) ----------
+    ensure_report_tables()
+    since_utc = (since_pk - timedelta(hours=5)) if since_pk else None
+    alerts = _crisis_events(db, user_id, since_utc, lang)
+    chat["alerts"] = alerts
+    chat["alert_count"] = len(alerts)
+    chat["emergency_count"] = sum(1 for a in alerts if a["level_key"] == "emergency")
+    # older chats were made before alerts were saved: keep the word check for those
+    chat["risk_source"] = "alerts" if alerts else "words"
+    if alerts:
+        chat["risk_count"] = len(alerts)
+        chat["risk_events"] = alerts[-5:]
+
+    # ---------- Calm Corner ----------
+    calm = _calm_summary(db, user_id, since_utc, lang)
+
+    # ---------- this period vs the period before ----------
+    compare = []
+    if days:
+        cur = _window_metrics(db, user_id, since_utc, None)
+        prev = _window_metrics(db, user_id, since_utc - timedelta(days=days), since_utc)
+        compare = _comparison(cur, prev, lang)
+
     fingerprint = (
         len(chat_rows), _row_get(chat_rows[-1], "id") if chat_rows else 0,
         len(wellbeing), len(assessments), _row_get(assess_rows[-1], "id") if assess_rows else 0,
+        len(alerts), calm["count"],
     )
 
     return {
@@ -503,6 +528,8 @@ def _collect(account_id, days, lang="en"):
         "wellbeing": wellbeing,
         "wb": wb_summary,
         "chat": chat,
+        "calm": calm,
+        "compare": compare,
         "risk_memory": risk_mem,
         "user_texts": [m["text"] for m in user_msgs],
         "fingerprint": fingerprint,
@@ -510,6 +537,215 @@ def _collect(account_id, days, lang="en"):
         "since_pk": since_pk,
         "lang": lang,
     }
+
+
+# ─────────────────────────────────────────────
+# Extra tables for the report (created automatically the first time).
+#   crisis_events : every time the chatbot switched to crisis / emergency mode
+#   calm_sessions : every finished Calm Corner exercise (distress before / after)
+#   report_log    : every report that was made, so its QR code can be verified
+# Nothing else in the app changes.
+# ─────────────────────────────────────────────
+_TABLES_READY = False
+
+
+def ensure_report_tables():
+    global _TABLES_READY
+    if _TABLES_READY:
+        return
+    db = get_db()
+    db.executescript("""
+        CREATE TABLE IF NOT EXISTS crisis_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER, account_id INTEGER,
+            level TEXT, excerpt TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS calm_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER, account_id INTEGER,
+            exercise TEXT, before_score INTEGER, after_score INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS report_log (
+            report_id TEXT PRIMARY KEY,
+            account_id INTEGER, user_id INTEGER,
+            initials TEXT, period_label TEXT, lang TEXT, status TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    db.commit()
+    _TABLES_READY = True
+
+
+@app.after_request
+def _record_crisis_reply(response):
+    """When the chatbot answers in crisis / emergency mode, save it for the report.
+    It only reads the reply that is already going out, so the chat itself is not changed."""
+    try:
+        if request.path == "/chat" and request.method == "POST" and response.is_json:
+            reply = response.get_json(silent=True) or {}
+            level = reply.get("type")
+            if level in ("crisis", "emergency") and session.get("user_id"):
+                text = str((request.get_json(silent=True) or {}).get("message", "")).strip().replace("\n", " ")
+                ensure_report_tables()
+                db = get_db()
+                db.execute(
+                    "INSERT INTO crisis_events (user_id, account_id, level, excerpt) VALUES (?, ?, ?, ?)",
+                    (session.get("user_id"), session.get("account_id"), level, text[:200]),
+                )
+                db.commit()
+    except Exception as e:
+        print("Crisis event log error:", e)
+    return response
+
+
+CALM_EXERCISES = {
+    "calm": ("Calming Breath", "پرسکون سانس"),
+    "box": ("Box Breathing", "باکس بریدنگ"),
+    "grounding": ("5-4-3-2-1 Grounding", "۵-۴-۳-۲-۱ گراؤنڈنگ"),
+    "nightmare": ("After a Bad Dream", "برے خواب کے بعد"),
+}
+
+
+def _rows_in_window(rows, col, start_utc, end_utc):
+    """Rows whose time (UTC) falls inside [start, end)."""
+    out = []
+    for r in rows:
+        dt = _parse_dt(_row_get(r, col))
+        if dt is None:
+            continue
+        if start_utc and dt < start_utc:
+            continue
+        if end_utc and dt >= end_utc:
+            continue
+        out.append(r)
+    return out
+
+
+def _window_metrics(db, user_id, start_utc, end_utc):
+    """The same key numbers for any time window, so two periods can be compared fairly."""
+    m = {}
+    if not user_id:
+        return m
+    a = _rows_in_window(db.execute("SELECT * FROM assessments WHERE user_id = ? ORDER BY assessment_date, id",
+                                   (user_id,)).fetchall(), "assessment_date", start_utc, end_utc)
+    if a:
+        m["phq"], m["gad"], m["who"] = (_row_get(a[-1], "phq9_total"), _row_get(a[-1], "gad7_total"),
+                                        _row_get(a[-1], "who5_total"))
+    w = _rows_in_window(db.execute("SELECT * FROM wellbeing_logs WHERE user_id = ?", (user_id,)).fetchall(),
+                        "log_date", start_utc, end_utc)
+    sleeps = [float(_row_get(r, "sleep_hours")) for r in w if _row_get(r, "sleep_hours") is not None]
+    moods = [(_row_get(r, "mood", "") or "").lower() for r in w if _row_get(r, "mood")]
+    if sleeps:
+        m["sleep"] = round(sum(sleeps) / len(sleeps), 1)
+    if moods:
+        m["low_mood"] = round(100 * sum(1 for x in moods if MOOD_SCORE.get(x, 3) <= 2) / len(moods))
+    c = _rows_in_window(db.execute("SELECT * FROM chat_history WHERE user_id = ? AND lower(sender) = 'user'",
+                                   (user_id,)).fetchall(), "timestamp", start_utc, end_utc)
+    m["messages"] = len(c)
+    m["active_days"] = len({_utc_to_pk(_parse_dt(_row_get(r, "timestamp"))).date() for r in c})
+    ce = _rows_in_window(db.execute("SELECT * FROM crisis_events WHERE user_id = ?", (user_id,)).fetchall(),
+                         "created_at", start_utc, end_utc)
+    m["crisis"] = len(ce)
+    cs = _rows_in_window(db.execute("SELECT * FROM calm_sessions WHERE user_id = ?", (user_id,)).fetchall(),
+                         "created_at", start_utc, end_utc)
+    m["calm"] = len(cs)
+    if cs:
+        m["relief"] = round(sum((_row_get(r, "before_score") or 0) - (_row_get(r, "after_score") or 0)
+                                for r in cs) / len(cs), 1)
+    return m
+
+
+# label EN, label UR, higher_is_better (None = neither), unit
+COMPARE_ROWS = [
+    ("phq", "Depression (PHQ-9)", "ڈپریشن (PHQ-9)", False, ""),
+    ("gad", "Anxiety (GAD-7)", "بے چینی (GAD-7)", False, ""),
+    ("who", "Wellbeing (WHO-5)", "فلاح (WHO-5)", True, ""),
+    ("sleep", "Average sleep (hours)", "اوسط نیند (گھنٹے)", True, ""),
+    ("low_mood", "Low / anxious mood entries", "کم / بے چین موڈ کے اندراجات", False, "%"),
+    ("messages", "Messages to the chatbot", "چیٹ بوٹ کو پیغامات", None, ""),
+    ("active_days", "Active days", "فعال دن", None, ""),
+    ("calm", "Calm Corner exercises", "پرسکون گوشہ کی مشقیں", None, ""),
+    ("relief", "Average relief per exercise (points)", "فی مشق اوسط سکون (پوائنٹس)", True, ""),
+    ("crisis", "Crisis alerts", "ہنگامی الرٹس", False, ""),
+]
+
+
+def _comparison(cur, prev, lang):
+    ur = lang == "ur"
+    rows = []
+    for key, en, urd, higher_better, unit in COMPARE_ROWS:
+        a, b = cur.get(key), prev.get(key)
+        if a is None and b is None:
+            continue
+        if key in ("messages", "active_days", "calm", "crisis") and not a and not b:
+            continue
+        fa = "—" if a is None else f"{a:g}{unit}"
+        fb = "—" if b is None else f"{b:g}{unit}"
+        if a is None or b is None:
+            text, cls = ("موازنہ ممکن نہیں" if ur else "Not comparable"), "same"
+        else:
+            diff = round(a - b, 1)
+            if diff == 0:
+                text, cls = ("کوئی تبدیلی نہیں" if ur else "No change"), "same"
+            else:
+                arrow = "▲" if diff > 0 else "▼"
+                amount = f"{arrow} {abs(diff):g}{unit}"
+                if higher_better is None:
+                    text, cls = amount, "same"
+                else:
+                    good = (diff > 0) == higher_better
+                    word = ("بہتر" if good else "بدتر") if ur else ("better" if good else "worse")
+                    text, cls = f"{amount} ({word})", ("good" if good else "bad")
+        rows.append({"label": urd if ur else en, "now": fa, "prev": fb, "text": text, "cls": cls})
+    return rows
+
+
+def _calm_summary(db, user_id, start_utc, lang):
+    ur = lang == "ur"
+    rows = _rows_in_window(db.execute("SELECT * FROM calm_sessions WHERE user_id = ? ORDER BY created_at, id",
+                                      (user_id,)).fetchall(), "created_at", start_utc, None) if user_id else []
+    sessions = []
+    for r in rows:
+        b, a = _row_get(r, "before_score"), _row_get(r, "after_score")
+        name = CALM_EXERCISES.get(_row_get(r, "exercise"), (_row_get(r, "exercise"), _row_get(r, "exercise")))
+        sessions.append({
+            "date": _fmt_datetime(_utc_to_pk(_parse_dt(_row_get(r, "created_at"))), lang),
+            "exercise": name[1] if ur else name[0],
+            "before": b, "after": a, "relief": (b or 0) - (a or 0),
+        })
+    if not sessions:
+        return {"count": 0, "sessions": []}
+    n = len(sessions)
+    by_ex = Counter(s["exercise"] for s in sessions)
+    return {
+        "count": n,
+        "avg_before": round(sum(s["before"] or 0 for s in sessions) / n, 1),
+        "avg_after": round(sum(s["after"] or 0 for s in sessions) / n, 1),
+        "avg_relief": round(sum(s["relief"] for s in sessions) / n, 1),
+        "helped_pct": round(100 * sum(1 for s in sessions if s["relief"] > 0) / n),
+        "by_exercise": by_ex.most_common(),
+        "top": by_ex.most_common(1)[0][0],
+        "sessions": sessions[-8:],
+    }
+
+
+def _crisis_events(db, user_id, start_utc, lang):
+    rows = _rows_in_window(db.execute("SELECT * FROM crisis_events WHERE user_id = ? ORDER BY created_at, id",
+                                      (user_id,)).fetchall(), "created_at", start_utc, None) if user_id else []
+    level_names = {"emergency": ("Emergency", "ایمرجنسی"), "crisis": ("Crisis", "بحران")}
+    return [{
+        "date": _fmt_datetime(_utc_to_pk(_parse_dt(_row_get(r, "created_at"))), lang),
+        "level": level_names.get(_row_get(r, "level"), ("Crisis", "بحران"))[1 if lang == "ur" else 0],
+        "level_key": _row_get(r, "level") or "crisis",
+        "excerpt": (_row_get(r, "excerpt") or "")[:110] + ("…" if len(_row_get(r, "excerpt") or "") > 110 else ""),
+    } for r in rows]
+
+
+def _initials(name):
+    parts = [p for p in re.split(r"\s+", (name or "").strip()) if p]
+    return ". ".join(p[0].upper() for p in parts[:3]) + "." if parts else "—"
 
 
 # ─────────────────────────────────────────────
@@ -525,7 +761,10 @@ def _overall_status(data):
         return urdu if ur else en
 
     reasons = []
-    if chat["risk_count"]:
+    if chat.get("alert_count"):
+        reasons.append(R(f'the chatbot raised {chat["alert_count"]} crisis alert(s) in this period',
+                         f'اس عرصے میں چیٹ بوٹ نے {chat["alert_count"]} ہنگامی الرٹ دیے'))
+    elif chat["risk_count"]:
         reasons.append(R(f'{chat["risk_count"]} message(s) with signs of suicidal thoughts or self-harm in this period',
                          f'اس عرصے میں {chat["risk_count"]} پیغام(ات) میں خودکشی یا خود کو نقصان پہنچانے کے آثار'))
     if phq is not None and phq >= 20:
@@ -581,7 +820,7 @@ Return ONLY JSON with these keys:
  "stressors": ["2-5 short bullet points on life stressors, e.g. displacement, income, family"],
  "strengths": ["2-4 short bullet points on coping, protective factors, engagement"],
  "risk_assessment": "2-3 sentences on safety, based on the risk data given (state clearly if no risk indicators were found)",
- "progress": "2 sentences comparing earlier and later data in the period",
+ "progress": "2 sentences comparing earlier and later data, using compared_with_previous_period and calm_corner_exercises when given",
  "recommendations": ["4-6 concrete, practical next steps for the professional and the client"]
 }"""
 
@@ -682,6 +921,11 @@ def _ai_narrative(data, status, period_label):
         "conversation_stats": {k: chat[k] for k in ("user_messages", "active_days", "avg_words", "language", "time_of_day")},
         "themes_detected": chat["themes"],
         "risk_messages_count": chat["risk_count"],
+        "crisis_alerts_raised_by_chatbot": chat.get("alert_count", 0),
+        "calm_corner_exercises": {k: data["calm"].get(k) for k in ("count", "avg_before", "avg_after", "avg_relief",
+                                                                  "helped_pct", "top")},
+        "compared_with_previous_period": [{"metric": r["label"], "now": r["now"], "before": r["prev"],
+                                           "change": r["text"]} for r in data["compare"]],
         "risk_note_from_memory": data["risk_memory"],
     }
     # A sample of the client's own words (recent first), kept short
@@ -775,6 +1019,17 @@ REPORT_TEXT = {
         chart_mood="Mood", chart_energy="Energy", chart_phq="PHQ-9 (depression)", chart_gad="GAD-7 (anxiety)",
         chart_who="WHO-5 (wellbeing)", lv1="Very low", lv2="Low", lv3="Okay / Medium", lv4="Good / High",
         page="Page", of="of", confidential_short="Confidential",
+        cmp_title="Compared with the previous period", cmp_note="The same number of days just before this period.",
+        cmp_metric="Measure", cmp_now="This period", cmp_prev="Previous period", cmp_change="Change",
+        s_calm="Calm Corner Exercises",
+        calm_note="Guided breathing and grounding exercises. Before and after each exercise the client rates their distress from 0 (calm) to 10 (very distressed).",
+        calm_count="Exercises done", calm_before="Avg. distress before", calm_after="Avg. distress after",
+        calm_relief="Avg. relief", calm_helped="Felt better in", calm_points="points", calm_top="Most used",
+        calm_exercise="Exercise", calm_b="Before", calm_a="After", calm_change="Change",
+        no_calm="No Calm Corner exercise was completed in this period.",
+        alerts_count="The chatbot switched to crisis support {n} time(s) in this period ({e} emergency). Each time it shared helpline numbers. Most recent:",
+        alerts_level="Level", risk_words_note="Found by checking the words of the client's messages.",
+        verify_title="Scan to verify", verify_note="Scan this code to check that this report is genuine.",
     ),
     "ur": dict(
         brand_sub="اندرونِ ملک بے گھر افراد کے لیے ذہنی صحت کی مدد · پاکستان",
@@ -820,6 +1075,17 @@ REPORT_TEXT = {
         chart_mood="موڈ", chart_energy="توانائی", chart_phq="PHQ-9 (ڈپریشن)", chart_gad="GAD-7 (بے چینی)",
         chart_who="WHO-5 (فلاح)", lv1="بہت کم", lv2="کم", lv3="ٹھیک / درمیانہ", lv4="اچھا / زیادہ",
         page="صفحہ", of="از", confidential_short="خفیہ",
+        cmp_title="پچھلے عرصے سے موازنہ", cmp_note="اس عرصے سے پہلے کے اتنے ہی دن۔",
+        cmp_metric="پیمانہ", cmp_now="یہ عرصہ", cmp_prev="پچھلا عرصہ", cmp_change="تبدیلی",
+        s_calm="پرسکون گوشہ کی مشقیں",
+        calm_note="سانس اور گراؤنڈنگ کی رہنمائی والی مشقیں۔ ہر مشق سے پہلے اور بعد صارف اپنی پریشانی ۰ (پرسکون) سے ۱۰ (بہت پریشان) تک بتاتا ہے۔",
+        calm_count="مکمل مشقیں", calm_before="پہلے اوسط پریشانی", calm_after="بعد میں اوسط پریشانی",
+        calm_relief="اوسط سکون", calm_helped="بہتر محسوس کیا", calm_points="پوائنٹس", calm_top="سب سے زیادہ",
+        calm_exercise="مشق", calm_b="پہلے", calm_a="بعد", calm_change="تبدیلی",
+        no_calm="اس عرصے میں پرسکون گوشہ کی کوئی مشق مکمل نہیں ہوئی۔",
+        alerts_count="اس عرصے میں چیٹ بوٹ نے {n} بار ہنگامی مدد شروع کی ({e} ایمرجنسی)۔ ہر بار ہیلپ لائن نمبر دیے گئے۔ حالیہ:",
+        alerts_level="درجہ", risk_words_note="یہ صارف کے پیغامات کے الفاظ دیکھ کر معلوم کیا گیا۔",
+        verify_title="تصدیق کے لیے اسکین کریں", verify_note="یہ کوڈ اسکین کر کے دیکھیں کہ رپورٹ اصلی ہے۔",
     ),
 }
 
@@ -850,7 +1116,20 @@ def wellbeing_report():
                         if days else f'All records up to {_fmt_date(now_pk)}')
     narrative = _ai_narrative(data, status, period_label)
 
-    report_id = f'EAI-{now_pk.strftime("%Y%m%d")}-{(data["user_id"] or 0):04d}'
+    report_id = (f'EAI-{now_pk.strftime("%Y%m%d")}-{(data["user_id"] or 0):04d}-'
+                 + "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(4)))
+    try:
+        db = get_db()
+        db.execute(
+            "INSERT OR REPLACE INTO report_log (report_id, account_id, user_id, initials, period_label, lang, status) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (report_id, session.get("account_id"), data["user_id"], _initials(data["profile"]["full_name"]),
+             period_label, lang, status["key"]),
+        )
+        db.commit()
+    except Exception as e:
+        print("Report log error:", e)
+    verify_url = request.url_root.rstrip("/") + "/report/verify/" + report_id
     safe_name = re.sub(r"[^A-Za-z0-9]+", "_", data["profile"]["full_name"] or "Client").strip("_") or "Client"
 
     charts = {
@@ -876,7 +1155,31 @@ def wellbeing_report():
         rlang=lang,
         T=REPORT_TEXT[lang],
         report_id=report_id,
+        verify_url=verify_url,
         file_name=f'Empath_AI_Report_{safe_name}_{now_pk.strftime("%Y-%m-%d")}' + ("_Urdu" if lang == "ur" else ""),
+    )
+
+
+@app.route("/report/verify/<report_id>")
+def verify_report(report_id):
+    """Opened from the QR code on a printed report. Public on purpose (a doctor can scan it),
+    so it shows only that the report is genuine: no health information, only initials."""
+    row = None
+    try:
+        ensure_report_tables()
+        row = get_db().execute("SELECT * FROM report_log WHERE report_id = ?", (report_id.strip(),)).fetchone()
+    except Exception as e:
+        print("Report verify error:", e)
+    lang = _row_get(row, "lang", "en") if row else ("ur" if str(session.get("language", "")).startswith("ur") else "en")
+    made = _utc_to_pk(_parse_dt(_row_get(row, "created_at"))) if row else None
+    return render_template(
+        "report_verify.html",
+        ok=row is not None,
+        report_id=report_id,
+        initials=_row_get(row, "initials", "—") if row else "",
+        period_label=_row_get(row, "period_label", "") if row else "",
+        made_on=(_fmt_datetime(made, lang) if lang == "ur" else made.strftime("%d %B %Y, %I:%M %p")) if made else "",
+        vlang=lang,
     )
 
 

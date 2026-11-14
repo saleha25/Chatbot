@@ -7,6 +7,7 @@
     <title>Wellbeing Report — Empath AI</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -253,6 +254,21 @@
   .sheet .disclaimer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 10.5px; color: var(--muted); line-height: 1.6; }
   .sheet .ai-tag { display: inline-block; font-size: 10px; font-weight: 700; color: var(--teal); background: var(--teal-50); border: 1px solid var(--teal-100); padding: 1px 6px; border-radius: 6px; margin-inline-start: 6px; vertical-align: middle; }
   .sheet .empty { color: var(--muted); font-style: italic; font-size: 12px; }
+
+  /* ---------- comparison, Calm Corner, QR ---------- */
+  .sheet .cmp td.good { color: var(--green); font-weight: 600; }
+  .sheet .cmp td.bad { color: var(--red); font-weight: 600; }
+  .sheet .cmp td.same { color: var(--soft); }
+  .sheet .calm-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .sheet .lvl { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+                background: #fee2e2; color: #991b1b; margin: 0 4px; }
+  .sheet .lvl.emergency { background: #991b1b; color: #fff; }
+  .sheet .sign { grid-template-columns: 1fr 1fr auto; align-items: end; }
+  .sheet .sign .qr-box { border-top: 0; padding-top: 0; text-align: center; width: 120px; }
+  .sheet .qr-box img { width: 86px; height: 86px; display: block; margin: 0 auto 4px; image-rendering: pixelated; }
+  .sheet .qr-box b { display: block; color: var(--ink); font-size: 11px; }
+  .sheet .qr-box span { display: block; font-size: 9.5px; line-height: 1.4; }
+  .sheet span.w { display: inline !important; font-size: inherit !important; }
 
   /* ---------- Urdu report (right to left) ---------- */
   .sheet .k-max { font-size: 12px; color: #94a3b8; font-weight: 600; }
@@ -501,6 +517,22 @@
         <div class="k-sub">{{ T.msgs_assess.replace('{m}', d.chat.user_messages|string).replace('{a}', d.assessments|length|string) }}</div>
       </div>
     </div>
+    {% if d.compare %}
+    <div class="panel keep" style="margin-top:12px">
+      <h4>{{ T.cmp_title }}</h4>
+      <p class="sec-note" style="margin:0 0 8px">{{ T.cmp_note }}</p>
+      <div class="tbl-wrap">
+        <table class="data cmp">
+          <thead><tr><th>{{ T.cmp_metric }}</th><th>{{ T.cmp_now }}</th><th>{{ T.cmp_prev }}</th><th>{{ T.cmp_change }}</th></tr></thead>
+          <tbody>
+          {% for r in d.compare %}
+            <tr><td><b>{{ r.label }}</b></td><td dir="ltr" style="text-align:start">{{ r.now }}</td><td dir="ltr" style="text-align:start">{{ r.prev }}</td><td class="{{ r.cls }}">{{ r.text }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
   </section>
 
   <!-- 4. STANDARDISED ASSESSMENTS -->
@@ -558,10 +590,38 @@
     {% endif %}
   </section>
 
-  <!-- 6. CONVERSATION ANALYSIS -->
+  <!-- 6. CALM CORNER -->
+  <section class="section">
+    <h2 class="sec-title"><span class="sec-num">6</span>{{ T.s_calm }}</h2>
+    <p class="sec-note">{{ T.calm_note }}</p>
+    {% set c = d.calm %}
+    {% if c.count %}
+    <div class="calm-stats">
+      <div class="kpi"><div class="k-label">{{ T.calm_count }}</div><div class="k-value">{{ c.count }}</div><div class="k-sub">{{ T.calm_top }}: {{ c.top }}</div></div>
+      <div class="kpi"><div class="k-label">{{ T.calm_before }}</div><div class="k-value" dir="ltr">{{ '%g' % c.avg_before }}<span class="k-max"> / 10</span></div></div>
+      <div class="kpi"><div class="k-label">{{ T.calm_after }}</div><div class="k-value" dir="ltr">{{ '%g' % c.avg_after }}<span class="k-max"> / 10</span></div></div>
+      <div class="kpi"><div class="k-label">{{ T.calm_relief }}</div><div class="k-value">{{ '%g' % c.avg_relief }} <span class="k-max">{{ T.calm_points }}</span></div><div class="k-sub">{{ T.calm_helped }}: <span dir="ltr">{{ c.helped_pct }}%</span></div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="data">
+        <thead><tr><th>{{ T.date }}</th><th>{{ T.calm_exercise }}</th><th>{{ T.calm_b }}</th><th>{{ T.calm_a }}</th><th>{{ T.calm_change }}</th></tr></thead>
+        <tbody>
+        {% for x in c.sessions|reverse %}
+          <tr><td>{{ x.date }}</td><td><b>{{ x.exercise }}</b></td><td>{{ x.before }}</td><td>{{ x.after }}</td>
+              <td class="chg {{ 'better' if x.relief > 0 else ('worse' if x.relief < 0 else 'same') }}" dir="ltr" style="text-align:start">{{ ('▼ ' ~ x.relief) if x.relief > 0 else (('▲ ' ~ (-x.relief)) if x.relief < 0 else '0') }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">{{ T.no_calm }}</p>
+    {% endif %}
+  </section>
+
+  <!-- 7. CONVERSATION ANALYSIS -->
   <section class="section allow-break">
     <div class="keep">
-    <h2 class="sec-title"><span class="sec-num">6</span>{{ T.s6 }} {% if n.ai %}<span class="ai-tag">{{ T.ai_tag }}</span>{% endif %}</h2>
+    <h2 class="sec-title"><span class="sec-num">7</span>{{ T.s6 }} {% if n.ai %}<span class="ai-tag">{{ T.ai_tag }}</span>{% endif %}</h2>
     {% if d.chat.user_messages %}
     <div class="tbl-wrap" style="margin-bottom:12px">
       <table class="data">
@@ -614,14 +674,20 @@
 
   <!-- 7. RISK AND SAFETY -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">7</span>{{ T.s7 }}</h2>
+    <h2 class="sec-title"><span class="sec-num">8</span>{{ T.s7 }}</h2>
     <div class="risk-box {{ '' if d.chat.risk_count else 'ok' }}">
       <p class="body" style="margin-bottom:6px"><b>{{ n.risk_assessment }}</b></p>
-      {% if d.chat.risk_count %}
+      {% if d.chat.alert_count %}
+      <p class="body" style="font-size:12px;color:#7f1d1d">{{ T.alerts_count.replace('{n}', d.chat.alert_count|string).replace('{e}', d.chat.emergency_count|string) }}</p>
+      {% for r in d.chat.alerts[-5:]|reverse %}
+      <div class="risk-item"><span class="when">{{ r.date }}</span><span class="lvl {{ r.level_key }}">{{ r.level }}</span>{% if r.excerpt %}— <span class="ex">“{{ r.excerpt }}”</span>{% endif %}</div>
+      {% endfor %}
+      {% elif d.chat.risk_count %}
       <p class="body" style="font-size:12px;color:#7f1d1d">{{ T.risk_count.replace('{n}', d.chat.risk_count|string) }}</p>
       {% for r in d.chat.risk_events|reverse %}
       <div class="risk-item"><span class="when">{{ r.date }}</span> — <span class="ex">“{{ r.excerpt }}”</span></div>
       {% endfor %}
+      <p class="sec-note" style="margin-top:6px">{{ T.risk_words_note }}</p>
       {% endif %}
     </div>
     <p class="sec-note" style="margin-top:8px">{{ T.emergency }}</p>
@@ -629,13 +695,19 @@
 
   <!-- 8. RECOMMENDATIONS -->
   <section class="section">
-    <h2 class="sec-title"><span class="sec-num">8</span>{{ T.s8 }}</h2>
+    <h2 class="sec-title"><span class="sec-num">9</span>{{ T.s8 }}</h2>
     <ol class="recs">{% for x in n.recommendations %}<li>{{ x }}</li>{% endfor %}</ol>
   </section>
 
   <div class="sign">
     <div>{{ T.reviewed_by }}</div>
     <div>{{ T.review_date }}</div>
+    <div class="qr-box">
+      <img id="qrImg" alt="QR code" style="display:none">
+      <b>{{ T.verify_title }}</b>
+      <span>{{ T.verify_note }}</span>
+      <span dir="ltr">{{ report_id }}</span>
+    </div>
   </div>
 
   <div class="disclaimer">
@@ -668,6 +740,15 @@
 <script>
 (function () {
   if (!window.Chart) return;
+  // QR code that opens the verification page for this report
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData({{ verify_url|tojson }});
+    qr.make();
+    const img = document.getElementById('qrImg');
+    img.src = qr.createDataURL(4, 2);
+    img.style.display = 'block';
+  } catch (e) { console.warn('QR code not created', e); }
   const C = {{ charts|tojson }};
   const RT = {{ T|tojson }};
   const RTL = {{ (rlang == 'ur')|tojson }};
@@ -731,7 +812,7 @@ const savedLang = (
 ).toLowerCase().trim();
 const LANG = (savedLang === 'ur' || savedLang === 'urdu' || savedLang.startsWith('ur-')) ? 'ur' : 'en';
 // if the report was made in the other language, reload it once in the app's language
-if (LANG !== {{ rlang|tojson }}) {
+if (LANG !== {{ rlang|tojson }} && new URLSearchParams(window.location.search).get('lang') !== LANG) {
   const u = new URL(window.location.href);
   u.searchParams.set('lang', LANG);
   window.location.replace(u.toString());
@@ -782,7 +863,7 @@ function splitUrduWords(doc) {
     t.nodeValue.split(/(\s+)/).forEach(part => {
       if (!part) return;
       if (/^\s+$/.test(part)) { frag.appendChild(doc.createTextNode(part)); return; }
-      const sp = doc.createElement('span'); sp.textContent = part; frag.appendChild(sp);
+      const sp = doc.createElement('span'); sp.className = 'w'; sp.textContent = part; frag.appendChild(sp);
     });
     t.parentNode.replaceChild(frag, t);
   });

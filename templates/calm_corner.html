@@ -1143,6 +1143,11 @@ function showResult() {
   const list = loadHistory();
   list.push({ ex: state.ex, before: b, after: a, at: Date.now() });
   saveHistory(list);
+  // also save it on the server, so it appears in the Wellbeing Report (the page works the same if this fails)
+  try {
+    fetch('/calm_corner/log', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exercise: state.ex, before: b, after: a }) }).catch(() => {});
+  } catch (e) {}
   paintStats();
 
   show('screenResult');

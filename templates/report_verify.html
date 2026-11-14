@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="{{ vlang }}" dir="{{ 'rtl' if vlang == 'ur' else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'رپورٹ کی تصدیق' if vlang == 'ur' else 'Report verification' }} · Empath AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+            font-family: {{ "'Noto Sans Arabic', 'Inter', sans-serif" if vlang == 'ur' else "'Inter', sans-serif" }};
+            color: #0f172a;
+            background: radial-gradient(circle at 10% 10%, #ccfbf1 0, transparent 40%),
+                        radial-gradient(circle at 90% 90%, #e0e7ff 0, transparent 40%), #f1f5f9;
+        }
+        .card { width: 100%; max-width: 440px; background: #fff; border: 1px solid #e2e8f0; border-radius: 22px;
+                box-shadow: 0 20px 50px -20px rgba(15, 118, 110, .35); padding: 30px 26px; text-align: center; }
+        .brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 22px; }
+        .mark { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, #0f766e, #14b8a6);
+                display: flex; align-items: center; justify-content: center; }
+        .brand b { font-size: 19px; font-weight: 800; }
+        .icon { width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 14px; display: flex;
+                align-items: center; justify-content: center; }
+        .ok .icon { background: #dcfce7; color: #15803d; }
+        .no .icon { background: #fee2e2; color: #b91c1c; }
+        h1 { font-size: 21px; margin: 0 0 6px; line-height: 1.6; }
+        p { color: #64748b; font-size: 14px; margin: 0 0 18px; line-height: 1.8; }
+        dl { margin: 0; text-align: start; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+        dl div { display: flex; justify-content: space-between; gap: 12px; padding: 11px 14px; border-top: 1px solid #f1f5f9; font-size: 13.5px; }
+        dl div:first-child { border-top: 0; }
+        dt { color: #64748b; }
+        dd { margin: 0; font-weight: 600; text-align: end; }
+        .note { font-size: 12px; color: #94a3b8; margin: 16px 0 0; }
+    </style>
+</head>
+<body>
+{% set U = vlang == 'ur' %}
+<main class="card {{ 'ok' if ok else 'no' }}">
+    <div class="brand">
+        <div class="mark"><svg width="20" height="20" viewBox="0 0 18 18" fill="#fff" aria-hidden="true"><circle cx="9" cy="7" r="4"/><rect x="7" y="11" width="4" height="5" rx="1"/></svg></div>
+        <b>Empath AI</b>
+    </div>
+
+    {% if ok %}
+    <div class="icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h1>{{ 'یہ رپورٹ اصلی ہے' if U else 'This report is genuine' }}</h1>
+    <p>{{ 'یہ رپورٹ ایمپاتھ اے آئی نے تیار کی ہے اور ہمارے ریکارڈ میں موجود ہے۔' if U else 'This report was created by Empath AI and is in our records.' }}</p>
+    <dl>
+        <div><dt>{{ 'رپورٹ نمبر' if U else 'Report ID' }}</dt><dd dir="ltr">{{ report_id }}</dd></div>
+        <div><dt>{{ 'تیار کی گئی' if U else 'Created on' }}</dt><dd>{{ made_on }}</dd></div>
+        <div><dt>{{ 'رپورٹ کا عرصہ' if U else 'Reporting period' }}</dt><dd>{{ period_label }}</dd></div>
+        <div><dt>{{ 'صارف' if U else 'Client' }}</dt><dd dir="ltr">{{ initials }}</dd></div>
+    </dl>
+    <p class="note">{{ 'رازداری کی وجہ سے یہاں صحت سے متعلق کوئی معلومات نہیں دکھائی جاتیں۔ اگر چھپی ہوئی رپورٹ کی تفصیل یہاں سے مختلف ہو تو اس پر بھروسہ نہ کریں۔' if U else 'For privacy, no health information is shown here. If the printed report shows different details, do not rely on it.' }}</p>
+    {% else %}
+    <div class="icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+    <h1>{{ 'رپورٹ نہیں ملی' if U else 'Report not found' }}</h1>
+    <p>{{ 'یہ رپورٹ نمبر ہمارے ریکارڈ میں نہیں ہے۔ ہو سکتا ہے رپورٹ اصلی نہ ہو۔' if U else 'This report ID is not in our records. The report may not be genuine.' }}</p>
+    <dl><div><dt>{{ 'رپورٹ نمبر' if U else 'Report ID' }}</dt><dd dir="ltr">{{ report_id }}</dd></div></dl>
+    {% endif %}
+</main>
+</body>
+</html>
