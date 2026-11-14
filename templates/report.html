@@ -263,9 +263,13 @@
   .sheet .lvl { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
                 background: #fee2e2; color: #991b1b; margin: 0 4px; }
   .sheet .lvl.emergency { background: #991b1b; color: #fff; }
-  .sheet .sign { grid-template-columns: 1fr 1fr auto; align-items: end; }
-  .sheet .sign .qr-box { border-top: 0; padding-top: 0; text-align: center; width: 120px; }
-  .sheet .qr-box img { width: 86px; height: 86px; display: block; margin: 0 auto 4px; image-rendering: pixelated; }
+  .sheet .qr-row { display: flex; align-items: flex-start; gap: 22px; margin-top: 18px; padding: 12px 14px;
+                   border: 1px dashed var(--line, #e2e8f0); border-radius: 12px; break-inside: avoid; page-break-inside: avoid; }
+  .sheet .qr-box { text-align: center; width: 150px; color: var(--muted); }
+  .sheet .qr-id { margin-inline-start: auto; align-self: center; font-size: 11px; color: var(--muted); text-align: end; line-height: 1.7; }
+  .sheet .qr-id b { color: var(--ink); font-size: 12px; }
+  .sheet .disclaimer { break-inside: avoid; page-break-inside: avoid; }
+  .sheet .qr-box img { width: 120px; height: 120px; display: block; margin: 0 auto 4px; image-rendering: pixelated; }
   .sheet .qr-box b { display: block; color: var(--ink); font-size: 11px; }
   .sheet .qr-box span { display: block; font-size: 9.5px; line-height: 1.4; }
   .sheet span.w { display: inline !important; font-size: inherit !important; }
@@ -702,12 +706,20 @@
   <div class="sign">
     <div>{{ T.reviewed_by }}</div>
     <div>{{ T.review_date }}</div>
+  </div>
+
+  <div class="qr-row">
     <div class="qr-box">
-      <img id="qrImg" alt="QR code" style="display:none">
-      <b>{{ T.verify_title }}</b>
-      <span>{{ T.verify_note }}</span>
-      <span dir="ltr">{{ report_id }}</span>
+      <img id="qrSummary" alt="QR code: report summary" style="display:none">
+      <b>{{ T.qr_sum_title }}</b>
+      <span>{{ T.qr_sum_note }}</span>
     </div>
+    <div class="qr-box">
+      <img id="qrVerify" alt="QR code: verify online" style="display:none">
+      <b>{{ T.qr_ver_title }}</b>
+      <span>{{ T.qr_ver_note }}</span>
+    </div>
+    <div class="qr-id">{{ T.report_id }}<br><b dir="ltr">{{ report_id }}</b></div>
   </div>
 
   <div class="disclaimer">
@@ -739,16 +751,23 @@
 
 <script>
 (function () {
+  // Two QR codes: 1) the report summary as plain text (shows with no internet),
+  //                2) the link to the verification page.
+  // They are separate because phone cameras show only the link when a QR has both.
+  function makeQR(id, text, cell) {
+    try {
+      const qr = qrcode(0, 'L');
+      qr.addData(text);
+      qr.make();
+      const img = document.getElementById(id);
+      img.src = qr.createDataURL(cell, 2);
+      img.style.display = 'block';
+    } catch (e) { console.warn('QR code not created', e); }
+  }
+  makeQR('qrSummary', {{ qr_text|tojson }}, 6);
+  makeQR('qrVerify', {{ verify_url|tojson }}, 8);
+
   if (!window.Chart) return;
-  // QR code that opens the verification page for this report
-  try {
-    const qr = qrcode(0, 'M');
-    qr.addData({{ verify_url|tojson }});
-    qr.make();
-    const img = document.getElementById('qrImg');
-    img.src = qr.createDataURL(4, 2);
-    img.style.display = 'block';
-  } catch (e) { console.warn('QR code not created', e); }
   const C = {{ charts|tojson }};
   const RT = {{ T|tojson }};
   const RTL = {{ (rlang == 'ur')|tojson }};
@@ -888,7 +907,7 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
       image: { type: 'jpeg', quality: 0.97 },
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'], avoid: ['.keep', '.panel', '.chart-box', '.kpi', '.risk-box', '.status', '.sign', '.info-grid', '.tbl-wrap tr', '.sec-title', '.kpis'] }
+      pagebreak: { mode: ['css', 'legacy'], avoid: ['.keep', '.qr-row', '.disclaimer', '.panel', '.chart-box', '.kpi', '.risk-box', '.status', '.sign', '.info-grid', '.tbl-wrap tr', '.sec-title', '.kpis'] }
     }).from(sheet).toPdf().get('pdf').then(pdf => {
       const pages = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= pages; i++) {

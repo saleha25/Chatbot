@@ -574,6 +574,9 @@ def ensure_report_tables():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
+    cols = {r[1] for r in db.execute("PRAGMA table_info(report_log)").fetchall()}
+    if "figures" not in cols:
+        db.execute("ALTER TABLE report_log ADD COLUMN figures TEXT")
     db.commit()
     _TABLES_READY = True
 
@@ -741,6 +744,72 @@ def _crisis_events(db, user_id, start_utc, lang):
         "level_key": _row_get(r, "level") or "crisis",
         "excerpt": (_row_get(r, "excerpt") or "")[:110] + ("…" if len(_row_get(r, "excerpt") or "") > 110 else ""),
     } for r in rows]
+
+
+STATUS_EN = {"urgent": "Urgent attention recommended", "attention": "Needs professional attention",
+             "monitor": "Monitor closely", "nodata": "Not enough data yet", "stable": "Stable"}
+
+
+STATUS_UR = {"urgent": "فوری توجہ کی ضرورت ہے", "attention": "ماہر کی توجہ درکار ہے",
+             "monitor": "قریبی نگرانی کریں", "nodata": "ابھی کافی معلومات نہیں", "stable": "مستحکم"}
+
+
+def _key_figures(data, status):
+    """The few numbers printed on the report, kept so the report can be checked later."""
+    L = data["latest"] or {}
+    wb, calm = data["wb"], data["calm"]
+    return {
+        "status": STATUS_EN.get(status["key"], status["key"]),
+        "phq": L.get("phq"), "gad": L.get("gad"), "who": L.get("who"),
+        "sleep": wb.get("avg_sleep"),
+        "alerts": data["chat"].get("alert_count", 0),
+        "calm": calm.get("count", 0),
+    }
+
+
+def _qr_text(report_id, now_pk, data, f, verify_url):
+    """Plain text stored inside the QR code. Any phone camera shows it, even with no internet,
+    so the doctor can compare it with the printed report. Always English (short and readable on any phone)."""
+    def v(x, suffix=""):
+        return "-" if x is None else f"{x:g}{suffix}" if isinstance(x, float) else f"{x}{suffix}"
+    lines = [
+        "EMPATH AI - Wellbeing Report",
+        f"ID: {report_id}",
+        f"Created: {now_pk.strftime('%d %b %Y, %I:%M %p')} PKT",
+        f"Client: {_initials(data['profile']['full_name'])}",
+        f"Status: {f['status']}",
+        f"PHQ-9: {v(f['phq'], '/27')} | GAD-7: {v(f['gad'], '/21')} | WHO-5: {v(f['who'], '/25')}",
+        f"Avg sleep: {v(f['sleep'], ' h')} | Crisis alerts: {f['alerts']} | Calm exercises: {f['calm']}",
+        "Screening summary, not a diagnosis.",
+        "To verify, scan the second QR code on the report.",
+    ]
+    return "\n".join(lines)
+
+
+def _lan_ip():
+    """The laptop's address on the WiFi / hotspot (e.g. 192.168.18.185). No data is sent anywhere."""
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.connect(("8.8.8.8", 80))   # only picks the network card, nothing is actually sent
+        return sock.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        sock.close()
+
+
+def _public_root():
+    """Address for the QR link. If the app was opened as 127.0.0.1 / localhost (which a phone cannot open),
+    use the laptop's WiFi address instead, so the QR link still works on a phone on the same network."""
+    root = request.url_root.rstrip("/")
+    host = request.host.split(":")[0]
+    if host in ("127.0.0.1", "localhost"):
+        ip = _lan_ip()
+        if ip and not ip.startswith("127."):
+            port = request.host.split(":")[1] if ":" in request.host else ""
+            root = f"{request.scheme}://{ip}" + (f":{port}" if port else "")
+    return root
 
 
 def _initials(name):
@@ -1029,7 +1098,8 @@ REPORT_TEXT = {
         no_calm="No Calm Corner exercise was completed in this period.",
         alerts_count="The chatbot switched to crisis support {n} time(s) in this period ({e} emergency). Each time it shared helpline numbers. Most recent:",
         alerts_level="Level", risk_words_note="Found by checking the words of the client's messages.",
-        verify_title="Scan to verify", verify_note="Scan this code to check that this report is genuine.",
+        qr_sum_title="Report summary", qr_sum_note="Scan with any phone camera. Works without internet.",
+        qr_ver_title="Verify online", qr_ver_note="Opens the verification page (same WiFi / hotspot as the server).",
     ),
     "ur": dict(
         brand_sub="اندرونِ ملک بے گھر افراد کے لیے ذہنی صحت کی مدد · پاکستان",
@@ -1085,7 +1155,8 @@ REPORT_TEXT = {
         no_calm="اس عرصے میں پرسکون گوشہ کی کوئی مشق مکمل نہیں ہوئی۔",
         alerts_count="اس عرصے میں چیٹ بوٹ نے {n} بار ہنگامی مدد شروع کی ({e} ایمرجنسی)۔ ہر بار ہیلپ لائن نمبر دیے گئے۔ حالیہ:",
         alerts_level="درجہ", risk_words_note="یہ صارف کے پیغامات کے الفاظ دیکھ کر معلوم کیا گیا۔",
-        verify_title="تصدیق کے لیے اسکین کریں", verify_note="یہ کوڈ اسکین کر کے دیکھیں کہ رپورٹ اصلی ہے۔",
+        qr_sum_title="رپورٹ کا خلاصہ", qr_sum_note="کسی بھی فون کیمرے سے اسکین کریں۔ انٹرنیٹ کے بغیر بھی چلتا ہے۔",
+        qr_ver_title="آن لائن تصدیق", qr_ver_note="تصدیق کا صفحہ کھلتا ہے (سرور والے وائی فائی / ہاٹ اسپاٹ پر)۔",
     ),
 }
 
@@ -1118,18 +1189,20 @@ def wellbeing_report():
 
     report_id = (f'EAI-{now_pk.strftime("%Y%m%d")}-{(data["user_id"] or 0):04d}-'
                  + "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(4)))
+    figures = _key_figures(data, status)
     try:
         db = get_db()
         db.execute(
-            "INSERT OR REPLACE INTO report_log (report_id, account_id, user_id, initials, period_label, lang, status) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO report_log (report_id, account_id, user_id, initials, period_label, lang, status, figures) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (report_id, session.get("account_id"), data["user_id"], _initials(data["profile"]["full_name"]),
-             period_label, lang, status["key"]),
+             period_label, lang, status["key"], json.dumps(figures)),
         )
         db.commit()
     except Exception as e:
         print("Report log error:", e)
-    verify_url = request.url_root.rstrip("/") + "/report/verify/" + report_id
+    verify_url = _public_root() + "/report/verify/" + report_id
+    qr_text = _qr_text(report_id, now_pk, data, figures, verify_url)
     safe_name = re.sub(r"[^A-Za-z0-9]+", "_", data["profile"]["full_name"] or "Client").strip("_") or "Client"
 
     charts = {
@@ -1156,14 +1229,22 @@ def wellbeing_report():
         T=REPORT_TEXT[lang],
         report_id=report_id,
         verify_url=verify_url,
+        qr_text=qr_text,
         file_name=f'Empath_AI_Report_{safe_name}_{now_pk.strftime("%Y-%m-%d")}' + ("_Urdu" if lang == "ur" else ""),
     )
 
 
+def _figures_from_row(row):
+    try:
+        return json.loads(_row_get(row, "figures") or "{}") if row else {}
+    except ValueError:
+        return {}
+
+
 @app.route("/report/verify/<report_id>")
 def verify_report(report_id):
-    """Opened from the QR code on a printed report. Public on purpose (a doctor can scan it),
-    so it shows only that the report is genuine: no health information, only initials."""
+    """Opened from the QR code on a printed report. Public on purpose (a doctor can scan it).
+    It shows only initials (no name) and the few key figures printed on the report, so they can be matched."""
     row = None
     try:
         ensure_report_tables()
@@ -1179,6 +1260,8 @@ def verify_report(report_id):
         initials=_row_get(row, "initials", "—") if row else "",
         period_label=_row_get(row, "period_label", "") if row else "",
         made_on=(_fmt_datetime(made, lang) if lang == "ur" else made.strftime("%d %B %Y, %I:%M %p")) if made else "",
+        figures=_figures_from_row(row),
+        status_text=(STATUS_UR if lang == "ur" else STATUS_EN).get(_row_get(row, "status", "") if row else "", ""),
         vlang=lang,
     )
 

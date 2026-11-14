@@ -14,7 +14,7 @@ if __name__ == "__main__":
     with app.app_context():
         init_db()
     app.run(
-        host="0.0.0.0",      # phone (same WiFi / hotspot) can open the app too
+        host="0.0.0.0",      # phone (same WiFi / hotspot) can open the app with the laptop's IP
         debug=True,
         port=5000,
         use_reloader=False

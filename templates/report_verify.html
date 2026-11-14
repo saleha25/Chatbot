@@ -32,6 +32,7 @@
         dt { color: #64748b; }
         dd { margin: 0; font-weight: 600; text-align: end; }
         .note { font-size: 12px; color: #94a3b8; margin: 16px 0 0; }
+        h2 { font-size: 14px; margin: 18px 0 8px; text-align: start; color: #0f766e; }
     </style>
 </head>
 <body>
@@ -52,7 +53,19 @@
         <div><dt>{{ 'رپورٹ کا عرصہ' if U else 'Reporting period' }}</dt><dd>{{ period_label }}</dd></div>
         <div><dt>{{ 'صارف' if U else 'Client' }}</dt><dd dir="ltr">{{ initials }}</dd></div>
     </dl>
-    <p class="note">{{ 'رازداری کی وجہ سے یہاں صحت سے متعلق کوئی معلومات نہیں دکھائی جاتیں۔ اگر چھپی ہوئی رپورٹ کی تفصیل یہاں سے مختلف ہو تو اس پر بھروسہ نہ کریں۔' if U else 'For privacy, no health information is shown here. If the printed report shows different details, do not rely on it.' }}</p>
+    {% if figures %}
+    <h2>{{ 'رپورٹ پر چھپے اہم اعداد' if U else 'Key figures printed on the report' }}</h2>
+    <dl>
+        <div><dt>{{ 'مجموعی حالت' if U else 'Overall status' }}</dt><dd>{{ status_text or figures.status }}</dd></div>
+        <div><dt>PHQ-9</dt><dd dir="ltr">{{ figures.phq if figures.phq is not none else '—' }} / 27</dd></div>
+        <div><dt>GAD-7</dt><dd dir="ltr">{{ figures.gad if figures.gad is not none else '—' }} / 21</dd></div>
+        <div><dt>WHO-5</dt><dd dir="ltr">{{ figures.who if figures.who is not none else '—' }} / 25</dd></div>
+        <div><dt>{{ 'اوسط نیند' if U else 'Average sleep' }}</dt><dd dir="ltr">{{ (figures.sleep ~ ' h') if figures.sleep is not none else '—' }}</dd></div>
+        <div><dt>{{ 'ہنگامی الرٹس' if U else 'Crisis alerts' }}</dt><dd dir="ltr">{{ figures.alerts }}</dd></div>
+        <div><dt>{{ 'پرسکون گوشہ کی مشقیں' if U else 'Calm Corner exercises' }}</dt><dd dir="ltr">{{ figures.calm }}</dd></div>
+    </dl>
+    {% endif %}
+    <p class="note">{{ 'رازداری کے لیے یہاں نام نہیں، صرف ابتدائی حروف اور رپورٹ کے اہم اعداد دکھائے جاتے ہیں۔ اگر چھپی ہوئی رپورٹ کے اعداد یہاں سے مختلف ہوں تو اس پر بھروسہ نہ کریں۔' if U else 'For privacy, only initials (no name) and the key figures from the report are shown. If the printed report shows different figures, do not rely on it.' }}</p>
     {% else %}
     <div class="icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
     <h1>{{ 'رپورٹ نہیں ملی' if U else 'Report not found' }}</h1>

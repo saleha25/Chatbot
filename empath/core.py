@@ -35,7 +35,7 @@ from quranic_corner_service import get_category_verses
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask("app", root_path=PROJECT_DIR)
-app.secret_key = os.environ.get("SECRET_KEY")
+app.secret_key = os.environ.get("SECRET_KEY", "mental_health_fyp_2026")
 app.permanent_session_lifetime = timedelta(days=30)
 
 # Set your real API key in PowerShell before running:
