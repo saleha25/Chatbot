@@ -101,6 +101,16 @@
       '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>' +
       '<path d="M9 17v-3M12 17v-6M15 17v-4"/></svg>',
 
+    /* Practical Help page */
+    help:
+      '<svg viewBox="0 0 24 24" ' + STROKE + '>' +
+      '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>' +
+      '<path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg>',
+
+    shield:
+      '<svg viewBox="0 0 24 24" ' + STROKE + '>' +
+      '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+
     download:
       '<svg viewBox="0 0 24 24" ' + STROKE + '><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
 
@@ -204,12 +214,13 @@
 
   /* -------------------------------------------------------
      SIDEBAR: make sure every page shows the newer links
-     (Calm Corner, My Wellbeing Report). Pages that already have
+     (Calm Corner, My Wellbeing Report, Practical Help). Pages that already have
      them are left alone, so nothing is added twice.
      ------------------------------------------------------- */
   var EXTRA_LINKS = [
     { href: "/calm_corner", icon: "calm",   en: "Calm Corner",         ur: "سکون کا گوشہ" },
-    { href: "/report",      icon: "report", en: "My Wellbeing Report", ur: "میری ذہنی صحت کی رپورٹ" }
+    { href: "/report",      icon: "report", en: "My Wellbeing Report", ur: "میری ذہنی صحت کی رپورٹ" },
+    { href: "/resources",   icon: "help",   en: "Practical Help",      ur: "عملی مدد" }
   ];
 
   function addSidebarLinks() {

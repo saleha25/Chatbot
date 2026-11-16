@@ -14,6 +14,7 @@ import asyncio
 import io
 import edge_tts
 import hmac
+import difflib
 
 from werkzeug.security import (
     generate_password_hash,
@@ -184,6 +185,9 @@ def get_response(user_message, sess, crisis_level="safe", emotion="unknown"):
     idp_context_line = get_idp_context_line(role, hardships)
 
     retrieved = retrieve_from_training_data(user_message, emotion, role, top_k=2)
+    for r in retrieved or []:
+        print(f'DATASET MATCH (after assessment): "{(user_message or "")[:60]}" -> topic={r.get("topic")}, '
+              f'source={r.get("source")}, similarity={r.get("similarity")}')
 
     retrieval_context = ""
     if retrieved:
@@ -307,7 +311,7 @@ BAD STYLE:
         messages.append({"role": "user", "content": user_message})
 
         response = client.responses.create(
-            model="gpt-4.1-mini",
+            model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),   # same model as the rest of the chat
             instructions=system_prompt,
             input=messages,
             max_output_tokens=220,
@@ -402,15 +406,236 @@ def _recent_dialogue_for_prompt(limit=8):
     return "\n".join(lines)
 
 
+def _user_gender(sess):
+    """'male' / 'female' if the user's gender is known (session or account), else ''."""
+    g = str(sess.get("gender", "") or "").strip().lower()
+    if not g and sess.get("account_id"):
+        try:
+            row = get_db().execute("SELECT * FROM accounts WHERE id = ?", (sess.get("account_id"),)).fetchone()
+            if row is not None:
+                for col in ("gender", "sex"):
+                    if col in row.keys() and row[col]:
+                        g = str(row[col]).strip().lower()
+                        break
+        except Exception as e:
+            print("Gender lookup error:", e)
+    if g in ("male", "m", "man", "boy", "mard", "مرد"):
+        return "male"
+    if g in ("female", "f", "woman", "girl", "aurat", "عورت", "خاتون"):
+        return "female"
+    return ""
+
+
+# Extra rules for consistent, careful replies (added after testing real conversations)
+CONSISTENCY_RULES = """
+
+CONSISTENCY AND CARE RULES (follow these strictly):
+
+1. MOOD CHANGE WITHIN THE CONVERSATION:
+- Compare the current message with the user's earlier messages in "Recent conversation".
+- If the mood changed sharply in a short time (for example happy a few minutes ago, now "the day was terrible",
+  or the other way round), gently notice the change in one short sentence and ask what happened in between.
+  Example (Urdu): "ابھی تھوڑی دیر پہلے آپ اسکول دوبارہ شروع ہونے پر خوش تھے، اور اب دن بہت بھاری لگ رہا ہے۔ اس دوران کیا ہوا؟"
+- Do not treat the new message as if the earlier messages never happened.
+
+2. NO INVENTED DETAILS:
+- Keep the user's facts exactly as they said them. "My day was good" is the whole day, not "the start of your day".
+- You cannot see the user: never write "seeing your effort" / "دیکھ کر". Say "hearing" / "سن کر" or nothing.
+- Do not assume the user witnessed an event, lost their home, or was displaced unless they said so.
+- Avoid general sayings that are not about the user ("happy moments brighten life"). Talk about what THEY said.
+
+3. NO REPEATED OPENINGS:
+- Never start with the same words or phrase as the last assistant reply.
+- In Urdu do not open two replies in a row with "یہ سن کر بہت خوشی ہوئی" or "یہ سن کر افسوس ہوا".
+  Start with the specific thing the user said.
+
+4. URDU GRAMMAR FOR THE USER'S GENDER:
+- The user's gender is given in the context. If it is male, use masculine forms for the user (رہے ہیں، تھے، گئے).
+  If it is female, use feminine forms (رہی ہیں، تھیں، گئیں).
+- If the gender is unknown, avoid gender-marked verbs for the user. Use neutral forms, e.g.
+  "آپ کی طبیعت کیسی ہے؟"، "آپ کو کیسا لگ رہا ہے؟"، "آپ کا دن کیسا گزرا؟" instead of "آپ کیسا محسوس کر رہی ہیں؟".
+
+5. UNCLEAR WORDS THAT MAY HIDE RISK (clarify first):
+- Some phrases can mean leaving a place OR not wanting to live: "I want to go far away", "I want to disappear",
+  "no one is mine", "nobody will miss me", "I want everything to stop", "sab se door chala jaun",
+  "kahin gayab ho jaun", "میں کہیں دور چلا جاؤں", "میں غائب ہو جانا چاہتا ہوں".
+- If the meaning is not clear, do NOT ignore it and do NOT assume. Acknowledge the feeling, then ask gently and
+  directly what they mean, for example: "When you say you want to go far away, do you mean leaving this place,
+  or are you having thoughts of not wanting to be alive?"
+- If the message or their answer clearly shows a wish to die or self-harm, use the SAFETY NET rule instead.
+
+6. LOSS AND DISPLACEMENT:
+- When the user shares a loss (home, school, work, belongings, a loved one), name that specific loss first and
+  what it means for them (for a teacher, losing the school also means losing their place with their students).
+- Do not add losses they did not mention.
+- In a later reply (not the very first one), when it fits, gently check basic safety and needs:
+  where they are staying now, whether they and their family are safe, and whether they have what they need.
+- If they ask what to do in practical terms (relief, lost ID card, money support, where to get help), first
+  acknowledge the feeling, then tell them that the "Practical Help" page in the app menu (Urdu: "عملی مدد")
+  lists free numbers for disaster relief (PDMA), lost ID cards (NADRA), BISP money support and legal help.
+  Do not write those phone numbers yourself. Then ask which need feels most urgent right now.
+"""
+
+
+# ─────────────────────────────────────────────
+# REPLY NOTES WORKED OUT IN CODE
+# gpt-4o-mini follows a short, specific note at the end of the prompt much better than
+# a long rule list, so the mood change and mixed feelings are detected here.
+# ─────────────────────────────────────────────
+_POSITIVE_WORDS = [
+    "happy", "glad", "good", "great", "better", "fine", "excited", "proud", "relieved", "peaceful", "completed",
+    "worth", "worthy",
+    "khush", "acha", "achha", "behtar", "sukoon",
+    "خوش", "اچھا", "اچھی", "بہتر", "سکون",
+]
+_NEGATIVE_WORDS = [
+    "sad", "bad", "worst", "terrible", "awful", "upset", "low", "down", "cry", "crying", "hopeless", "worthless",
+    "useless", "lonely", "angry", "stressed", "anxious", "tired", "hate",
+    "bakwas", "bura", "udaas", "udas", "pareshan", "dukhi", "rona", "tanha", "akela", "ghussa",
+    "اداس", "برا", "بری", "پریشان", "دکھی", "رونا", "تنہا", "اکیلا", "غصہ", "بیکار", "بکواس",
+]
+_GENERIC_OPENERS = [
+    "It's wonderful", "It's great", "That's great", "That sounds", "It sounds like", "I'm really sorry",
+    "I'm sorry to hear", "I understand", "یہ سن کر بہت خوشی ہوئی", "یہ سن کر افسوس ہوا",
+]
+
+
+def _has_any(text, words):
+    t = (text or "").lower()
+    for w in words:
+        if w.isascii():
+            if re.search(r"(?<![a-z])" + re.escape(w) + r"(?![a-z])", t):
+                return True
+        elif w in t:
+            return True
+    return False
+
+
+def _similar(a, b):
+    """0..1 similarity of two texts (ignores case and punctuation)."""
+    clean = lambda x: re.sub(r"[^\w\s]", "", str(x or "").lower()).strip()
+    a, b = clean(a), clean(b)
+    if not a or not b:
+        return 0.0
+    return difflib.SequenceMatcher(None, a, b).ratio()
+
+
+def _too_similar_to_recent(reply, sess, limit=3):
+    """The highest similarity between this reply and the last few assistant replies."""
+    recent = [str(m.get("content", "")) for m in list(sess.get("history", [])) if m.get("role") == "assistant"][-limit:]
+    return max((_similar(reply, r) for r in recent), default=0.0)
+
+
+def _feeling(text):
+    pos, neg = _has_any(text, _POSITIVE_WORDS), _has_any(text, _NEGATIVE_WORDS)
+    if pos and neg:
+        return "mixed"
+    return "positive" if pos else "negative" if neg else ""
+
+
+def _reply_notes(user_message, sess):
+    """Short notes for this one reply: mood change, mixed or unclear feelings, openings to avoid."""
+    notes = []
+    earlier = [str(m.get("content", "")) for m in list(sess.get("history", []))
+               if m.get("role") == "user"]
+    # the current message may already be in history: leave it out
+    if earlier and earlier[-1].strip() == (user_message or "").strip():
+        earlier = earlier[:-1]
+    now = _feeling(user_message)
+
+    if now in ("negative", "positive", "mixed"):
+        for old in reversed(earlier[-3:]):
+            before = _feeling(old)
+            if before == "mixed":
+                before = "negative"      # a message with sadness in it counts as a sad one here
+            if before and before != now and now != "mixed":
+                notes.append(
+                    f'MOOD CHANGE: a little earlier the user said "{old[:120]}" ({before}), and now the message is {now}. '
+                    "In one short sentence, gently mention this specific change (use their earlier words) "
+                    "and ask what happened in between. Do not reply as if the earlier messages did not exist."
+                )
+                break
+
+    if now == "mixed":
+        notes.append(
+            "MIXED OR UNCLEAR MESSAGE: the message contains both good and bad feelings, or may have a typo "
+            '(for example "I feel worth now I am feeling sad" may mean "I feel worthless"). Do NOT pick the positive '
+            "meaning and do not guess. Gently say what you understood and ask what they meant. If it means they "
+            "feel worthless, take it seriously and kindly."
+        )
+
+    # the user says almost the same thing again ("i am happy" ... "i am happy")
+    for old in reversed(earlier[-6:]):
+        if _similar(old, user_message) >= 0.7:
+            notes.append(
+                f'REPEATED MESSAGE: the user already said "{old[:100]}" earlier. Do not give the same kind of reply '
+                "or ask the same question again. React like a friend would to hearing it again (for example notice it "
+                "lightly, or pick up something new)."
+            )
+            break
+
+    # mood going back and forth (happy -> sad -> happy)
+    feelings = [("negative" if f == "mixed" else f) for f in (_feeling(m) for m in earlier[-4:] + [user_message]) if f]
+    swings = sum(1 for a, b in zip(feelings, feelings[1:]) if a != b)
+    if swings >= 2:
+        notes.append(
+            "MOOD GOING BACK AND FORTH: the user's feelings have switched several times in a few messages. "
+            "Gently and warmly name this in simple words and ask how they are really feeling right now."
+        )
+
+    # questions already asked: never ask them again
+    asked = []
+    for m in list(sess.get("history", []))[-8:]:
+        if m.get("role") == "assistant":
+            asked += [q.strip() for q in re.findall(r"[^.!?؟۔\n]*[?؟]", str(m.get("content", ""))) if q.strip()]
+    if asked:
+        notes.append("Questions you ALREADY asked (do not ask these or similar ones again): " +
+                     " | ".join(asked[-4:]))
+
+    if now in ("negative", "mixed"):
+        length_rule = (
+            "LENGTH: the user is sad or struggling, so give a full, warm reply: 2 short paragraphs, about 4-6 sentences. "
+            "Paragraph 1: react to their exact words and name the feeling behind them. "
+            "Paragraph 2: one gentle, useful thought or small step that fits what they said, then ONE caring question."
+        )
+    elif now == "positive":
+        length_rule = (
+            "LENGTH: the user shares something good, so reply with real warmth in about 3-4 sentences: "
+            "celebrate the specific thing, say why it matters, then ONE curious question about it."
+        )
+    else:
+        length_rule = "LENGTH: about 3-5 sentences, in 1 or 2 short paragraphs."
+    notes.append(
+        "TALK LIKE A CARING FRIEND, NOT AN AI: simple everyday words and contractions. "
+        "React to their exact words first (e.g. \"Assignment done? That's a big relief!\"). No general statements about "
+        "emotions or life (\"those moments lift our spirits\", \"emotions can shift unexpectedly\"). "
+        "Never answer in just one or two lines. " + length_rule
+    )
+
+    last = ""
+    for m in reversed(list(sess.get("history", []))):
+        if m.get("role") == "assistant":
+            last = str(m.get("content", "")).strip()
+            break
+    avoid = list(_GENERIC_OPENERS)
+    if last:
+        avoid.append(" ".join(last.split()[:5]))
+    notes.append("Do NOT start the reply with any of these: " + " | ".join(avoid) +
+                 ". Start with the specific thing the user just said.")
+    return "\n".join(f"- {n}" for n in notes)
+
+
 def _compact_user_context(sess, emotion="unknown", wellbeing_info=None):
     name = sess.get("name", "") or "the user"
     role = sess.get("role", "default") or "default"
     memory = sess.get("user_memory_profile", "") or ""
     living_place = sess.get("living_place", "") or ""
 
+    gender = _user_gender(sess)
     context = [
         f"Name: {name}",
-        f"Role/profession: {role}",
+        f"Gender: {gender or 'unknown (use gender-neutral Urdu for the user)'}",
+        f"Role/profession: {sess.get('profession') or role}" + (f" (category: {role})" if sess.get('profession') else ""),
         "Project context: Empath AI supports internally displaced people in Pakistan; keep this as gentle background context.",
         "Do not ask whether the user is an IDP and do not repeatedly say 'as an IDP' or 'because you are displaced'.",
     ]
@@ -686,6 +911,10 @@ def _fallback_natural_response(user_message, sess, emotion="unknown"):
 
 
 
+# A dataset example is shown to the AI as a style reference only when it matches this well (0-1 scale).
+DATASET_EXAMPLE_MIN_SIMILARITY = 0.25
+
+
 def build_dataset_guidance_context(user_message, role="default", emotion="unknown"):
     """Use local training/testing assets as understanding signals, not as fixed replies.
 
@@ -710,20 +939,37 @@ def build_dataset_guidance_context(user_message, role="default", emotion="unknow
         print("Dataset survey guidance error:", e)
 
     try:
-        # Use retrieval system only as a lightweight topic signal, never as a copy-paste answer.
+        # Our counselling dataset (22K Q&A pairs): find the closest examples.
+        # Their topic always guides the reply; when an example is a strong match, the counsellor's
+        # answer is also given as a style reference (rephrased by the AI, never copied).
         retrieved = retrieve_from_training_data(user_message, emotion=emotion, role=role, top_k=2)
         if retrieved:
             topics = []
+            examples = []
             for item in retrieved:
                 topic = item.get("topic", "general")
                 source = item.get("source", "training")
-                sim = item.get("similarity", "")
+                sim = float(item.get("similarity", 0) or 0)
                 topics.append(f"{topic} ({source}, similarity {sim})")
+                print(f'DATASET MATCH: "{(user_message or "")[:60]}" -> topic={topic}, source={source}, similarity={sim}')
+                if sim >= DATASET_EXAMPLE_MIN_SIMILARITY and len(examples) < 2:
+                    examples.append(
+                        f"- Situation: {str(item.get('question', ''))[:160]}\n"
+                        f"  Counsellor answer: {str(item.get('answer', ''))[:300]}"
+                    )
             parts.append(
                 "Training-data semantic signal: similar examples relate to "
-                + "; ".join(topics)
-                + ". Do not copy dataset answers; use only to understand likely context."
+                + "; ".join(topics) + "."
             )
+            if examples:
+                print(f"DATASET EXAMPLES USED AS STYLE REFERENCE: {len(examples)}")
+                parts.append(
+                    "Closest examples from our own counselling dataset (strong match). Use them only as a reference "
+                    "for tone and approach. Write your own words in the selected language, fitted to THIS user's exact "
+                    "message. Never copy sentences, and ignore any part that does not fit:\n" + "\n".join(examples)
+                )
+            else:
+                parts.append("Dataset matches are weak: rely on the user's own words.")
     except Exception as e:
         print("Dataset semantic guidance error:", e)
 
@@ -965,6 +1211,7 @@ CONVERSATION FLOW (explore first, advise later):
 - Questions must be specific to what the user just said. Never ask empty questions like
   "What do you think?", "How does that sound?" or "Does that make sense?".
 """.strip()
+            system_prompt += CONSISTENCY_RULES
 
             # Read the language selected when the chatbot was opened.
             selected_language = str(
@@ -1031,6 +1278,9 @@ Current user message:
 
 Selected application language: {selected_language}
 
+IMPORTANT FOR THIS REPLY (follow these first):
+{_reply_notes(user_message, sess)}
+
 Write the next Empath AI reply now.
 """.strip()
 
@@ -1044,7 +1294,7 @@ Write the next Empath AI reply now.
                 temperature=0.6 if selected_language == "ur" else 0.7,
                 # Practical answers (recipes, steps) need room to finish
                 max_tokens=(1100 if selected_language == "ur" else 800) if practical
-                else (260 if selected_language == "ur" else 220),
+                else (450 if selected_language == "ur" else 320),   # room for a full 4-6 sentence reply
             )
 
             response = result.choices[0].message.content.strip()
@@ -1094,7 +1344,7 @@ Include exactly one natural follow-up question in English.
                         }
                     ],
                     temperature=0.5,
-                    max_tokens=800 if practical else 220,
+                    max_tokens=800 if practical else 320,
                 )
 
                 response = retry_result.choices[0].message.content.strip()
@@ -1143,7 +1393,7 @@ Do not use English sentences or Roman Urdu.
                         }
                     ],
                     temperature=0.5,
-                    max_tokens=1100 if practical else 260,
+                    max_tokens=1100 if practical else 450,
                 )
 
                 response = retry_result.choices[0].message.content.strip()
@@ -1168,6 +1418,33 @@ Do not use English sentences or Roman Urdu.
             # Practical answers: keep the full answer, no extra follow-up question
             if practical:
                 return response
+
+            # Same kind of reply as before? Rewrite once (only then is a second call made).
+            if _too_similar_to_recent(response, sess) >= 0.55:
+                print("REPEAT CHECK: reply too similar to a recent one. Rewriting.")
+                try:
+                    retry_result = client.chat.completions.create(
+                        model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
+                        messages=[
+                            {"role": "system", "content": system_prompt + """
+
+IMPORTANT CORRECTION:
+Your draft was almost the same as one of your earlier replies. Write a completely different reply:
+different first words, different structure, no repeated question. Keep a full, warm length
+(about 3-6 sentences, in short paragraphs), like a caring friend reacting to exactly what the user just said.
+"""},
+                            {"role": "user", "content": user_prompt + "\n\nYour rejected draft (do not repeat it):\n" + response},
+                        ],
+                        temperature=0.9,
+                        max_tokens=450 if selected_language == "ur" else 320,
+                    )
+                    rewrite = _strip_markdown(retry_result.choices[0].message.content.strip())
+                    if SAFETY_CHECK_TOKEN in rewrite:
+                        return SAFETY_CHECK_TOKEN
+                    if rewrite and (selected_language != "ur" or _reply_language_ok(rewrite, "ur")):
+                        response = rewrite
+                except Exception as e:
+                    print("Repeat rewrite error:", e)
 
             # Fix repeated Urdu mistakes by code (no extra API call)
             if selected_language == "ur":

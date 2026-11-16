@@ -25,6 +25,7 @@ _AI_CACHE = {}                                 # (user, period, data fingerprint
 
 ROLE_LABELS = {
     "teacher": "Teacher",
+    "professional": "Professional",
     "farmer": "Farmer",
     "health_worker": "Health worker",
     "business": "Shopkeeper / small business",
@@ -40,6 +41,7 @@ ROLE_LABELS = {
 DISPLACEMENT_LABELS = {
     "flood": "Floods",
     "conflict": "Conflict / insecurity",
+    "violence": "Violence / threats",
     "earthquake": "Earthquake",
     "eviction": "Eviction / loss of housing",
     "fire": "Fire",
@@ -100,13 +102,13 @@ URDU_MONTHS = ["جنوری", "فروری", "مارچ", "اپریل", "مئی", "
 
 UR = {
     # roles / professions
-    "Teacher": "استاد / معلم", "Farmer": "کسان", "Health worker": "صحت کا کارکن",
+    "Teacher": "استاد / معلم", "Professional": "پیشہ ور", "Farmer": "کسان", "Health worker": "صحت کا کارکن",
     "Shopkeeper / small business": "دکاندار / چھوٹا کاروبار", "Student": "طالب علم", "Homemaker": "گھریلو خاتون", "Parent / caregiver": "والدین / نگہداشت کرنے والے",
     "Currently unemployed": "فی الحال بے روزگار", "Daily-wage worker": "دیہاڑی دار مزدور",
     "Elderly / retired": "بزرگ / ریٹائرڈ", "Employed (government / private)": "ملازم (سرکاری / نجی)",
     "Not specified": "درج نہیں", "Not stated": "نہیں بتایا گیا", "Yes": "جی ہاں",
     # displacement
-    "Floods": "سیلاب", "Conflict / insecurity": "تنازع / بدامنی", "Earthquake": "زلزلہ",
+    "Floods": "سیلاب", "Conflict / insecurity": "تنازع / بدامنی", "Violence / threats": "تشدد / دھمکیاں", "Earthquake": "زلزلہ",
     "Eviction / loss of housing": "بے دخلی / گھر کا چھن جانا", "Fire": "آگ",
     "Displacement (cause not specified)": "نقل مکانی (وجہ درج نہیں)",
     # hardships
@@ -303,9 +305,14 @@ def _collect(account_id, days, lang="en"):
         if _row_get(account, col):
             profession = str(_row_get(account, col)).strip()
             break
+    told_profession = ""
     if not profession:
+        # the exact profession the user told the chatbot (e.g. "Lawyer" / "وکیل")
+        told_profession = str((_row_get(user, "profession_ur") if lang == "ur" else "") or
+                              _row_get(user, "profession") or "").strip()
+    if not profession and not told_profession:
         profession = ROLE_LABELS.get(role, role.replace("_", " ").title())
-    profession = tx(profession, lang)
+    profession = told_profession or tx(profession, lang)
 
     living_place = _row_get(user, "living_place", "") or _row_get(memory, "living_place", "")
     extra_fields = []
@@ -350,11 +357,12 @@ def _collect(account_id, days, lang="en"):
     latest_assessment = assessments[-1] if assessments else None
     first_assessment = assessments[0] if assessments else None
 
-    displacement = None
+    displacement = _displacement_from_chat(db, user_id, memory)
     hardships = []
     for r in reversed(all_assess):
-        if not displacement and _row_get(r, "displacement_cause"):
-            displacement = DISPLACEMENT_LABELS.get(_row_get(r, "displacement_cause"), str(_row_get(r, "displacement_cause")).title())
+        cause_saved = _row_get(r, "displacement_cause")
+        if not displacement and cause_saved and str(cause_saved).lower() not in ("unknown", "displacement", "none", ""):
+            displacement = DISPLACEMENT_LABELS.get(cause_saved, str(cause_saved).title())
         if not hardships and _row_get(r, "idp_hardships"):
             raw = _row_get(r, "idp_hardships")
             try:
@@ -816,6 +824,57 @@ def _public_root():
             port = request.host.split(":")[1] if ":" in request.host else ""
             root = f"{request.scheme}://{ip}" + (f":{port}" if port else "")
     return root
+
+
+# Cause of displacement, read from what the user said in chat (English, Urdu, Roman Urdu).
+# Only counted when the user also talks about losing / leaving home or living in a camp,
+# so "the flood destroyed our school" alone does not make someone displaced.
+_CAUSE_WORDS = {
+    "flood": ["flood", "flooding", "flooded", "selab", "sailab", "selaab", "سیلاب"],
+    "earthquake": ["earthquake", "zalzala", "zalzla", "زلزلہ", "زلزلے"],
+    "conflict": ["war", "military operation", "bomb", "bombing", "firing", "militants", "terrorists",
+                 "jang", "جنگ", "آپریشن", "دہشت گرد", "فائرنگ"],
+    "violence": ["violence", "violent", "attack", "attacked", "threat", "threats", "threatened", "beaten", "beat us",
+                 "abuse", "abused", "fighting", "clashes", "fled", "had to flee", "ran away", "tashaddud", "maar peet",
+                 "dhamki", "dhamkiyan", "larai", "تشدد", "حملہ", "حملے", "دھمکی", "دھمکیاں", "مار پیٹ", "لڑائی", "جھگڑ"],
+    "fire": ["house burned", "home burned", "fire destroyed", "ghar jal", "گھر جل", "آگ لگ"],
+    "eviction": ["evicted", "eviction", "thrown out of our house", "بے دخل"],
+}
+_HOME_LOSS_WORDS = [
+    "lost my home", "lost our home", "lost my house", "lost our house", "losing my home", "losing our home",
+    "home was destroyed", "house was destroyed", "our home", "my home", "left our home", "left my home",
+    "displaced", "camp", "shelter", "tent", "relief", "ghar tabah", "ghar chhor", "ghar chor", "be ghar",
+    "گھر", "کیمپ", "بے گھر", "خیمہ",
+]
+
+
+def _has_word(text, words):
+    for w in words:
+        if w.isascii():
+            if re.search(r"(?<![a-z])" + re.escape(w) + r"(?![a-z])", text):
+                return True
+        elif w in text:
+            return True
+    return False
+
+
+def _displacement_from_chat(db, user_id, memory=None):
+    if not user_id:
+        return None
+    try:
+        rows = db.execute("SELECT message FROM chat_history WHERE user_id = ? AND lower(sender) = 'user' "
+                          "ORDER BY id DESC LIMIT 300", (user_id,)).fetchall()
+    except Exception:
+        return None
+    msgs = [str(_row_get(r, "message", "") or "").lower() for r in rows]
+    home_context = bool(_row_get(memory, "is_displaced")) or any(_has_word(m, _HOME_LOSS_WORDS) for m in msgs)
+    if not home_context:
+        return None
+    for cause, words in _CAUSE_WORDS.items():
+        if any(_has_word(m, words) and (_has_word(m, _HOME_LOSS_WORDS) or bool(_row_get(memory, "is_displaced")))
+               for m in msgs):
+            return DISPLACEMENT_LABELS[cause]
+    return None
 
 
 def _initials(name):

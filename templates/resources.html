@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='16' fill='%230f766e'/%3E%3Ccircle cx='32' cy='25' r='8' fill='white'/%3E%3Crect x='27' y='34' width='10' height='14' rx='2' fill='white'/%3E%3C/svg%3E">
+    <title>Practical Help — Empath AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      try { if (localStorage.getItem("empathSidebarCollapsed") === "1") document.documentElement.classList.add("sidebar-collapsed"); } catch (e) {}
+    </script>
+
+    <!-- ===== ICONS (separate file) ===== -->
+    <script src="/static/icons.js"></script>
+
+    <!-- ===== TAILWIND CSS (same setup as the other pages) ===== -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
+              urdu: ['"Noto Sans Arabic"', 'Inter', 'sans-serif']
+            }
+          }
+        }
+      }
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer components {
+        .glass {
+          @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150
+                 shadow-[0_8px_32px_rgba(15,23,42,0.07),inset_0_1px_0_rgba(255,255,255,0.8)];
+        }
+
+        /* ---------- Sidebar ---------- */
+        .side-link {
+          @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium text-slate-600 transition
+                 hover:bg-white/60 hover:text-slate-900;
+        }
+        .side-link [data-icon], .side-link .side-svg { @apply h-[18px] w-[18px] shrink-0 text-slate-400 transition; }
+        .side-link:hover [data-icon], .side-link:hover .side-svg { @apply text-teal-700; }
+        .side-link.active { @apply bg-white font-semibold text-slate-900 shadow-[0_2px_10px_rgba(15,23,42,0.06)]; }
+        .side-link.active [data-icon], .side-link.active .side-svg { @apply text-teal-700; }
+
+        .icon-btn {
+          @apply relative flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/60
+                 text-slate-700 transition hover:bg-white hover:text-teal-700;
+        }
+        .icon-btn [data-icon] { @apply h-5 w-5; }
+
+        /* ---------- Top bar ---------- */
+        .nav-btn-green {
+          @apply inline-flex items-center rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
+        }
+
+        /* ---------- Calm Corner ---------- */
+        .ex-card {
+          @apply glass flex flex-col items-start rounded-2xl p-5 text-start transition
+                 hover:-translate-y-1 hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600;
+        }
+        .ex-emoji { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/80 text-2xl; }
+        .ex-title { @apply mb-1 text-[16px] font-bold tracking-tight text-slate-900; }
+        .ex-desc { @apply mb-4 text-[13px] leading-relaxed text-slate-500; }
+        .ex-meta { @apply mt-auto inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11.5px] font-semibold text-teal-800; }
+
+        .panel { @apply glass mx-auto w-full max-w-2xl rounded-3xl p-6 text-center md:p-10; }
+        .panel-title { @apply mb-2 text-[22px] font-bold tracking-tight text-slate-900 md:text-[26px]; }
+        .panel-sub { @apply mx-auto mb-6 max-w-md text-sm leading-relaxed text-slate-500; }
+
+        .btn-main {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 py-3 text-sm font-semibold text-white
+                 shadow-[0_6px_16px_rgba(15,118,110,0.25)] transition hover:bg-teal-800 disabled:opacity-50;
+        }
+        .btn-soft {
+          @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/80 bg-white/70 px-5 py-3 text-sm font-semibold
+                 text-slate-700 transition hover:bg-white hover:text-teal-800;
+        }
+
+        .stat-chip { @apply glass flex flex-col rounded-2xl px-4 py-3 text-start; }
+        .stat-chip b { @apply text-[22px] font-bold leading-tight text-slate-900; }
+        .stat-chip span { @apply text-xs text-slate-500; }
+
+        /* ---------- Practical Help ---------- */
+        .sos {
+          @apply flex items-center gap-3 rounded-2xl border border-red-100 bg-white/80 p-3.5 transition hover:-translate-y-0.5 hover:bg-white;
+        }
+        .sos b { @apply block text-[22px] font-extrabold leading-none text-red-700; }
+        .sos span { @apply text-[12.5px] font-medium leading-snug text-slate-600; }
+        .sos-ico { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700; }
+        .sos-ico [data-icon] { @apply h-5 w-5; }
+
+        .res-card { @apply glass flex flex-col rounded-3xl p-5 md:p-6; }
+        .res-head { @apply mb-4 flex items-center gap-3; }
+        .res-ico { @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white/70 text-teal-700; }
+        .res-ico [data-icon] { @apply h-5 w-5; }
+        .res-title { @apply text-[16.5px] font-bold tracking-tight text-slate-900; }
+        .res-sub { @apply text-[12.5px] text-slate-500; }
+
+        .line { @apply flex items-center justify-between gap-3 border-t border-slate-900/[0.06] py-3 first:border-t-0 first:pt-0; }
+        .line-name { @apply text-[14px] font-semibold text-slate-800; }
+        .line-what { @apply mt-0.5 text-[12.5px] leading-relaxed text-slate-500; }
+        .call {
+          @apply inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-teal-700 px-3.5 py-2 text-[13.5px] font-bold text-white
+                 shadow-[0_4px_12px_rgba(15,118,110,0.25)] transition hover:bg-teal-800;
+        }
+        .call [data-icon] { @apply h-4 w-4; }
+        .tip { @apply mt-3 rounded-2xl bg-teal-50/80 px-4 py-3 text-[12.5px] leading-relaxed text-teal-900; }
+        .tip b { @apply font-bold; }
+        .warn { @apply mt-3 rounded-2xl bg-amber-50/90 px-4 py-3 text-[12.5px] leading-relaxed text-amber-900; }
+
+        .step { @apply flex gap-3 py-2.5; }
+        .step-n { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-[12.5px] font-bold text-white; }
+        .step p { @apply text-[13.5px] leading-relaxed text-slate-700; }
+
+        .helpline-footer {
+          @apply glass mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl px-4 py-3 text-center text-[12.5px] text-slate-500;
+        }
+        .helpline-footer strong { @apply whitespace-nowrap font-semibold text-slate-900; }
+      }
+    </style>
+
+    <style>
+      @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      .anim-up   { animation: fadeUp .5s ease both; }
+      .anim-up-2 { animation: fadeUp .5s .06s ease both; }
+      .anim-up-3 { animation: fadeUp .5s .12s ease both; }
+
+      .topbar { isolation: isolate; }
+      .topbar::before {
+        content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+        background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+        -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+        box-shadow: 0 8px 32px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+
+      /* ===== SIDEBAR (same as dashboard) ===== */
+      html .sidebar {
+        position: fixed; top: 12px; bottom: 12px; inset-inline-start: 12px; z-index: 70;
+        display: flex; flex-direction: column;
+        width: 280px; max-width: calc(100vw - 48px);
+        overflow-y: auto; overflow-x: visible;
+        background: rgba(255,255,255,0.9);
+        transform: translateX(calc(-100% - 24px));
+        transition: transform .3s cubic-bezier(.4,0,.2,1), width .25s ease;
+      }
+      html[dir="rtl"] .sidebar { transform: translateX(calc(100% + 24px)); }
+      html.sidebar-open .sidebar { transform: none; }
+      .sidebar-overlay {
+        position: fixed; inset: 0; z-index: 65; background: rgba(15,23,42,0.35);
+        -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+        opacity: 0; pointer-events: none; transition: opacity .3s ease;
+      }
+      html.sidebar-open .sidebar-overlay { opacity: 1; pointer-events: auto; }
+      html.sidebar-open body { overflow: hidden; }
+
+      @media (min-width: 1024px) {
+        html .sidebar, html[dir="rtl"] .sidebar {
+          position: sticky; top: 20px; bottom: auto; z-index: 30;
+          height: calc(100vh - 40px); width: 248px; max-width: none;
+          transform: none; overflow: visible; background: rgba(255,255,255,0.45);
+          cursor: pointer;
+        }
+        .sidebar-overlay { display: none; }
+        html.sidebar-collapsed .sidebar { width: 80px; }
+        html.sidebar-collapsed .sidebar .side-label { display: none; }
+        html.sidebar-collapsed .sidebar .sidebar-top { justify-content: center; }
+        html.sidebar-collapsed .sidebar .side-link { justify-content: center; padding-inline: 0; }
+        html.sidebar-collapsed .sidebar .side-link:hover .side-label,
+        html.sidebar-collapsed .sidebar .side-link:focus-visible .side-label {
+          display: block; position: absolute; top: 50%; inset-inline-start: calc(100% + 12px);
+          transform: translateY(-50%); z-index: 80; padding: 6px 10px; border-radius: 8px;
+          background: #0f172a; color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+          box-shadow: 0 8px 20px rgba(15,23,42,0.2);
+        }
+      }
+
+      /* ===== Breathing circle ===== */
+      .breath-wrap { position: relative; width: 260px; height: 260px; margin: 8px auto 24px; }
+      @media (max-width: 400px) { .breath-wrap { width: 220px; height: 220px; } }
+      .breath-ring {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 2px dashed rgba(15,118,110,0.25);
+      }
+      .breath-circle {
+        position: absolute; inset: 0; margin: auto; width: 100%; height: 100%; border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, rgba(94,234,212,0.95), rgba(20,184,166,0.85) 45%, rgba(15,118,110,0.9));
+        box-shadow: 0 20px 60px rgba(15,118,110,0.35), inset 0 -10px 30px rgba(15,118,110,0.35);
+        transform: scale(0.45);
+        transition-property: transform; transition-timing-function: ease-in-out;
+      }
+      .breath-glow {
+        position: absolute; inset: -20px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(45,212,191,0.25), transparent 65%);
+        transform: scale(0.6); transition-property: transform; transition-timing-function: ease-in-out;
+      }
+      .breath-text {
+        position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #fff; text-shadow: 0 1px 8px rgba(15,23,42,0.25); pointer-events: none;
+      }
+      .breath-word { font-size: 20px; font-weight: 700; }
+      .breath-count { font-size: 40px; font-weight: 800; line-height: 1.1; }
+
+      .progress-track { height: 6px; border-radius: 999px; background: rgba(15,23,42,0.07); overflow: hidden; }
+      .progress-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #14b8a6, #0f766e); transition: width .4s ease; }
+
+      /* ===== Rating slider ===== */
+      .rate-emoji { font-size: 64px; line-height: 1; margin-bottom: 8px; transition: transform .2s ease; }
+      .rate-num { font-size: 34px; font-weight: 800; color: #0f172a; }
+      input[type=range].rate {
+        -webkit-appearance: none; appearance: none; width: 100%; height: 10px; border-radius: 999px;
+        background: linear-gradient(90deg, #34d399, #fbbf24, #f87171); outline: none;
+      }
+      input[type=range].rate::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%;
+        background: #fff; border: 3px solid #0f766e; box-shadow: 0 4px 12px rgba(15,23,42,0.2); cursor: pointer;
+      }
+      input[type=range].rate::-moz-range-thumb {
+        width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 3px solid #0f766e; cursor: pointer;
+      }
+      html[dir="rtl"] input[type=range].rate { direction: rtl; background: linear-gradient(270deg, #34d399, #fbbf24, #f87171); }
+
+      /* ===== Result ===== */
+      .result-scores { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 8px 0 18px; }
+      .result-box { width: 96px; padding: 14px 0; border-radius: 20px; background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.9); }
+      .result-box b { display: block; font-size: 34px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+      .result-box span { font-size: 12px; color: #64748b; }
+      .result-arrow { font-size: 26px; color: #0f766e; }
+      html[dir="rtl"] .result-arrow { transform: scaleX(-1); }
+
+      .step-big { font-size: 56px; line-height: 1; margin-bottom: 14px; }
+      .step-text { font-size: 18px; line-height: 1.7; color: #0f172a; font-weight: 600; max-width: 460px; margin: 0 auto 8px; }
+      .step-hint { font-size: 13.5px; color: #64748b; line-height: 1.7; max-width: 440px; margin: 0 auto; }
+      .step-inputs { display: grid; gap: 10px; max-width: 420px; margin: 20px auto 0; }
+      .step-input {
+        width: 100%; border-radius: 14px; border: 1px solid rgba(15,23,42,0.1); background: rgba(255,255,255,0.85);
+        padding: 12px 14px; font-size: 15px; color: #0f172a; outline: none; transition: border-color .2s, box-shadow .2s;
+      }
+      .step-input:focus { border-color: #14b8a6; box-shadow: 0 0 0 4px rgba(20,184,166,0.15); }
+      .step-input.filled { border-color: rgba(20,184,166,0.5); }
+      .step-input.bad { border-color: #f43f5e; box-shadow: 0 0 0 4px rgba(244,63,94,0.12); }
+      .step-need.err { color: #be123c; }
+      .rate-note { margin-top: 14px; font-size: 13.5px; font-weight: 600; color: #b45309; min-height: 20px; }
+      .input-row { display: flex; gap: 8px; align-items: center; }
+      .input-row .step-input { flex: 1 1 auto; min-width: 0; }
+      .mic-btn {
+        flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+        border: 1px solid rgba(15,23,42,0.1); background: rgba(255,255,255,0.85); color: #0f766e; cursor: pointer; transition: all .2s;
+      }
+      .mic-btn:hover { background: #fff; border-color: #14b8a6; }
+      .mic-btn [data-icon] { display: block; width: 20px; height: 20px; }
+      .mic-btn.listening { background: #e11d48; border-color: #e11d48; color: #fff; animation: micPulse 1.2s ease-in-out infinite; }
+      @keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(225,29,72,0.45); } 50% { box-shadow: 0 0 0 8px rgba(225,29,72,0); } }
+      .mic-note { margin-top: 8px; font-size: 12.5px; color: #64748b; }
+      .mic-note.err { color: #be123c; font-weight: 600; }
+      .step-need { margin-top: 10px; font-size: 12.5px; color: #0f766e; font-weight: 600; }
+      .step-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 520px; margin: 18px auto 0; }
+      .step-summary span { border-radius: 999px; background: rgba(20,184,166,0.1); color: #115e59; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+      .btn-main:disabled { opacity: .45; cursor: not-allowed; }
+
+      .voice-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; user-select: none; }
+      .voice-toggle .sw { width: 38px; height: 22px; border-radius: 999px; background: #cbd5e1; position: relative; transition: background .2s; }
+      .voice-toggle .sw::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start .2s; }
+      .voice-toggle.on .sw { background: #0f766e; }
+      .voice-toggle.on .sw::after { inset-inline-start: 19px; }
+
+      .screen { display: none; }
+      .screen.show { display: block; animation: fadeUp .4s ease both; }
+
+      /* ===== URDU / RTL ===== */
+      html[dir="rtl"] body { direction: rtl; }
+      html[lang="ur"] body,
+      html[lang="ur"] button { font-family: 'Inter', 'Noto Sans Arabic', sans-serif; }
+      html[lang="ur"] *,
+      html[lang="ur"] *::before,
+      html[lang="ur"] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+      html[lang="ur"] h1, html[lang="ur"] .panel-title { line-height: 1.7; }
+      html[lang="ur"] p, html[lang="ur"] .ex-desc, html[lang="ur"] .panel-sub,
+      html[lang="ur"] .step-text, html[lang="ur"] .step-hint { line-height: 2; }
+      html[lang="ur"] .side-link, html[lang="ur"] .helpline-footer { line-height: 1.8; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .breath-circle, .breath-glow { transition-duration: 0s !important; }
+      }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden bg-[#eef3f8] font-sans text-slate-800 antialiased">
+
+<!-- Background colour behind the glass -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0" style="background:
+    radial-gradient(900px 620px at 0% 0%, rgba(20,184,166,0.18), transparent 60%),
+    radial-gradient(820px 620px at 100% 18%, rgba(14,165,233,0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(99,102,241,0.08), transparent 60%),
+    linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);"></div>
+  <div class="absolute -left-40 top-[8%] h-[400px] w-[400px] rounded-full bg-teal-500/20 blur-3xl md:h-[540px] md:w-[540px]"></div>
+  <div class="absolute -bottom-[12%] -right-40 h-[400px] w-[400px] rounded-full bg-cyan-600/15 blur-3xl md:h-[600px] md:w-[600px]"></div>
+</div>
+
+<div class="page flex min-h-screen gap-5 p-3 md:p-5 lg:items-start">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar" class="sidebar glass rounded-3xl p-3" aria-label="Sidebar">
+      <div class="sidebar-top flex items-center justify-between gap-2 px-1.5 pb-6 pt-1.5">
+        <a href="/dashboard" class="flex items-center gap-2.5 whitespace-nowrap text-lg font-bold tracking-tight text-slate-900">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+            <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+          </span>
+          <span class="side-label">Empath AI</span>
+        </a>
+        <button type="button" class="icon-btn h-9 w-9 lg:hidden" onclick="closeSidebar()" aria-label="Close menu"><span data-icon="close"></span></button>
+      </div>
+
+      <nav class="flex flex-col gap-1" aria-label="Main">
+        <a class="side-link" href="/dashboard"><span data-icon="home"></span><span class="side-label" data-i18n-extra="dashboard">Dashboard</span></a>
+        <a class="side-link" href="/app"><span data-icon="chat"></span><span class="side-label" data-i18n-extra="letsChat">Let's Chat</span></a>
+        <a class="side-link" href="/self_assessment"><span data-icon="assessment"></span><span class="side-label" data-i18n-extra="weeklyAssessment">Weekly Self Assessment</span></a>
+        <a class="side-link" href="/wellness"><span data-icon="wellness"></span><span class="side-label" data-i18n-extra="wellnessProgress">Wellness Progress</span></a>
+        <a class="side-link" href="/quotes"><span data-icon="hope"></span><span class="side-label" data-i18n-extra="wordsOfHope">Words of Hope</span></a>
+        <a class="side-link" href="/quranic_corner"><span data-icon="quran"></span><span class="side-label" data-i18n-extra="quranicCorner">Quranic Comfort Corner</span></a>
+        <a class="side-link" href="/calm_corner"><span data-icon="calm"></span><span class="side-label" data-i18n-extra="calmCorner">Calm Corner</span></a>
+        <a class="side-link" href="/report"><span data-icon="report"></span><span class="side-label" data-i18n-extra="report">My Wellbeing Report</span></a>
+        <a class="side-link active" href="/resources" aria-current="page">
+          <span data-icon="help"></span>
+          <span class="side-label" data-i18n-extra="resources">Practical Help</span>
+        </a>
+      </nav>
+
+      <div class="mt-auto flex flex-col gap-1 border-t border-slate-900/[0.06] pt-3">
+        <a class="side-link" href="/logout"><span data-icon="logout"></span><span class="side-label" data-i18n-extra="logout">Logout</span></a>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="min-w-0 flex-1">
+
+    <!-- NAVBAR -->
+    <nav class="topbar sticky top-3 z-40 flex items-center justify-between gap-3 rounded-2xl py-2.5 pe-2.5 ps-4 md:top-5 md:ps-5">
+        <div class="nav-left flex min-w-0 items-center gap-3">
+            <button type="button" class="icon-btn lg:hidden" id="menuBtn" onclick="openSidebar()" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+            <a class="idp-badge flex min-w-0 items-center gap-2.5 lg:hidden" href="/dashboard">
+                <div class="idp-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-teal-700 text-white shadow-[0_4px_12px_rgba(15,118,110,0.3)]">
+                    <span class="block h-[18px] w-[18px]" data-icon="logo"></span>
+                </div>
+                <div class="brand-text hidden min-w-0 flex-col min-[400px]:flex">
+                    <span class="brand-name text-[15px] font-bold leading-tight tracking-tight text-slate-900">Empath AI</span>
+                    <span class="brand-sub truncate text-[11px] text-slate-500" data-t="brandSub">IDP Mental Health</span>
+                </div>
+            </a>
+            <div class="nav-divider hidden h-7 w-px bg-slate-900/10 sm:block lg:hidden"></div>
+            <span class="nav-page-label hidden truncate text-[15px] font-semibold text-slate-900 sm:inline" data-t="page">Practical Help</span>
+        </div>
+        <div class="nav-right flex shrink-0 items-center gap-3">
+            <a href="/dashboard" class="nav-btn-green" data-t="dashboard">Dashboard</a>
+        </div>
+    </nav>
+
+
+    <div class="main mx-auto w-full max-w-6xl px-1 pb-8 pt-6 md:px-2 md:pt-10">
+
+        <!-- Title -->
+        <div class="anim-up mb-6 md:mb-8">
+            <h1 class="text-[26px] font-bold leading-tight tracking-tight text-slate-900 md:text-[36px]" data-t="title">Practical Help</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 md:text-[15px]" data-t="subtitle">Important numbers and simple steps for everyday needs: safety, relief, documents, money support and your rights. Tap a number to call.</p>
+        </div>
+
+        <!-- Emergency -->
+        <section class="anim-up-2 glass mb-6 rounded-3xl p-5 md:p-6" aria-labelledby="sosTitle">
+            <div class="mb-4 flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full bg-red-600"></span>
+                <h2 id="sosTitle" class="text-[16.5px] font-bold text-slate-900" data-t="sosTitle">In an emergency, call now</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <a class="sos" href="tel:1122"><span class="sos-ico"><span data-icon="help"></span></span><div><b dir="ltr">1122</b><span data-t="sos1122">Rescue & ambulance</span></div></a>
+                <a class="sos" href="tel:15"><span class="sos-ico"><span data-icon="help"></span></span><div><b dir="ltr">15</b><span data-t="sos15">Police</span></div></a>
+                <a class="sos" href="tel:115"><span class="sos-ico"><span data-icon="help"></span></span><div><b dir="ltr">115</b><span data-t="sos115">Edhi ambulance</span></div></a>
+                <a class="sos" href="tel:16"><span class="sos-ico"><span data-icon="help"></span></span><div><b dir="ltr">16</b><span data-t="sos16">Fire brigade</span></div></a>
+            </div>
+        </section>
+
+        <div class="grid gap-5 md:grid-cols-2">
+
+            <!-- Emotional support -->
+            <section class="res-card">
+                <div class="res-head">
+                    <span class="res-ico"><span data-icon="hope"></span></span>
+                    <div><h2 class="res-title" data-t="mhTitle">Someone to talk to</h2><p class="res-sub" data-t="mhSub">Free emotional support from trained people</p></div>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="umang">Umang mental health helpline</div><div class="line-what" data-t="umangWhat">24 hours, every day. Free.</div></div>
+                    <a class="call" href="tel:03117786264"><span data-icon="phone"></span><span dir="ltr">0311-7786264</span></a>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="rozan">Rozan Counseling Helpline</div><div class="line-what" data-t="rozanWhat">Confidential counselling in Urdu and English.</div></div>
+                    <a class="call" href="tel:03041111741"><span data-icon="phone"></span><span dir="ltr">0304-111-1741</span></a>
+                </div>
+                <div class="tip" data-t="mhTip">If you are thinking about harming yourself, please call Umang or 1122 now, and stay close to someone you trust.</div>
+            </section>
+
+            <!-- Disaster & relief -->
+            <section class="res-card">
+                <div class="res-head">
+                    <span class="res-ico"><span data-icon="home"></span></span>
+                    <div><h2 class="res-title" data-t="pdmaTitle">Disaster relief (PDMA)</h2><p class="res-sub" data-t="pdmaSub">Flood or disaster help, relief and complaints</p></div>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="pdmaPunjab">PDMA Punjab</div><div class="line-what" data-t="pdmaPunjabWhat">Disaster helpline. You get a complaint number by SMS.</div></div>
+                    <a class="call" href="tel:1129"><span data-icon="phone"></span><span dir="ltr">1129</span></a>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="pdmaKP">PDMA Khyber Pakhtunkhwa</div><div class="line-what" data-t="pdmaKPWhat">Toll-free, 24 hours.</div></div>
+                    <a class="call" href="tel:1700"><span data-icon="phone"></span><span dir="ltr">1700</span></a>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="pdmaSindh">PDMA Sindh</div><div class="line-what" data-t="pdmaSindhWhat">Emergency helpline to report a disaster.</div></div>
+                    <a class="call" href="tel:1736"><span data-icon="phone"></span><span dir="ltr">1736</span></a>
+                </div>
+                <div class="tip" data-t="pdmaTip">Other areas: contact your district administration (Deputy Commissioner's office) or the camp management to register for relief.</div>
+            </section>
+
+            <!-- Documents -->
+            <section class="res-card">
+                <div class="res-head">
+                    <span class="res-ico"><span data-icon="assessment"></span></span>
+                    <div><h2 class="res-title" data-t="nadraTitle">Lost ID card (NADRA)</h2><p class="res-sub" data-t="nadraSub">CNIC, B-form and other identity documents</p></div>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="nadraMobile">NADRA helpline (mobile)</div><div class="line-what" data-t="nadraMobileWhat">From any mobile network.</div></div>
+                    <a class="call" href="tel:1777"><span data-icon="phone"></span><span dir="ltr">1777</span></a>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="nadraLand">NADRA helpline (landline)</div><div class="line-what" data-t="nadraLandWhat">From a landline phone.</div></div>
+                    <a class="call" href="tel:051111786100"><span data-icon="phone"></span><span dir="ltr">051-111-786-100</span></a>
+                </div>
+                <div class="tip" data-t="nadraTip"><b>Lost your CNIC?</b> Go to a NADRA Registration Centre with your CNIC number. A police report (FIR) is not required. Keep your CNIC number written on paper or saved in your phone.</div>
+            </section>
+
+            <!-- Money support -->
+            <section class="res-card">
+                <div class="res-head">
+                    <span class="res-ico"><span data-icon="wellness"></span></span>
+                    <div><h2 class="res-title" data-t="bispTitle">Money support (BISP)</h2><p class="res-sub" data-t="bispSub">Benazir Income Support Programme</p></div>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="bispLine">BISP helpline</div><div class="line-what" data-t="bispLineWhat">Free call: payments, deductions, complaints.</div></div>
+                    <a class="call" href="tel:080026477"><span data-icon="phone"></span><span dir="ltr">0800-26477</span></a>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="bispSms">Official BISP SMS number</div><div class="line-what" data-t="bispSmsWhat">Check status by sending your CNIC number.</div></div>
+                    <span class="call pointer-events-none !bg-slate-700"><span dir="ltr">8171</span></span>
+                </div>
+                <div class="warn" data-t="bispWarn">Registration is free. 8171 is the only official BISP number. Never pay an agent, and never share your OTP or PIN with anyone.</div>
+            </section>
+
+            <!-- Rights & protection -->
+            <section class="res-card">
+                <div class="res-head">
+                    <span class="res-ico"><span data-icon="shield"></span></span>
+                    <div><h2 class="res-title" data-t="rightsTitle">Rights & protection</h2><p class="res-sub" data-t="rightsSub">Free legal advice, women and children</p></div>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="mohr">Human rights helpline (1099)</div><div class="line-what" data-t="mohrWhat">Free legal advice for abuse, domestic violence and rights violations. Toll-free.</div></div>
+                    <a class="call" href="tel:1099"><span data-icon="phone"></span><span dir="ltr">1099</span></a>
+                </div>
+                <div class="line">
+                    <div><div class="line-name" data-t="child">Child protection</div><div class="line-what" data-t="childWhat">If a child is in danger, lost or needs protection.</div></div>
+                    <a class="call" href="tel:1121"><span data-icon="phone"></span><span dir="ltr">1121</span></a>
+                </div>
+            </section>
+
+            <!-- Simple steps -->
+            <section class="res-card">
+                <div class="res-head">
+                    <span class="res-ico"><span data-icon="calm"></span></span>
+                    <div><h2 class="res-title" data-t="stepsTitle">Simple steps that help</h2><p class="res-sub" data-t="stepsSub">Small things that make the next days easier</p></div>
+                </div>
+                <div class="step"><span class="step-n">1</span><p data-t="step1">Write important numbers on paper too, in case your phone is lost or the battery dies.</p></div>
+                <div class="step"><span class="step-n">2</span><p data-t="step2">Keep photos of your CNIC, B-forms and important papers, and send a copy to a family member you trust.</p></div>
+                <div class="step"><span class="step-n">3</span><p data-t="step3">Ask the camp management or district office how to register for relief, and keep any token or SMS you receive.</p></div>
+                <div class="step"><span class="step-n">4</span><p data-t="step4">Government help is free. Do not pay anyone who promises to "speed it up".</p></div>
+                <div class="step"><span class="step-n">5</span><p data-t="step5">Look after your mind too: a short exercise in the Calm Corner or a chat can help on hard days.</p></div>
+            </section>
+        </div>
+
+        <!-- Footer note -->
+        <p class="helpline-footer" data-t="checked">Numbers checked on 16 November 2026. Services can change. If a number does not work in an emergency, call 1122 or 15. Empath AI is not part of these organisations.</p>
+    </div>
+    </div>
+</div>
+
+<script>
+/* LANGUAGE (same detection as the other pages) */
+const savedLanguage = (
+    localStorage.getItem('empathLanguage') ||
+    localStorage.getItem('language') ||
+    localStorage.getItem('selectedLanguage') ||
+    localStorage.getItem('appLanguage') ||
+    {{ session.get('language', 'en')|tojson }} ||
+    'en'
+).toLowerCase().trim();
+const LANG = (savedLanguage === 'ur' || savedLanguage === 'urdu' || savedLanguage.startsWith('ur-')) ? 'ur' : 'en';
+document.documentElement.lang = LANG;
+document.documentElement.dir = LANG === 'ur' ? 'rtl' : 'ltr';
+
+const UR = {
+  page: "عملی مدد", brandSub: "آئی ڈی پی ذہنی صحت", dashboard: "ڈیش بورڈ",
+  title: "عملی مدد",
+  subtitle: "روزمرہ ضروریات کے لیے اہم نمبر اور آسان اقدامات: حفاظت، امداد، دستاویزات، مالی مدد اور آپ کے حقوق۔ کال کرنے کے لیے نمبر پر ٹیپ کریں۔",
+  sosTitle: "ایمرجنسی میں ابھی کال کریں",
+  sos1122: "ریسکیو اور ایمبولینس", sos15: "پولیس", sos115: "ایدھی ایمبولینس", sos16: "فائر بریگیڈ",
+  mhTitle: "کوئی جس سے بات کر سکیں", mhSub: "تربیت یافتہ افراد کی طرف سے مفت جذباتی مدد",
+  umang: "اُمنگ ذہنی صحت ہیلپ لائن", umangWhat: "دن رات، ہر روز۔ مفت۔",
+  rozan: "روزن کاؤنسلنگ ہیلپ لائن", rozanWhat: "اردو اور انگریزی میں رازدارانہ کاؤنسلنگ۔",
+  mhTip: "اگر آپ کو خود کو نقصان پہنچانے کے خیالات آ رہے ہیں تو ابھی اُمنگ یا 1122 پر کال کریں، اور کسی قابلِ اعتماد شخص کے پاس رہیں۔",
+  pdmaTitle: "آفات میں امداد (پی ڈی ایم اے)", pdmaSub: "سیلاب یا آفت میں مدد، امداد اور شکایات",
+  pdmaPunjab: "پی ڈی ایم اے پنجاب", pdmaPunjabWhat: "ڈیزاسٹر ہیلپ لائن۔ شکایت نمبر ایس ایم ایس پر ملتا ہے۔",
+  pdmaKP: "پی ڈی ایم اے خیبر پختونخوا", pdmaKPWhat: "ٹول فری، چوبیس گھنٹے۔",
+  pdmaSindh: "پی ڈی ایم اے سندھ", pdmaSindhWhat: "آفت کی اطلاع دینے کے لیے ایمرجنسی ہیلپ لائن۔",
+  pdmaTip: "دوسرے علاقے: امداد کے لیے اندراج کروانے کے لیے اپنی ضلعی انتظامیہ (ڈپٹی کمشنر آفس) یا کیمپ انتظامیہ سے رابطہ کریں۔",
+  nadraTitle: "شناختی کارڈ گم ہو گیا (نادرا)", nadraSub: "شناختی کارڈ، ب فارم اور دیگر دستاویزات",
+  nadraMobile: "نادرا ہیلپ لائن (موبائل)", nadraMobileWhat: "کسی بھی موبائل نیٹ ورک سے۔",
+  nadraLand: "نادرا ہیلپ لائن (لینڈ لائن)", nadraLandWhat: "لینڈ لائن فون سے۔",
+  nadraTip: "<b>شناختی کارڈ گم ہو گیا؟</b> اپنے شناختی کارڈ نمبر کے ساتھ نادرا رجسٹریشن سینٹر جائیں۔ پولیس رپورٹ (ایف آئی آر) ضروری نہیں۔ اپنا شناختی کارڈ نمبر کاغذ پر لکھ کر یا فون میں محفوظ رکھیں۔",
+  bispTitle: "مالی مدد (بی آئی ایس پی)", bispSub: "بینظیر انکم سپورٹ پروگرام",
+  bispLine: "بی آئی ایس پی ہیلپ لائن", bispLineWhat: "مفت کال: ادائیگی، کٹوتی اور شکایات۔",
+  bispSms: "بی آئی ایس پی کا سرکاری ایس ایم ایس نمبر", bispSmsWhat: "اپنا شناختی کارڈ نمبر بھیج کر حیثیت معلوم کریں۔",
+  bispWarn: "اندراج مفت ہے۔ 8171 بی آئی ایس پی کا واحد سرکاری نمبر ہے۔ کسی ایجنٹ کو پیسے نہ دیں، اور اپنا او ٹی پی یا پن کسی کو نہ بتائیں۔",
+  rightsTitle: "حقوق اور تحفظ", rightsSub: "مفت قانونی مشورہ، خواتین اور بچے",
+  mohr: "انسانی حقوق ہیلپ لائن (1099)", mohrWhat: "تشدد، گھریلو زیادتی اور حقوق کی خلاف ورزی پر مفت قانونی مشورہ۔ ٹول فری۔",
+  child: "بچوں کا تحفظ", childWhat: "اگر کوئی بچہ خطرے میں ہو، گم ہو جائے یا اسے تحفظ کی ضرورت ہو۔",
+  stepsTitle: "آسان اقدامات جو مدد دیتے ہیں", stepsSub: "چھوٹی باتیں جو آنے والے دن آسان بناتی ہیں",
+  step1: "اہم نمبر کاغذ پر بھی لکھ لیں، کہیں فون گم ہو جائے یا بیٹری ختم ہو جائے۔",
+  step2: "اپنے شناختی کارڈ، ب فارم اور اہم کاغذات کی تصویریں رکھیں، اور ایک کاپی کسی قابلِ اعتماد رشتہ دار کو بھیج دیں۔",
+  step3: "کیمپ انتظامیہ یا ضلعی دفتر سے پوچھیں کہ امداد کے لیے اندراج کیسے ہوتا ہے، اور ملنے والا ٹوکن یا ایس ایم ایس سنبھال کر رکھیں۔",
+  step4: "سرکاری مدد مفت ہے۔ \"کام جلدی کروانے\" کا وعدہ کرنے والے کسی شخص کو پیسے نہ دیں۔",
+  step5: "اپنے ذہن کا بھی خیال رکھیں: مشکل دنوں میں سکون کے گوشے کی ایک مختصر مشق یا بات چیت مدد کر سکتی ہے۔",
+  checked: "نمبر 16 نومبر 2026 کو جانچے گئے۔ خدمات بدل سکتی ہیں۔ ایمرجنسی میں اگر کوئی نمبر کام نہ کرے تو 1122 یا 15 پر کال کریں۔ ایمپاتھ اے آئی ان اداروں کا حصہ نہیں ہے۔"
+};
+
+if (LANG === 'ur') {
+  document.title = "عملی مدد — Empath AI";
+  document.querySelectorAll('[data-t]').forEach(function (el) {
+    const v = UR[el.getAttribute('data-t')];
+    if (v === undefined) return;
+    if (v.indexOf('<b>') !== -1) el.innerHTML = v; else el.textContent = v;
+  });
+}
+</script>
+
+<script>
+/* =========================================================
+   SIDEBAR — labels + mobile drawer + click-to-collapse
+   (same behaviour as the dashboard; uses the saved language)
+   ========================================================= */
+(function () {
+  const root = document.documentElement;
+  const KEY = "empathSidebarCollapsed";
+
+  const SIDEBAR_TEXT = {
+    en: { dashboard: "Dashboard", letsChat: "Let's Chat", weeklyAssessment: "Weekly Self Assessment",
+          wellnessProgress: "Wellness Progress", wordsOfHope: "Words of Hope",
+          quranicCorner: "Quranic Comfort Corner", calmCorner: "Calm Corner", report: "My Wellbeing Report", resources: "Practical Help", logout: "Logout" },
+    ur: { dashboard: "ڈیش بورڈ", letsChat: "بات چیت کریں", weeklyAssessment: "ہفتہ وار خود تشخیصی جائزہ",
+          wellnessProgress: "ذہنی فلاح و بہبود کی پیش رفت", wordsOfHope: "امید کے الفاظ",
+          quranicCorner: "قرآنی سکون کا گوشہ", calmCorner: "سکون کا گوشہ", report: "میری ذہنی صحت کی رپورٹ", resources: "عملی مدد", logout: "لاگ آؤٹ" }
+  };
+
+  const t = SIDEBAR_TEXT[root.lang === "ur" ? "ur" : "en"];
+  document.querySelectorAll("[data-i18n-extra]").forEach(function (el) {
+    const key = el.getAttribute("data-i18n-extra");
+    if (t[key]) el.textContent = t[key];
+  });
+
+  function syncMenuBtn() {
+    const btn = document.getElementById("menuBtn");
+    if (btn) btn.setAttribute("aria-expanded", root.classList.contains("sidebar-open") ? "true" : "false");
+  }
+
+  window.openSidebar = function () { root.classList.add("sidebar-open"); syncMenuBtn(); };
+  window.closeSidebar = function () { root.classList.remove("sidebar-open"); syncMenuBtn(); };
+
+  function setCollapsed(collapsed) {
+    root.classList.toggle("sidebar-collapsed", collapsed);
+    try { localStorage.setItem(KEY, collapsed ? "1" : "0"); } catch (e) {}
+  }
+
+  // Desktop: click on the menu -> collapse; click again -> open.
+  document.addEventListener("click", function (e) {
+    if (window.innerWidth < 1024) return;
+    if (!e.target.closest("#sidebar") || e.target.closest("a, button")) return;
+    setCollapsed(!root.classList.contains("sidebar-collapsed"));
+  });
+
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") window.closeSidebar(); });
+  window.addEventListener("resize", function () { if (window.innerWidth >= 1024) window.closeSidebar(); });
+})();
+</script>
+
+</body>
+</html>

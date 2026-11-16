@@ -378,14 +378,39 @@ def _humanize_time_ago(delta, language="en"):
     return "a while ago"
 
 
+# Text that only appears in crisis replies (the helpline numbers)
+_CRISIS_REPLY_MARKERS = ("1122", "7786264", "Umang", "اُمنگ", "امنگ", "ریسکیو")
+
+
 def _last_chat_was_crisis(user_id):
-    """True if the saved risk pattern says the last conversations reached crisis level."""
+    """True only if the LAST conversation ended in a crisis.
+
+    The saved risk pattern remembers that a crisis happened at some point, but if the user
+    later said they were okay or happy, the welcome must follow that, not the old crisis.
+    So we also check how the last conversation ended: was one of the last two bot replies
+    a crisis reply (with the helpline numbers)?"""
     try:
-        row = get_db().execute(
+        db = get_db()
+        row = db.execute(
             "SELECT risk_pattern FROM user_memory WHERE user_id = ?", (user_id,)
         ).fetchone()
-        return bool(row and (row["risk_pattern"] or "") in ("crisis", "emergency"))
-    except Exception:
+        if not (row and (row["risk_pattern"] or "") in ("crisis", "emergency")):
+            return False
+
+        last_bot = db.execute(
+            """
+            SELECT message FROM chat_history
+            WHERE user_id = ? AND sender = 'assistant'
+            ORDER BY id DESC LIMIT 2
+            """,
+            (user_id,)
+        ).fetchall()
+        return any(
+            any(m in str(r["message"] or "") for m in _CRISIS_REPLY_MARKERS)
+            for r in last_bot
+        )
+    except Exception as e:
+        print("Last chat crisis check error:", e)
         return False
 
 
@@ -835,11 +860,15 @@ def chat():
             response = "I am here with you. What has been weighing on your heart these days?"
 
     elif stage == STAGE_ROLE:
-        role = detect_role_smart(user_message)
+        # role = category used inside the app; profession = the user's exact job ("Lawyer")
+        role, profession_en, profession_ur = detect_role_and_profession(user_message)
         session["role"] = role
+        if profession_en:
+            session["profession"] = profession_en
 
         if session.get("user_id"):
             update_user_role(session["user_id"], role)
+            save_user_profession(session["user_id"], profession_en, profession_ur)
 
         session["stage"] = STAGE_LISTEN
 
@@ -1193,7 +1222,8 @@ from .responses import (  # noqa: E402
     _is_practical_request,
 )
 from .role import (  # noqa: E402
-    detect_role_smart,
+    detect_role_and_profession,
+    save_user_profession,
 )
 from .safety import (  # noqa: E402
     build_crisis_response,
