@@ -788,6 +788,8 @@ ROLE_KEYWORDS = {
     "student": ["student", "university", "college", "school", "studies", "study", "exam", "education", "semester", "notes"],
     "homemaker": ["house wife", "housewife", "home maker", "homemaker", "mother", "mom", "maa", "children", "kids", "baby", "bacha"],
     "parent": ["parent", "mother", "father", "ammi", "abu", "my children", "my kids", "my child"],
+    "teacher": ["teacher", "teaching", "i teach", "lecturer", "professor", "principal", "tutor", "ustad", "ustani", "استاد", "استانی", "ٹیچر", "معلم", "پڑھاتا", "پڑھاتی"],
+    "student": ["student", "university", "college", "school", "studies", "study", "exam", "education", "semester", "notes"],
     "unemployed": ["unemployed", "no job", "lost my job", "without work", "not working", "no work"],
     "daily_worker": ["worker", "labor", "labour", "construction", "daily wage", "mazdoor", "earner", "jobless"],
     "elderly": ["retired", "old", "elder", "grandfather", "grandmother", "haji", "buzurg", "old man", "old woman"],

@@ -443,6 +443,42 @@ def build_returning_welcome(first_name, language, user_id, is_new_chat=False):
     ])
 
 
+# ─────────────────────────────────────────────
+# ROLE QUESTION: did the user share more than their role?
+# ─────────────────────────────────────────────
+_LOSS_WORDS = [
+    # English
+    "flood", "destroy", "destroyed", "lost", "lose", "died", "dead", "death", "killed", "passed away",
+    "home", "house", "camp", "displaced", "shelter", "tent", "war", "attack", "earthquake", "fire",
+    "no job", "lost my job", "jobless", "sad", "scared", "afraid", "worried", "alone", "hurt", "pain",
+    "can't", "cannot", "difficult", "hard", "miss", "crying", "stress", "anxious", "depressed",
+    # Urdu
+    "سیلاب", "تباہ", "ختم ہو", "مر گ", "فوت", "انتقال", "گھر", "کیمپ", "بے گھر", "خیمہ", "زلزلہ",
+    "اداس", "پریشان", "ڈر", "خوف", "اکیلا", "اکیلی", "دکھ", "تکلیف", "رو ", "بے روزگار", "نوکری چلی",
+    # Roman Urdu
+    "selab", "sailab", "tabah", "khatam ho", "mar gay", "faut", "ghar", "camp", "be ghar",
+    "udaas", "udas", "pareshan", "dar lag", "khauf", "akela", "akeli", "dukh", "takleef", "naukri chali",
+]
+_HEAVY_EMOTIONS = {"depression", "sadness", "grief", "anxiety", "stress", "fear", "ptsd", "anger"}
+
+
+def _role_answer_has_more(message, emotion=None):
+    """True when the answer to "are you a student / working ...?" also carries feelings or a loss,
+    so the bot should respond to that instead of moving on with a scripted question."""
+    text = (message or "").lower()
+    for w in _LOSS_WORDS:
+        if w.isascii():
+            # whole words only ("house" must not match "housewife")
+            if re.search(r"(?<![a-z])" + re.escape(w) + r"(?![a-z])", text):
+                return True
+        elif w in text:
+            return True
+    if emotion in _HEAVY_EMOTIONS:
+        return True
+    # a long answer usually tells a story, not just a role
+    return len(text.split()) > 8
+
+
 # CHAT SAFETY FAIL-SAFE HELPERS
 # Only protects /chat safety routing; normal flow remains unchanged.
 def _crisis_plain_fallback(name=""):
@@ -799,21 +835,42 @@ def chat():
             response = "I am here with you. What has been weighing on your heart these days?"
 
     elif stage == STAGE_ROLE:
-        role = detect_role(user_message)
+        role = detect_role_smart(user_message)
         session["role"] = role
 
         if session.get("user_id"):
             update_user_role(session["user_id"], role)
 
-        if session.get("sa_followup_needed"):
-            response = (
-                f"Thank you, {session.get('name', '')}. I also noticed you completed a self-assessment recently. "
-                f"Before we continue, how have you been feeling lately?"
-            )
-        else:
-            response = f"Thank you, {session.get('name', '')}. How have you been feeling lately?"
-
         session["stage"] = STAGE_LISTEN
+
+        if _role_answer_has_more(user_message, emotion):
+            # The user said more than their role (e.g. "I am a teacher and our school was
+            # destroyed in the flood"). Reply to what they shared instead of a scripted question.
+            response = generate_natural_chat_response(
+                user_message=user_message,
+                sess=session,
+                emotion=emotion,
+                wellbeing_info=wellbeing_info
+            )
+            if SAFETY_CHECK_TOKEN in (response or ""):
+                return _llm_safety_flag_response(user_message)
+        else:
+            name = session.get("name", "")
+            if language == "ur":
+                if session.get("sa_followup_needed"):
+                    response = (
+                        f"شکریہ، {name}۔ میں نے دیکھا کہ آپ نے حال ہی میں سیلف اسیسمنٹ مکمل کی ہے۔ "
+                        "آگے بڑھنے سے پہلے بتائیں، آج کل آپ کیسا محسوس کر رہے ہیں؟"
+                    )
+                else:
+                    response = f"شکریہ، {name}۔ آج کل آپ کیسا محسوس کر رہے ہیں؟"
+            elif session.get("sa_followup_needed"):
+                response = (
+                    f"Thank you, {name}. I also noticed you completed a self-assessment recently. "
+                    f"Before we continue, how have you been feeling lately?"
+                )
+            else:
+                response = f"Thank you, {name}. How have you been feeling lately?"
 
     elif stage == STAGE_LISTEN:
         if wants_assessment(user_message):
@@ -1134,6 +1191,9 @@ from .responses import (  # noqa: E402
     generate_natural_chat_response,
     get_response,
     _is_practical_request,
+)
+from .role import (  # noqa: E402
+    detect_role_smart,
 )
 from .safety import (  # noqa: E402
     build_crisis_response,

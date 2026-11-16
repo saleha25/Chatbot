@@ -24,6 +24,10 @@ REPORT_PERIODS = {"7": 7, "30": 30, "90": 90, "all": 0}
 _AI_CACHE = {}                                 # (user, period, data fingerprint) -> narrative
 
 ROLE_LABELS = {
+    "teacher": "Teacher",
+    "farmer": "Farmer",
+    "health_worker": "Health worker",
+    "business": "Shopkeeper / small business",
     "student": "Student",
     "homemaker": "Homemaker",
     "parent": "Parent / caregiver",
@@ -96,7 +100,8 @@ URDU_MONTHS = ["جنوری", "فروری", "مارچ", "اپریل", "مئی", "
 
 UR = {
     # roles / professions
-    "Student": "طالب علم", "Homemaker": "گھریلو خاتون", "Parent / caregiver": "والدین / نگہداشت کرنے والے",
+    "Teacher": "استاد / معلم", "Farmer": "کسان", "Health worker": "صحت کا کارکن",
+    "Shopkeeper / small business": "دکاندار / چھوٹا کاروبار", "Student": "طالب علم", "Homemaker": "گھریلو خاتون", "Parent / caregiver": "والدین / نگہداشت کرنے والے",
     "Currently unemployed": "فی الحال بے روزگار", "Daily-wage worker": "دیہاڑی دار مزدور",
     "Elderly / retired": "بزرگ / ریٹائرڈ", "Employed (government / private)": "ملازم (سرکاری / نجی)",
     "Not specified": "درج نہیں", "Not stated": "نہیں بتایا گیا", "Yes": "جی ہاں",
@@ -767,7 +772,7 @@ def _key_figures(data, status):
     }
 
 
-def _qr_text(report_id, now_pk, data, f, verify_url):
+def _qr_text(report_id, now_pk, data, f, period_label_en):
     """Plain text stored inside the QR code. Any phone camera shows it, even with no internet,
     so the doctor can compare it with the printed report. Always English (short and readable on any phone)."""
     def v(x, suffix=""):
@@ -777,11 +782,12 @@ def _qr_text(report_id, now_pk, data, f, verify_url):
         f"ID: {report_id}",
         f"Created: {now_pk.strftime('%d %b %Y, %I:%M %p')} PKT",
         f"Client: {_initials(data['profile']['full_name'])}",
+        f"Period: {period_label_en}",
         f"Status: {f['status']}",
         f"PHQ-9: {v(f['phq'], '/27')} | GAD-7: {v(f['gad'], '/21')} | WHO-5: {v(f['who'], '/25')}",
         f"Avg sleep: {v(f['sleep'], ' h')} | Crisis alerts: {f['alerts']} | Calm exercises: {f['calm']}",
         "Screening summary, not a diagnosis.",
-        "To verify, scan the second QR code on the report.",
+        "Keep this Report ID to verify the report with Empath AI.",
     ]
     return "\n".join(lines)
 
@@ -874,10 +880,19 @@ def _overall_status(data):
 # Professional narrative (AI with a rule-based fallback)
 # ─────────────────────────────────────────────
 REPORT_PROMPT = """You are a clinical psychologist writing the narrative part of a mental-wellbeing progress report
-about an internally displaced person (IDP) in Pakistan who uses a support chatbot called Empath AI.
+about a client of Empath AI, a support chatbot built for internally displaced people (IDPs) in Pakistan.
+Do not assume this client is displaced: follow the STRICT FACT RULES below.
 The reader is a doctor, counsellor or NGO case worker. Write in clear, plain, professional English, third person
 ("the client"), calm and respectful. Use ONLY the data given. Never invent facts, names, events or numbers.
 Do NOT give a diagnosis; describe observations and screening results. If data is limited, say so honestly.
+STRICT FACT RULES:
+- State only what the client explicitly said or what the data fields contain. Do not add causes, places or events.
+- Do NOT say the client is displaced, homeless or living in a camp, and do not name a cause of displacement,
+  unless "displacement" / "living_situation" in the data says so or the client clearly said it in their messages.
+  Example: "our school was destroyed in the flood" means the school was destroyed, NOT that the client lost their home.
+- Use the profession exactly as given in the data.
+- With very few messages or entries (fewer than 5), say the picture is based on limited data. Never use words like
+  "consistently", "throughout" or "always" for 1-3 data points.
 The client's messages may be in Urdu or Roman Urdu: understand them, but write the report in English and do not
 quote more than a few words.
 
@@ -1098,7 +1113,7 @@ REPORT_TEXT = {
         no_calm="No Calm Corner exercise was completed in this period.",
         alerts_count="The chatbot switched to crisis support {n} time(s) in this period ({e} emergency). Each time it shared helpline numbers. Most recent:",
         alerts_level="Level", risk_words_note="Found by checking the words of the client's messages.",
-        qr_sum_title="Report summary", qr_sum_note="Scan with any phone camera. Works without internet.",
+        qr_sum_title="Scan for report summary", qr_sum_note="Any phone camera. Works without internet.",
         qr_ver_title="Verify online", qr_ver_note="Opens the verification page (same WiFi / hotspot as the server).",
     ),
     "ur": dict(
@@ -1155,7 +1170,7 @@ REPORT_TEXT = {
         no_calm="اس عرصے میں پرسکون گوشہ کی کوئی مشق مکمل نہیں ہوئی۔",
         alerts_count="اس عرصے میں چیٹ بوٹ نے {n} بار ہنگامی مدد شروع کی ({e} ایمرجنسی)۔ ہر بار ہیلپ لائن نمبر دیے گئے۔ حالیہ:",
         alerts_level="درجہ", risk_words_note="یہ صارف کے پیغامات کے الفاظ دیکھ کر معلوم کیا گیا۔",
-        qr_sum_title="رپورٹ کا خلاصہ", qr_sum_note="کسی بھی فون کیمرے سے اسکین کریں۔ انٹرنیٹ کے بغیر بھی چلتا ہے۔",
+        qr_sum_title="رپورٹ کے خلاصے کے لیے اسکین کریں", qr_sum_note="کوئی بھی فون کیمرا۔ انٹرنیٹ کے بغیر بھی چلتا ہے۔",
         qr_ver_title="آن لائن تصدیق", qr_ver_note="تصدیق کا صفحہ کھلتا ہے (سرور والے وائی فائی / ہاٹ اسپاٹ پر)۔",
     ),
 }
@@ -1202,7 +1217,8 @@ def wellbeing_report():
     except Exception as e:
         print("Report log error:", e)
     verify_url = _public_root() + "/report/verify/" + report_id
-    qr_text = _qr_text(report_id, now_pk, data, figures, verify_url)
+    days_txt = (f'{_fmt_date(data["since_pk"])} - {_fmt_date(now_pk)}' if days else f'All records to {_fmt_date(now_pk)}')
+    qr_text = _qr_text(report_id, now_pk, data, figures, days_txt)
     safe_name = re.sub(r"[^A-Za-z0-9]+", "_", data["profile"]["full_name"] or "Client").strip("_") or "Client"
 
     charts = {
