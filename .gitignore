@@ -23,3 +23,6 @@ anaconda_projects/
 
 # Jupyter
 .ipynb_checkpoints/
+
+*.osm.pbf
+*.shp.zip

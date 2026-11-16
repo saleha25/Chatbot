@@ -5,6 +5,7 @@ All the code now lives in the empath/ folder, one file per topic."""
 from empath import app  # noqa: F401  (also registers every route)
 from empath.context import extract_energy, extract_wellbeing_info
 from empath.database import init_db
+from empath import resources
 
 
 # ==============================

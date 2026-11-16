@@ -155,6 +155,7 @@
     .icon-cyan    { @apply bg-cyan-600/10 text-cyan-700; }
     .icon-emerald { @apply bg-emerald-600/10 text-emerald-700; }
     .icon-sky     { @apply bg-sky-600/10 text-sky-700; }
+    .icon-rose    { @apply bg-rose-600/10 text-rose-700; }
 
     /* ---------- Delete modal (script toggles .show) ---------- */
     .modal-overlay { @apply fixed inset-0 z-[1000] hidden items-center justify-center bg-slate-900/40 p-5 backdrop-blur-sm; }
@@ -198,16 +199,12 @@
     .cards-grid > .card:nth-child(1) { grid-column: span 2 / span 2; }
   }
 
-  /* ===== Calm Corner: wide card on the last row (no empty space) ===== */
-  @media (min-width: 768px) {
-    .cards-grid > .card.card-calm { grid-column: 1 / -1; }
-    .card.card-calm { display: grid; grid-template-columns: auto 1fr auto; column-gap: 20px; align-items: center; }
-    .card.card-calm .card-icon-wrap { margin-bottom: 0; }
-    .card.card-calm p, .card.card-calm .card-tags { margin-bottom: 0; }
-    .card.card-calm .card-cta { margin-top: 0; border-top: 0; padding-top: 0; gap: 10px; white-space: nowrap; }
+  /* ===== Balanced grid (8 cards) =====
+     Wide desktop (3 columns) : [Chat x2 | Assessment] [Wellness | Hope | Quran] [Calm | Report | Practical Help]
+     Laptop / tablet (2 columns): Chat full, then pairs, and Practical Help full width on the last row */
+  @media (min-width: 768px) and (max-width: 1279px) {
+    .cards-grid > .card.card-help { grid-column: 1 / -1; }
   }
-  .card.card-calm .calm-text h2 { margin-bottom: 6px; }
-  .card.card-calm .calm-text .card-tags { margin-top: 12px; }
 
   /* ===== Mobile: compact cards (icon + title on one line) ===== */
   @media (max-width: 767px) {
@@ -580,22 +577,21 @@
             </div>
         </a>
 
-        <!-- 6. Calm Corner (wide card) -->
+        <!-- 6. Calm Corner -->
         <a class="card card-calm group" href="/calm_corner">
             <div class="card-icon-wrap icon-indigo"><span data-icon="calm"></span></div>
 
-            <div class="calm-text">
-                <h2 data-i18n="calmCorner">Calm Corner</h2>
-                <p data-i18n="calmDescription">
-                    Guided breathing and grounding exercises with an Urdu and English voice guide.
-                    Rate how you feel before and after, and see how much lighter you become.
-                </p>
-                <div class="card-tags">
-                    <span class="tag" data-i18n="breathing">Breathing</span>
-                    <span class="tag" data-i18n="grounding">5-4-3-2-1 Grounding</span>
-                    <span class="tag" data-i18n="badDreams">After Bad Dreams</span>
-                    <span class="tag" data-i18n="voiceGuide">Voice Guide</span>
-                </div>
+            <h2 data-i18n="calmCorner">Calm Corner</h2>
+
+            <p data-i18n="calmDescription">
+                Guided breathing and grounding exercises with an Urdu and English voice guide.
+                Rate how you feel before and after, and see how much lighter you become.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="breathing">Breathing</span>
+                <span class="tag" data-i18n="grounding">5-4-3-2-1 Grounding</span>
+                <span class="tag" data-i18n="voiceGuide">Voice Guide</span>
             </div>
 
             <div class="card-cta">
@@ -604,25 +600,46 @@
             </div>
         </a>
 
-        <!-- 7. Wellbeing Report (wide card) -->
-        <a class="card card-calm card-report group" href="/report">
+        <!-- 7. Wellbeing Report -->
+        <a class="card card-report group" href="/report">
             <div class="card-icon-wrap icon-teal"><span data-icon="report"></span></div>
 
-            <div class="calm-text">
-                <h2 data-i18n="myReport">My Wellbeing Report</h2>
-                <p data-i18n="reportDescription">
-                    A professional report of your progress: assessment scores, sleep, mood and energy,
-                    and an analysis of your conversations. Download it as a PDF to share with a doctor or counsellor.
-                </p>
-                <div class="card-tags">
-                    <span class="tag" data-i18n="pdfDownload">PDF Download</span>
-                    <span class="tag" data-i18n="forDoctors">For Doctors &amp; NGOs</span>
-                    <span class="tag" data-i18n="chatAnalysis">Chat Analysis</span>
-                </div>
+            <h2 data-i18n="myReport">My Wellbeing Report</h2>
+
+            <p data-i18n="reportDescription">
+                A professional report of your progress: assessment scores, sleep, mood and energy,
+                and an analysis of your conversations. Download it as a PDF to share with a doctor or counsellor.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="pdfDownload">PDF Download</span>
+                <span class="tag" data-i18n="forDoctors">For Doctors &amp; NGOs</span>
             </div>
 
             <div class="card-cta">
                 <span data-i18n="viewReport">View Report</span>
+                <span class="cta-arrow" data-icon="arrow"></span>
+            </div>
+        </a>
+
+        <!-- 8. Practical Help -->
+        <a class="card card-help group" href="/resources">
+            <div class="card-icon-wrap icon-rose"><span data-icon="help"></span></div>
+
+            <h2 data-i18n="practicalHelp">Practical Help</h2>
+
+            <p data-i18n="practicalHelpDescription">
+                Emergency numbers, NADRA and BISP helplines, and a map of the nearest hospitals,
+                NADRA offices, NGOs and ATMs anywhere in Pakistan.
+            </p>
+
+            <div class="card-tags">
+                <span class="tag" data-i18n="emergencyNumbers">Emergency Numbers</span>
+                <span class="tag" data-i18n="nearbyHelpMap">Nearby Help Map</span>
+            </div>
+
+            <div class="card-cta">
+                <span data-i18n="findHelp">Find Help Near You</span>
                 <span class="cta-arrow" data-icon="arrow"></span>
             </div>
         </a>
@@ -685,6 +702,10 @@ const translations = {
      myReport: "My Wellbeing Report",
      reportDescription: "A professional report of your progress: assessment scores, sleep, mood and energy, and an analysis of your conversations. Download it as a PDF to share with a doctor or counsellor.",
      pdfDownload: "PDF Download", forDoctors: "For Doctors & NGOs", chatAnalysis: "Chat Analysis", viewReport: "View Report",
+     practicalHelp: "Practical Help",
+     practicalHelpDescription: "Emergency numbers, NADRA and BISP helplines, and a map of the nearest hospitals, NADRA offices, NGOs and ATMs anywhere in Pakistan.",
+     emergencyNumbers: "Emergency Numbers", nearbyHelpMap: "Nearby Help Map", nadraBisp: "NADRA & BISP", allPakistan: "All of Pakistan",
+     findHelp: "Find Help Near You",
      conversationsAre: "Your conversations are",
     privateAnonymous: "private and anonymous", deleteAccountQuestion: "Delete Account?",
     deleteWarning: "This action will permanently remove your account and all related data. This cannot be undone.",
@@ -722,6 +743,10 @@ const translations = {
      myReport: "میری ذہنی صحت کی رپورٹ",
      reportDescription: "آپ کی پیش رفت کی ایک پیشہ ورانہ رپورٹ: جائزوں کے اسکور، نیند، موڈ اور توانائی، اور آپ کی گفتگو کا تجزیہ۔ اسے PDF میں ڈاؤن لوڈ کر کے ڈاکٹر یا کونسلر کو دکھائیں۔",
      pdfDownload: "PDF ڈاؤن لوڈ", forDoctors: "ڈاکٹروں اور این جی اوز کے لیے", chatAnalysis: "گفتگو کا تجزیہ", viewReport: "رپورٹ دیکھیں",
+     practicalHelp: "عملی مدد",
+     practicalHelpDescription: "ایمرجنسی نمبر، نادرا اور بی آئی ایس پی ہیلپ لائنز، اور پورے پاکستان میں قریب ترین ہسپتال، نادرا دفاتر، این جی اوز اور اے ٹی ایم کا نقشہ۔",
+     emergencyNumbers: "ایمرجنسی نمبر", nearbyHelpMap: "قریبی مدد کا نقشہ", nadraBisp: "نادرا اور بی آئی ایس پی", allPakistan: "پورا پاکستان",
+     findHelp: "اپنے قریب مدد تلاش کریں",
      conversationsAre: "آپ کی گفتگو",
     privateAnonymous: "نجی اور گمنام ہے", deleteAccountQuestion: "اکاؤنٹ حذف کریں؟",
     deleteWarning: "یہ کارروائی آپ کے اکاؤنٹ اور اس سے متعلق تمام ڈیٹا کو مستقل طور پر حذف کر دے گی۔ اسے واپس نہیں کیا جا سکتا۔",
