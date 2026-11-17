@@ -491,6 +491,8 @@ _POSITIVE_WORDS = [
 _NEGATIVE_WORDS = [
     "sad", "bad", "worst", "terrible", "awful", "upset", "low", "down", "cry", "crying", "hopeless", "worthless",
     "useless", "lonely", "angry", "stressed", "anxious", "tired", "hate",
+    "scared", "afraid", "fear", "worried", "worry", "nightmare", "nightmares", "can't sleep", "cant sleep",
+    "darr", "dar lag", "khauf", "neend nahi", "ڈر", "خوف", "نیند نہیں",
     "bakwas", "bura", "udaas", "udas", "pareshan", "dukhi", "rona", "tanha", "akela", "ghussa",
     "اداس", "برا", "بری", "پریشان", "دکھی", "رونا", "تنہا", "اکیلا", "غصہ", "بیکار", "بکواس",
 ]
@@ -531,6 +533,37 @@ def _feeling(text):
     if pos and neg:
         return "mixed"
     return "positive" if pos else "negative" if neg else ""
+
+
+def _idp_context_note(sess, feeling):
+    """One light IDP line for emotional replies (sad, scared, can't sleep ...), never for happy or everyday talk.
+
+    Uses only what the user has actually shared (living place, why they left home, role).
+    If nothing is known, the line must not assume a flood, camp or loss.
+    """
+    if feeling not in ("negative", "mixed"):
+        return ""
+    known = []
+    place = str(sess.get("living_place", "") or "").strip()
+    if place:
+        known.append(f"they are staying in {place}")
+    cause = str(sess.get("displacement_cause", "") or "").strip().lower()
+    if cause and cause not in ("unknown", "none", "general"):
+        known.append(f"they left home because of {cause}")
+    profession = str(sess.get("profession", "") or sess.get("role", "") or "").strip()
+    if profession and profession != "default":
+        known.append(f"they are a {profession}")
+    facts = ("What the user has shared: " + "; ".join(known) + ". Use these facts, in their words.") if known else (
+        "Nothing specific is known about their displacement, so do NOT mention floods, camps, shelters or losses. "
+        "Use a gentle line that does not assume, for example about life feeling unsettled, being away from home "
+        "or from family, or how worry for loved ones grows when families are spread apart.")
+    return (
+        "IDP CONTEXT (Empath AI is for internally displaced people in Pakistan): add exactly ONE short, natural "
+        "sentence that connects what they feel right now to their life situation. " + facts +
+        " Examples of the idea: nightmares and poor sleep are very common after leaving home or living through a "
+        "disaster; worry for relatives feels heavier when family is far away; a temporary place can make it hard to "
+        "rest or feel safe. Never say 'as an IDP' or 'because you are displaced'. One sentence only, not in every paragraph."
+    )
 
 
 def _reply_notes(user_message, sess):
@@ -591,6 +624,10 @@ def _reply_notes(user_message, sess):
     if asked:
         notes.append("Questions you ALREADY asked (do not ask these or similar ones again): " +
                      " | ".join(asked[-4:]))
+
+    idp_note = _idp_context_note(sess, now)
+    if idp_note:
+        notes.append(idp_note)
 
     if now in ("negative", "mixed"):
         length_rule = (
@@ -839,8 +876,6 @@ def build_adaptive_memory_context(user_id, current_message=""):
         lines.append("Preferred response style inferred from user engagement: " + ", ".join(preferred_styles) + ".")
         if avoid_openings:
             lines.append("Avoid repeating these recent openings: " + " | ".join(avoid_openings) + ".")
-        if user_msgs[-6:]:
-            lines.append("Recent user statements: " + " | ".join(user_msgs[-6:]) + ".")
         return "\n".join(lines)
     except Exception as e:
         print("Adaptive memory context error:", e)

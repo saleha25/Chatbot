@@ -316,95 +316,192 @@ def detect_dream_or_hallucination_risk(text):
 
 
 
+# Every family member / close person, in English, Roman Urdu and Urdu script
+RELATION_WORDS = [
+    # English
+    "mother", "mom", "mum", "mama", "father", "dad", "papa", "parent", "parents", "sister", "brother", "sibling",
+    "son", "daughter", "child", "children", "baby", "kid", "wife", "husband", "aunt", "aunty", "auntie", "uncle",
+    "cousin", "nephew", "niece", "grandmother", "grandfather", "grandma", "grandpa", "granny", "grandparent",
+    "friend", "neighbour", "neighbor", "relative", "relatives", "family", "fiance", "fiancee", "teacher",
+    "someone", "somebody", "person", "people", "loved one",
+    # Roman Urdu
+    "ammi", "ami", "amma", "abbu", "abu", "abba", "behen", "bahen", "behan", "bhai", "beta", "beti", "bacha", "bachi",
+    "biwi", "shohar", "khala", "khalu", "phupho", "phuppo", "phupi", "chacha", "chachi", "taya", "tayi", "mamu",
+    "mamoo", "mami", "nana", "nani", "dada", "dadi", "cousin", "dost", "saheli", "rishtedar", "hamsaya", "parosi",
+    # Urdu script
+    "امی", "ماں", "والدہ", "ابو", "والد", "باپ", "بہن", "بھائی", "بیٹا", "بیٹی", "بچہ", "بچی", "بچے", "بیوی", "شوہر",
+    "خالہ", "خالو", "پھوپھو", "پھوپھی", "چچا", "چچی", "تایا", "تائی", "ماموں", "ممانی", "نانا", "نانی", "دادا", "دادی",
+    "کزن", "دوست", "سہیلی", "رشتہ دار", "ہمسایہ", "پڑوسی", "کوئی",
+]
+
+# Death, injury or blood (what people see in frightening dreams)
+DEATH_WORDS = [
+    "die", "died", "dies", "dying", "dead", "death", "passed away", "killed", "lost", "fell", "falling",
+    "blood", "bleeding", "injured", "hurt", "accident", "drowned", "drowning", "burned", "grave", "funeral",
+    "calling me", "crying", "came", "appeared", "talking to me",
+    "mar gay", "mar gai", "mar gaya", "mar gayi", "faut", "fot", "intiqal", "maut", "khoon", "gir gay", "gir gai", "zakhmi",
+    "مر گ", "مرتے", "فوت", "انتقال", "موت", "خون", "گر گ", "زخمی", "جنازہ", "قبر", "رو رہ",
+]
+
+DREAM_WORDS = [
+    "dream", "dreams", "dreamt", "dreamed", "nightmare", "nightmares", "in my sleep", "while sleeping",
+    "after waking", "when i woke", "woke up",
+    "khwab", "khawab", "khaab", "sapna", "sapnay",
+    "خواب", "ڈراؤنا خواب", "نیند میں", "آنکھ کھلی",
+]
+
+
+def _has_word(text, words):
+    """Whole-word match for English / Roman Urdu, simple match for Urdu script."""
+    for w in words:
+        if w.isascii():
+            if re.search(r"(?<![a-z])" + re.escape(w) + r"(?![a-z])", text):
+                return True
+        elif w in text:
+            return True
+    return False
+
+
+def _earlier_user_messages(limit=2):
+    """The user's last few messages in this chat (a dream story often continues over several messages)."""
+    try:
+        history = list(session.get("history", []) or [])
+    except RuntimeError:
+        return []   # no request (offline tests)
+    msgs = [str(m.get("content", "")) for m in history if m.get("role") == "user"]
+    return [normalize_for_safety(m).lower() for m in msgs[-(limit + 1):]]
+
+
 def is_grief_dream_without_self_harm(text):
-    """Detect grief/disturbing experiences about a deceased person without automatic crisis.
+    """A frightening dream about ANY person (mother, aunt, khala, friend ...) dying, bleeding or hurt,
+    without any wish to die or self-harm, gets warm dream support instead of the suicide safety message.
 
-    This is intentionally a safety nuance, not normal response routing. Crisis still wins when
-    the user says they want/need/should go, join the deceased person, die, or harm themselves.
-    It also treats phrases like "after waking up" as dream context, because users often continue
-    the same dream story without repeating the word "dream" every turn.
+    Crisis still wins whenever the user says they want to die, join / go with the person,
+    or hurt themselves, in English, Urdu or Roman Urdu.
+    The word "dream" may be in an earlier message of the same chat ("I saw blood in my dreams" ->
+    "I saw my aunt die ..."), so the last two user messages are checked for dream words too.
     """
-    t = normalize_for_safety(text or "")
+    t = normalize_for_safety(text or "").lower()
 
-    deceased_context = any(x in t for x in [
-        "dead friend", "dead mother", "dead father", "dead sister", "dead brother",
-        "my friend died", "friend who died", "passed away", "deceased", "someone who died"
-    ]) or ("dead" in t and any(x in t for x in ["friend", "mother", "father", "sister", "brother", "person", "someone"]))
-
-    dream_context = any(x in t for x in [
-        "dream", "dreams", "in my dream", "in my dreams", "after waking", "when i woke", "woke up"
-    ])
-
-    grief_content = any(x in t for x in [
-        "calling me", "crying", "came", "appeared", "saw", "see", "talking to me", "i am scared", "scared"
-    ])
-
+    # 1. Any sign of real risk -> never treat it as only a dream
     crisis_intent = any(x in t for x in [
         "i should go", "i want to go", "i need to go", "i have to go", "i will go",
-        "go to her", "go to him", "join her", "join him", "join them",
-        "go with her", "go with him", "want to die", "kill myself", "end my life", "suicide"
+        "go to her", "go to him", "go to them", "join her", "join him", "join them",
+        "go with her", "go with him", "take me with", "want to die", "kill myself", "end my life", "suicide",
+        "hurt myself", "harm myself",
     ])
+    if crisis_intent or direct_crisis_override(t) or _states_explicit_intent(t):
+        return False
 
+    # 2. Awake experiences (voices, someone in the room) are handled by the psychosis checks
     awake_hallucination_context = any(x in t for x in [
         "while awake", "when i am awake", "i hear voices", "voices are", "voice is", "standing in my room"
     ])
+    if awake_hallucination_context:
+        return False
 
-    return bool(deceased_context and grief_content and not crisis_intent and not awake_hallucination_context and dream_context)
+    # 3. A person + death / blood / injury in this message
+    if not (_has_word(t, RELATION_WORDS) and _has_word(t, DEATH_WORDS)):
+        return False
+
+    # 4. It is a dream: in this message or in the user's last two messages
+    if _has_word(t, DREAM_WORDS):
+        return True
+    return any(_has_word(m, DREAM_WORDS) for m in _earlier_user_messages(2))
+
 
 def build_grief_dream_support_response(user_text, name="", role="default"):
-    """Warm support for grief-related dreams without over-triggering crisis."""
+    """Warm support for frightening dreams about someone dying or getting hurt, without crisis panic."""
     display_name = (name or "").strip()
     prefix = f"{display_name}, " if display_name else ""
+    language = "en"
+    try:
+        language = session.get("language", "en")
+    except RuntimeError:
+        pass
 
     if os.environ.get("OPENAI_API_KEY"):
         try:
-            system_prompt = """
+            lang_rule = ("Write ONLY in natural Urdu script (no English, no Roman Urdu)."
+                         if language == "ur" else "Write ONLY in English.")
+            system_prompt = f"""
 You are Empath AI, a warm mental-health support chatbot for IDPs in Pakistan.
-The user is describing a grief-related dream about someone who died. They have NOT expressed wanting to die or join the deceased person.
-Respond with emotional support, not emergency panic.
-Do not validate the dream as supernatural or real. Do not dismiss it.
-Include: gentle validation, one hopeful IDP-sensitive line, a short dua/prayer for the deceased if appropriate, and exactly one simple follow-up question.
-Keep it 4-6 sentences, warm and natural.
+The user is describing a frightening dream in which someone (a family member, friend or other person) died,
+was bleeding or got hurt. They have NOT said they want to die, join that person, or hurt themselves.
+Respond with calm emotional support, not emergency panic.
+- Name the exact person they mentioned (for example "your aunt", "your khala") and what they saw, in your own gentle words.
+- Make clear it was a dream. If it is not clear whether it also really happened, gently ask.
+- Say that such nightmares are common after loss, fear or hard times, and can stay with you after waking.
+- Do NOT ask about suicide or self-harm. Do NOT give phone numbers.
+- Do not say the dream is a sign, a message, or that it will come true. Do not dismiss it either.
+- You may gently mention the "After Bad Dreams" exercise in the app's Calm Corner.
+- If they say they cannot sleep, give ONE small, practical tip for tonight (a few slow breaths, a sip of water,
+  a dim light, a short dua or calm words before lying down again).
+- IDP context: add ONE gentle sentence that fits displaced families in Pakistan, for example that nightmares
+  and broken sleep are very common after leaving home or living through hard times, or that worry for a relative
+  feels heavier when family is far away. If you know where they stay or why they left home (given below), use it;
+  otherwise do not assume floods, camps or losses. Never say "as an IDP".
+- If they worry about the person, you may suggest calling or checking on them.
+- Do not say that YOU will pray or keep the person in your thoughts. You may suggest the user make a short dua.
+- Do not say "it was just a dream"; the feeling is real even if the dream is not.
+- 4-6 sentences in 2 short paragraphs, then exactly one gentle question about how they feel now.
+- {lang_rule}
 """.strip()
-            prompt = f"User name: {display_name or 'User'}\nRole: {role}\nUser message: {user_text}\nWrite the next response."
-            print("Empath AI selected model:", os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"))
+            recent = ""
+            try:
+                recent = " | ".join(m for m in _earlier_user_messages(2))
+            except Exception:
+                pass
+            idp_facts = []
+            try:
+                if session.get("living_place"):
+                    idp_facts.append(f"staying in {session.get('living_place')}")
+                cause = str(session.get("displacement_cause", "") or "").lower()
+                if cause and cause not in ("unknown", "none", "general"):
+                    idp_facts.append(f"left home because of {cause}")
+            except RuntimeError:
+                pass
+            prompt = (f"User name: {display_name or 'User'}\nRole: {role}\n"
+                      f"Known displacement facts: {'; '.join(idp_facts) or 'none shared yet'}\n"
+                      f"User's recent messages in this chat: {recent}\nUser message: {user_text}\nWrite the next response.")
             result = client.chat.completions.create(
                 model=os.environ.get("EMPATH_AI_MODEL", "gpt-4o-mini"),
-                
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.75,
-                max_tokens=180,
+                temperature=0.7,
+                max_tokens=320 if language == "ur" else 230,
             )
             response = result.choices[0].message.content.strip()
-            response = _ensure_one_followup(response, user_text) if '_ensure_one_followup' in globals() else response
-            return _with_comfort(response, "psychosis")
+            if response and not _has_unknown_phone_number(response) and _reply_language_ok(response, language):
+                response = _ensure_one_followup(response, user_text) if '_ensure_one_followup' in globals() else response
+                return _with_comfort(response, "psychosis")
+            print("Grief dream reply rejected, using fixed text.")
         except Exception as e:
             print("Grief dream OpenAI response error:", e)
 
+    if language == "ur":
+        options = [
+            "ایسا خواب دیکھنا، جس میں کوئی اپنا تکلیف میں ہو، واقعی بہت ڈراؤنا ہوتا ہے، اور آنکھ کھلنے کے بعد بھی دل بے چین رہتا ہے۔ "
+            "مشکل وقت یا کسی نقصان کے بعد ایسے خواب آنا عام بات ہے۔\n\n"
+            "اگر آپ چاہیں تو سکون کے گوشے میں \"برے خواب کے بعد\" والی مشق آپ کو تھوڑا پُرسکون کر سکتی ہے۔ "
+            "جاگنے کے بعد سے آپ کی طبیعت کیسی ہے؟",
+        ]
+        return _with_comfort(random.choice(options), "psychosis")
+
     options = [
         (
-            f"{prefix}seeing your friend like that in a dream sounds really painful and unsettling. "
-            "Dreams about someone we have lost can bring sadness back very strongly, especially when the heart is already carrying a lot. "
-            "After everything you have been managing, your mind and heart may be asking for gentleness right now. "
-            "You can make dua for your friend — may Allah grant them peace, mercy, and light. "
-            "How did you feel when you woke up from that dream?"
+            f"{prefix}seeing someone you love hurt like that in a dream sounds really frightening, and that feeling can stay with you after you wake up. "
+            "Nightmares like this are common after loss, fear or a hard time, and they don't mean something bad will happen.\n\n"
+            "If you'd like, the 'After Bad Dreams' exercise in Calm Corner can help you feel steadier. "
+            "How have you been feeling since you woke up?"
         ),
         (
-            f"{prefix}that dream sounds heavy, especially because it was about someone you cared about. "
-            "When grief is still inside us, the mind can bring that person into dreams in emotional ways. "
-            "Even with so much change around you, talking about it is a strong step instead of holding it alone. "
-            "May Allah give your friend peace and give your heart comfort too. "
-            "What part of the dream stayed with you the most?"
-        ),
-        (
-            f"{prefix}I can understand why that would shake you — seeing your friend crying in a dream can feel very real and upsetting. "
-            "It may be your grief showing how much you still care about them, not something you have to face alone. "
-            "When life feels unsettled, painful memories and dreams can feel even stronger, but sharing them can bring a little ease. "
-            "Please make a gentle dua for your friend, and be kind to yourself tonight too. "
-            "Would you like to tell me what happened in the dream?"
+            f"{prefix}that sounds like a really upsetting dream, especially because it was about someone close to you. "
+            "When the mind is carrying a lot, it can bring fears into dreams in very vivid ways.\n\n"
+            "Talking about it, like you are now, can take a little of its weight away. "
+            "What part of the dream has stayed with you the most?"
         ),
     ]
     return _with_comfort(random.choice(options), "psychosis")
